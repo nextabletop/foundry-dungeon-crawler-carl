@@ -1,0 +1,16 @@
+<section class="dcc-item-body">
+  {{> "systems/dungeon-crawler-carl/templates/item/partials/header.hbs"}}
+  <div class="dcc-box dcc-item-section">
+    <div class="dcc-bar">{{localize "DCC.ItemSheet.Inventory"}}</div>
+    <div class="dcc-item-grid">
+      {{formGroup systemFields.quantity value=systemSource.quantity rootId=rootId}}
+      {{formGroup systemFields.slot value=systemSource.slot options=selectOptions.slot rootId=rootId}}
+    </div>
+    <div class="dcc-item-flags">
+      {{formGroup systemFields.active value=systemSource.active rootId=rootId}}
+      {{formGroup systemFields.accessory value=systemSource.accessory rootId=rootId}}
+      {{formGroup systemFields.onHotlist value=systemSource.onHotlist rootId=rootId}}
+    </div>
+  </div>
+  {{> "systems/dungeon-crawler-carl/templates/item/partials/description.hbs"}}
+</section>

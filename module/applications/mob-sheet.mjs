@@ -1,0 +1,42 @@
+import DCCCreatureSheet from './creature-sheet.mjs';
+import { ACTOR_PARTIALS, templatePath as path } from './actor-sheet-base.mjs';
+import { inventoryView } from './sheet-rows.mjs';
+
+/**
+ * Mob stat block (R20 mode = mob): no tabs; the R20 two-column card flow
+ * (system.css). The stat block and the Notes editor are separate parts so an
+ * open Notes editor is not torn down when the stat block re-renders (health
+ * clicks, item edits). The window content scrolls as one page.
+ *
+ * Rolls whisper to the GM unless `system.mobPublic` (postCard / whisperToGM),
+ * set in Configure Sheet (DCCSheetConfig).
+ * Owned item types: the base default (weapon, skill, spell, gear).
+ */
+export default class MobSheet extends DCCCreatureSheet {
+  static DEFAULT_OPTIONS = { classes: ['mob'], position: { width: 720, height: 820 } };
+
+  static RICH_TEXT_PARTS = {
+    notes: [{ key: 'notes', label: 'DCC.Bio.Notes', wide: true }],
+  };
+
+  static PARTS = {
+    body: {
+      template: path('actor/mob/body.hbs'),
+      templates: [
+        ACTOR_PARTIALS.healthBar, ACTOR_PARTIALS.defenses, ACTOR_PARTIALS.unresolved,
+        ACTOR_PARTIALS.attackList, ACTOR_PARTIALS.skillList, ACTOR_PARTIALS.buffList, ACTOR_PARTIALS.itemRow,
+        ACTOR_PARTIALS.crewing,
+      ],
+    },
+    notes: { template: path('actor/mob/notes.hbs'), templates: [ACTOR_PARTIALS.richFields] },
+  };
+
+  /**
+   * The right column's Inventory list: gear only (weapons are listed under Attacks).
+   * @inheritDoc
+   */
+  async _prepareContext(options) {
+    const context = await super._prepareContext(options);
+    return Object.assign(context, { inventory: inventoryView({ gear: this.document.itemTypes.gear }).inventory });
+  }
+}

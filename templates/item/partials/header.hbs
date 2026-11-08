@@ -1,0 +1,9 @@
+{{!-- Item identity (shared by every item type): portrait, name, read-only type badge. --}}
+<header class="dcc-box dcc-item-header">
+  <img class="dcc-portrait" src="{{document.img}}" alt="{{document.name}}" {{#if editable}}data-action="editImage" data-edit="img" data-tooltip="{{localize 'DCC.Sheet.EditImage'}}"{{/if}}>
+  <div class="dcc-item-ident">
+    <label class="dcc-flabel" for="{{rootId}}-name">{{localize "DCC.Sheet.Name"}}</label>
+    <input class="dcc-fline" id="{{rootId}}-name" type="text" name="name" value="{{document.name}}" placeholder="{{localize 'DCC.Sheet.Name'}}">
+  </div>
+  <span class="dcc-type-badge">{{typeLabel}}</span>
+</header>

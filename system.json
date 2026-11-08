@@ -1,0 +1,29 @@
+{
+  "id": "dungeon-crawler-carl",
+  "title": "Dungeon Crawler Carl",
+  "description": "Unofficial Dungeon Crawler Carl system (port of the NexTableTop Roll20 sheet).",
+  "version": "0.1.0",
+  "compatibility": { "minimum": "14", "verified": "14" },
+  "authors": [{ "name": "NexTableTop" }],
+  "esmodules": ["index.mjs"],
+  "styles": [{ "src": "styles/system.css", "layer": "system" }],
+  "languages": [{ "lang": "en", "name": "English", "path": "lang/en.json" }],
+  "documentTypes": {
+    "Actor": {
+      "pc": { "htmlFields": ["notes", "popularity", "pastTrauma", "looseEnds", "regrets"] },
+      "mob": { "htmlFields": ["notes"] },
+      "vehicle": { "htmlFields": ["notes"] },
+      "gmscreen": {}
+    },
+    "Item": {
+      "weapon": { "htmlFields": ["description"] },
+      "skill": { "htmlFields": ["description"] },
+      "spell": { "htmlFields": ["description"] },
+      "gear": { "htmlFields": ["description"] }
+    }
+  },
+  "grid": { "type": 1, "distance": 5, "units": "ft", "diagonals": 0 },
+  "primaryTokenAttribute": "healthPoints",
+  "secondaryTokenAttribute": "mana",
+  "socket": false
+}

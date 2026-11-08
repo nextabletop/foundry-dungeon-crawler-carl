@@ -1,0 +1,12 @@
+{{!-- Crewing (R20 .dcc-crewing, read-only): the vehicles this actor crews and the role held on
+      each, from the vehicles' crew lists (DCCCreatureSheet#crewing). Crew are linked, unlinked and
+      given roles on the vehicle sheet; a chip opens that vehicle. Hidden when on no crew. --}}
+{{#if crewing.length}}
+<div class="dcc-crewing">
+  <span class="dcc-flabel">{{localize "DCC.Crew.Crewing"}}</span>
+  {{#each crewing}}
+  <button type="button" class="dcc-vchip dcc-crewing-chip" data-action="openCrewing" data-view-only data-uuid="{{uuid}}"
+          data-tooltip="{{localize 'DCC.Crew.OpenVehicleTooltip'}}">{{name}} <span class="val">{{localize roleKey}}</span></button>
+  {{/each}}
+</div>
+{{/if}}

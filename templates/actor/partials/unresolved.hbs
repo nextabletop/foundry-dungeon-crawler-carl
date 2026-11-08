@@ -1,0 +1,7 @@
+{{!-- Unresolved-modifier warning: modifiers the engine could not apply (no matching target). --}}
+{{#if system.unresolvedModifiers.length}}
+<p class="dcc-unresolved" data-tooltip="{{localize 'DCC.Unresolved.Tooltip'}}">
+  <span class="dcc-unresolved-lbl">{{localize "DCC.Unresolved.Label"}}</span>
+  {{#each system.unresolvedModifiers}}<code>{{target}}</code>{{/each}}
+</p>
+{{/if}}

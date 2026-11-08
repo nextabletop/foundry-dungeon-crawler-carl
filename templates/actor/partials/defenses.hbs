@@ -1,0 +1,65 @@
+{{!-- Defenses strip (R20 sections/_combat.pug .dcc-combat-top). Move/Step show the
+      derived values but are named dcc.* — the sheet's _processFormData turns an
+      edit into system.moveBase / stepBase (backCalcBase against the flat bonus).
+      `hideEvade=true` (mob): no Evade group — the Evade roll is PC-only; a mob shows its
+      static Evade in the mob strip (R20 .dcc-fgroup.dcc-pc-only). `hideEvade` also hides the
+      Evade entry in the buff-line below, since mobEvade ignores buffs. --}}
+<div class="dcc-combat-top">
+  {{#unless hideEvade}}
+  <div class="dcc-fgroup">
+    <span class="gl">{{localize "DCC.Defense.Evade"}}<br>d20 +</span>
+    <div class="dcc-fbox">
+      <span class="lab">{{localize "DCC.Defense.DexterityModifier"}}</span>
+      <span class="bx">{{system.stats.dexterity.modifier}}</span>
+    </div>
+    <span class="dcc-fop">+</span>
+    <div class="dcc-fbox">
+      <span class="lab">{{localize "DCC.Defense.Buffs"}}</span>
+      <span class="bx">{{system.evadeBonus}}</span>
+    </div>
+    <span class="dcc-fop">=</span>
+    <div class="dcc-fbox">
+      <span class="lab">{{localize "DCC.Defense.EvadeTotal"}}</span>
+      <button type="button" class="bx tot" data-action="rollEvade" data-tooltip="{{localize 'DCC.Defense.EvadeRollTooltip'}}" aria-label="{{localize 'DCC.Defense.EvadeRollTooltip'}}">{{system.evade}}</button>
+    </div>
+  </div>
+  {{/unless}}
+  <div class="cm">
+    <label class="dcc-fbox">
+      <span class="lab">{{localize "DCC.Defense.Move"}}</span>
+      <input class="bx" type="number" step="1" name="dcc.move" value="{{system.move}}">
+    </label>
+    <label class="dcc-fbox">
+      <span class="lab">{{localize "DCC.Defense.Step"}}</span>
+      <input class="bx" type="number" step="1" name="dcc.step" value="{{system.step}}">
+    </label>
+    <label class="dcc-fbox">
+      <span class="lab">{{localize "DCC.Defense.Size"}}</span>
+      <input class="bx" type="text" name="system.size" value="{{systemSource.size}}">
+    </label>
+  </div>
+  <div class="dcc-fgroup">
+    <span class="gl">{{localize "DCC.Defense.DamageResistance"}}</span>
+    <label class="dcc-fbox">
+      <span class="lab">{{localize "DCC.Defense.Armor"}}</span>
+      <input class="bx" type="number" step="1" name="system.armor" value="{{systemSource.armor}}">
+    </label>
+    <span class="dcc-fop">+</span>
+    <div class="dcc-fbox">
+      <span class="lab">{{localize "DCC.Defense.Buffs"}}</span>
+      <span class="bx">{{system.damageResistanceBonus}}</span>
+    </div>
+    <span class="dcc-fop">=</span>
+    <div class="dcc-fbox">
+      <span class="lab">{{localize "DCC.Defense.DamageResistanceTotal"}}</span>
+      <span class="bx tot">{{system.damageResistance}}</span>
+    </div>
+  </div>
+</div>
+<p class="dcc-buffline">
+  <span class="dcc-flabel">{{localize "DCC.Defense.Buffs"}}</span>
+  {{#unless hideEvade}}{{localize "DCC.Defense.Evade"}} {{numberFormat system.evadeBonus sign=true}} ·{{/unless}}
+  {{localize "DCC.Defense.DamageResistanceShort"}} {{numberFormat system.damageResistanceBonus sign=true}} ·
+  {{localize "DCC.Defense.Move"}} {{numberFormat system.moveBonus sign=true}} ·
+  {{localize "DCC.Defense.Step"}} {{numberFormat system.stepBonus sign=true}}
+</p>

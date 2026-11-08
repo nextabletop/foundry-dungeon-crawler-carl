@@ -1,0 +1,36 @@
+{{!-- The item's modifiers (transferred ActiveEffects), laid out like the actor's Buffs list.
+      The edit controls carry data-view-only so observers can still open an effect's sheet. --}}
+<section class="dcc-item-effects">
+  <div class="dcc-box dcc-list">
+    <div class="dcc-bar dcc-bar--list">
+      <span>{{localize "DCC.Effect.Header"}}</span>
+      {{#if editable}}
+      <button type="button" class="dcc-addbtn" data-action="createEffect">
+        <i class="fa-solid fa-plus" inert></i> {{localize "DCC.Effect.Create"}}
+      </button>
+      {{/if}}
+    </div>
+    <ol class="dcc-ilist dcc-ilist--effects">
+      {{#each effects as |e|}}
+      <li class="dcc-irow{{#if e.disabled}} dcc-irow--off{{/if}}" data-effect-id="{{e.id}}">
+        <button type="button" class="dcc-iname" data-action="editEffect" data-view-only>
+          <img src="{{e.img}}" alt="" width="20" height="20">
+          <span>{{e.name}}</span>
+        </button>
+        <span class="dcc-ichanges">{{e.changes}}</span>
+        <span class="dcc-effect-state">{{#if e.suppressed}}<span class="dcc-effect-badge">{{localize "DCC.Effect.Inactive"}}</span>{{/if}}</span>
+        <span class="dcc-icontrols">
+          <button type="button" class="icon fa-solid fa-pen-to-square" data-action="editEffect" data-view-only
+                  data-tooltip aria-label="{{localize 'DCC.Effect.Edit'}}"></button>
+          {{#if ../editable}}
+          <button type="button" class="icon fa-solid fa-trash" data-action="deleteEffect"
+                  data-tooltip aria-label="{{localize 'DCC.Effect.Delete'}}"></button>
+          {{/if}}
+        </span>
+      </li>
+      {{else}}
+      <li class="dcc-iempty">{{localize "DCC.Effect.None"}}</li>
+      {{/each}}
+    </ol>
+  </div>
+</section>

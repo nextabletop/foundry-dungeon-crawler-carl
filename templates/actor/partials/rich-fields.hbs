@@ -1,0 +1,16 @@
+{{!-- Rich-text fields (from DCCActorSheetBase#_richTextFields as `richFields`), in a 2-col grid;
+      `wide` spans both columns. Each is a toggled <prose-mirror> (HTMLField via formInput, named
+      system.<key>); read-only viewers get the enriched HTML. Not a <label>: a form-associated custom
+      element is labelable, so clicks in the label would be re-dispatched to the editor. --}}
+<div class="dcc-bio">
+  {{#each richFields}}
+  <div class="dcc-bio-f{{#if wide}} dcc-bio-f--wide{{/if}}">
+    <span class="dcc-bio-lab" id="{{@root.rootId}}-bio-{{key}}">{{localize label}}</span>
+    {{#if @root.editable}}
+    {{formInput field value=value enriched=enriched toggled=true}}
+    {{else}}
+    <div class="dcc-bio-view" role="group" aria-labelledby="{{@root.rootId}}-bio-{{key}}">{{#if empty}}<span class="dcc-bio-empty">&mdash;</span>{{else}}{{{enriched}}}{{/if}}</div>
+    {{/if}}
+  </div>
+  {{/each}}
+</div>

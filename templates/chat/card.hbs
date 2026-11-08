@@ -1,0 +1,52 @@
+<div class="dcc-card">
+  <header class="dcc-card-head {{headClass}}">
+    <span class="dcc-card-token">{{#if img}}<img src="{{img}}" alt="{{characterName}}">{{/if}}</span>
+    <div class="dcc-card-titles">
+      <span class="dcc-card-actname">{{name}}</span>
+      <span class="dcc-card-char">{{characterName}}</span>
+    </div>
+    {{#if tag}}<span class="dcc-card-sub">{{tag}}</span>{{/if}}
+  </header>
+  {{#if roll}}
+  <div class="dcc-card-pad">
+    <div class="dcc-card-line">
+      <span class="dcc-card-pill"><span class="dcc-card-n{{#if roll.crit}} rcrit{{/if}}{{#if roll.fumble}} rfail{{/if}}">{{roll.total}}</span></span>
+      {{#if roll.crit}}<span class="dcc-card-chip crit">{{localize "DCC.Card.Crit"}}</span>{{/if}}
+      {{#if roll.fumble}}<span class="dcc-card-chip fumble">{{localize "DCC.Card.Fumble"}}</span>{{/if}}
+    </div>
+    {{!-- roll.tooltip / damage.tooltip: trusted core HTML (Roll#getTooltip), hence triple-stash. --}}
+    {{#if roll.tooltip}}<details class="dcc-card-dice"><summary>{{roll.formula}}</summary>{{{roll.tooltip}}}</details>{{/if}}
+  </div>
+  {{/if}}
+  {{#if target}}
+  <div class="dcc-card-pad dcc-card-line">
+    <span class="dcc-card-pill"><span class="dcc-card-n">{{target.value}}</span><span class="dcc-card-u">{{localize "DCC.Card.Target"}}</span></span>
+  </div>
+  {{/if}}
+  {{#if damage}}
+  <div class="dcc-card-pad">
+    <div class="dcc-card-line">
+      <span class="dcc-card-pill"><span class="dcc-card-n">{{damage.total}}</span>{{#if damage.type}}<span class="dcc-card-u">{{damage.type}}</span>{{/if}}</span>
+    </div>
+    {{#if damage.tooltip}}<details class="dcc-card-dice"><summary>{{damage.formula}}</summary>{{{damage.tooltip}}}</details>{{/if}}
+  </div>
+  {{/if}}
+  {{#if advantage}}
+  <div class="dcc-card-pad dcc-card-opt"><span class="dcc-card-chip adv">{{advantage}}</span></div>
+  {{/if}}
+  {{#if dc}}
+  <div class="dcc-card-pad dcc-card-cast"><span class="dcc-card-castlabel">{{localize "DCC.Card.DC"}}</span><span class="dcc-card-castval">{{dc.value}}</span></div>
+  {{/if}}
+  {{#if penalty}}
+  <div class="dcc-card-pad dcc-card-note"><span>{{penalty}}</span></div>
+  {{/if}}
+  {{#if note}}
+  <div class="dcc-card-pad dcc-card-note"><span>{{note}}</span></div>
+  {{/if}}
+  {{#if cost}}
+  <div class="dcc-card-pad dcc-card-cast"><span class="dcc-card-castlabel">{{localize "DCC.Card.ManaCost"}}</span><span class="dcc-card-castval">{{cost.value}}</span></div>
+  {{/if}}
+  {{#if insufficient}}
+  <div class="dcc-card-pad dcc-card-insufficient"><span>{{localize "DCC.Card.InsufficientMana"}}</span></div>
+  {{/if}}
+</div>

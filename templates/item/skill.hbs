@@ -1,0 +1,19 @@
+<section class="dcc-item-body">
+  {{> "systems/dungeon-crawler-carl/templates/item/partials/header.hbs"}}
+  <div class="dcc-box dcc-item-section">
+    <div class="dcc-bar">{{localize "DCC.ItemSheet.Skill"}}</div>
+    <div class="dcc-item-grid">
+      {{formGroup systemFields.stat value=systemSource.stat options=selectOptions.stat rootId=rootId}}
+      {{formGroup systemFields.rank value=systemSource.rank rootId=rootId}}
+      {{formGroup systemFields.checkType value=systemSource.checkType options=selectOptions.checkType rootId=rootId}}
+      {{formGroup systemFields.class value=systemSource.class rootId=rootId}}
+    </div>
+    <div class="dcc-item-flags">
+      {{formGroup systemFields.enabled value=systemSource.enabled rootId=rootId}}
+      {{formGroup systemFields.passive value=systemSource.passive rootId=rootId}}
+      {{formGroup systemFields.mark value=systemSource.mark rootId=rootId}}
+      {{formGroup systemFields.onHotlist value=systemSource.onHotlist rootId=rootId}}
+    </div>
+  </div>
+  {{> "systems/dungeon-crawler-carl/templates/item/partials/description.hbs"}}
+</section>

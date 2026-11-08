@@ -1,0 +1,35 @@
+{{!-- Buffs & Debuffs: actor-level effects (item effects live on their items). --}}
+<div class="dcc-box dcc-list">
+  <div class="dcc-bar dcc-bar--list">
+    <span>{{localize "DCC.Buff.Header"}}</span>
+    {{#if @root.editable}}
+    <button type="button" class="dcc-addbtn" id="{{@root.rootId}}-add-buff" data-action="createBuff">
+      <i class="fa-solid fa-plus" inert></i> {{localize "DCC.Buff.Create"}}
+    </button>
+    {{/if}}
+  </div>
+  <ol class="dcc-ilist dcc-ilist--buffs">
+    {{#each buffs}}
+    <li class="dcc-irow{{#if disabled}} dcc-irow--off{{/if}}" data-effect-id="{{id}}">
+      <button type="button" class="icon fa-solid {{#if disabled}}fa-toggle-off{{else}}fa-toggle-on{{/if}} dcc-itoggle"
+              id="{{@root.rootId}}-{{id}}-toggle" data-action="toggleEffect" data-tooltip
+              aria-label="{{#if disabled}}{{localize 'DCC.Buff.Enable'}}{{else}}{{localize 'DCC.Buff.Disable'}}{{/if}}"></button>
+      <button type="button" class="dcc-iname" id="{{@root.rootId}}-{{id}}-name" data-action="editEffect" data-view-only>
+        <img src="{{img}}" alt="" width="20" height="20">
+        <span>{{name}}</span>
+      </button>
+      <span class="dcc-ichanges">{{changes}}</span>
+      <span class="dcc-icontrols">
+        <button type="button" class="icon fa-solid fa-pen-to-square" id="{{@root.rootId}}-{{id}}-edit" data-action="editEffect" data-view-only
+                data-tooltip aria-label="{{localize 'DCC.Effect.Edit'}}"></button>
+        {{#if @root.editable}}
+        <button type="button" class="icon fa-solid fa-trash" id="{{@root.rootId}}-{{id}}-delete" data-action="deleteEffect"
+                data-tooltip aria-label="{{localize 'DCC.Effect.Delete'}}"></button>
+        {{/if}}
+      </span>
+    </li>
+    {{else}}
+    <li class="dcc-iempty">{{localize "DCC.Buff.None"}}</li>
+    {{/each}}
+  </ol>
+</div>

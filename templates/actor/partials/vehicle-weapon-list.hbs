@@ -1,0 +1,56 @@
+{{!-- Vehicle Weapons / Mount Attacks box (rows from vehicleWeaponRows). No Stat column: a vehicle
+      has no ability mods, so to-hit is rank + modifiers. Vehicle Weapons carry inline Gunner slot +
+      Skill name controls (data-field, no name: they edit the item, see item-row.hbs); `mount=true`
+      titles the box Mount Attacks and drops them (a mount attacks on its own). The list keeps
+      .dcc-ilist--attacks for the shared attack-row styling. Cells and header spans carry dcc-c-*
+      classes: a narrow list lays each row out on two lines by grid area. --}}
+<div class="dcc-box dcc-list">
+  <div class="dcc-bar dcc-bar--list">
+    <span>{{#if mount}}{{localize "DCC.Vehicle.MountAttacks"}}{{else}}{{localize "DCC.Vehicle.Weapons"}}{{/if}}</span>
+    {{#if @root.editable}}
+    <button type="button" class="dcc-addbtn" id="{{@root.rootId}}-add-weapon" data-action="createItem" data-type="weapon">
+      <i class="fa-solid fa-plus" inert></i> {{localize "TYPES.Item.weapon"}}
+    </button>
+    {{/if}}
+  </div>
+  <ol class="dcc-ilist dcc-ilist--attacks dcc-ilist--vehicle{{#if mount}} dcc-ilist--mount{{/if}}">
+    <li class="dcc-ihead">
+      <span class="dcc-c-name">{{localize "DCC.Sheet.Name"}}</span>
+      {{#unless mount}}
+      <span class="dcc-c-gun">{{localize "DCC.Vehicle.Gunner"}}</span>
+      <span class="dcc-c-skill">{{localize "DCC.Vehicle.SkillName"}}</span>
+      {{/unless}}
+      <span class="dcc-c-rank">{{localize "DCC.Items.Rank"}}</span>
+      <span class="dcc-c-tohit">{{localize "DCC.Roll.ToHit"}}</span>
+      <span class="dcc-c-dmg">{{localize "DCC.Roll.Damage"}}</span>
+      <span class="dcc-c-ctl"></span>
+    </li>
+    {{#each attacks}}
+    {{#> "systems/dungeon-crawler-carl/templates/actor/partials/item-row.hbs" mount=../mount}}
+      {{#unless mount}}
+      <span class="dcc-icell dcc-c-gun">
+        <select class="dcc-iselect" id="{{@root.rootId}}-{{id}}-gunnerSlot" data-field="system.gunnerSlot"
+                aria-label="{{localize 'DCC.Vehicle.Gunner'}}">
+          {{selectOptions @root.gunnerSlots selected=gunnerSlot localize=true}}
+        </select>
+      </span>
+      <span class="dcc-icell dcc-c-skill">
+        <input class="dcc-iinput dcc-iinput--text" type="text" id="{{@root.rootId}}-{{id}}-skillName" data-field="system.skillName" value="{{skillName}}"
+               placeholder="{{localize 'DCC.Vehicle.SkillNamePlaceholder'}}" aria-label="{{localize 'DCC.Vehicle.SkillName'}}">
+      </span>
+      {{/unless}}
+      <span class="dcc-icell dcc-c-rank">{{rank}}</span>
+      <span class="dcc-icell dcc-c-tohit">
+        <button type="button" class="dcc-rollbtn" id="{{@root.rootId}}-{{id}}-rollWeapon-toHit" data-action="rollWeapon" data-roll="toHit"
+                data-tooltip="{{localize 'DCC.Roll.ToHit'}}">{{numberFormat toHit sign=true}}</button>
+      </span>
+      <span class="dcc-icell dcc-c-dmg">
+        <button type="button" class="dcc-rollbtn dcc-rollbtn--wide" id="{{@root.rootId}}-{{id}}-rollWeapon-damage" data-action="rollWeapon" data-roll="damage"
+                data-tooltip="{{localize 'DCC.Roll.Damage'}}">{{damageLabel}}</button>
+      </span>
+    {{/"systems/dungeon-crawler-carl/templates/actor/partials/item-row.hbs"}}
+    {{else}}
+    <li class="dcc-iempty">{{localize "DCC.Vehicle.NoWeapons"}}</li>
+    {{/each}}
+  </ol>
+</div>

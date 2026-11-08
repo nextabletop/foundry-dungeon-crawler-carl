@@ -1,0 +1,19 @@
+{{!-- Hotlist: hotlistCap cells, visible on every tab. Items flagged onHotlist (inventory tab for
+      gear / weapons, skills tab for skills / spells), first hotlistCap grouped by type (gear, weapon, skill, spell), by sort within a type. A click runs
+      DCCActor#useHotlistItem. Empty cells are inert spans. --}}
+<div class="dcc-a-hotlist dcc-box">
+  <div class="dcc-bar">{{localize "DCC.Hotlist.Label"}}</div>
+  <div class="dcc-hot-grid">
+    {{#each hotlist}}
+    {{#if this}}
+    <button type="button" class="dcc-hot-cell filled" id="{{@root.rootId}}-{{id}}-hotlist" data-item-id="{{id}}" data-action="useHotlist"
+            data-tooltip-text="{{label}}" aria-label="{{label}}">
+      {{#if quantity}}<span class="quantity" aria-hidden="true">×{{quantity}}</span>{{/if}}
+      <span class="it">{{name}}</span>
+    </button>
+    {{else}}
+    <span class="dcc-hot-cell"></span>
+    {{/if}}
+    {{/each}}
+  </div>
+</div>

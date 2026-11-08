@@ -1,0 +1,251 @@
+{{!-- Vehicle / Mount stat block (R20 mode = vehicle, views/_vehicle.pug): no tabs. The R20 vehicle
+      view is a two-column card flow under a full-width header: the Health Bar, the Vehicle / Mount
+      card, Actions and Crew on the left; Combat (weapons) and Notes (its own part,
+      vehicle/notes.hbs) on the right. The wrapper is display: contents (system.css). `kind` swaps a
+      few cards (isMount). The Health Bar is the shared partial (slots = size, Con Mod = the
+      vehicle's, blank = 5); DR reuses `armor` and protects the OCCUPANTS. Derived values (DR Total,
+      Move, Cruise, penalty, Step) are display-only spans. Roll inputs are plain system fields, so
+      they persist like R20's attributes. --}}
+<section class="dcc-vehicle">
+  <header class="dcc-header dcc-box">
+    <div class="dcc-headgrid">
+      <img class="dcc-portrait" src="{{document.img}}" alt="{{document.name}}" {{#if editable}}data-action="editImage" data-edit="img" data-tooltip="{{localize 'DCC.Sheet.EditImage'}}"{{/if}}>
+      <div class="dcc-headmain">
+        <div class="dcc-fields">
+          <label class="dcc-field dcc-grow-6">
+            <span class="dcc-flabel">{{localize "DCC.Sheet.Name"}}</span>
+            <input class="dcc-fline" type="text" name="name" value="{{document.name}}">
+          </label>
+          <div class="dcc-field dcc-field--num dcc-grow-2">
+            <span class="dcc-flabel">{{localize "DCC.Header.Type"}}</span>
+            <span class="dcc-type-badge">{{localize (concat "TYPES.Actor." document.type)}}</span>
+          </div>
+          <label class="dcc-field dcc-field--num dcc-grow-2">
+            <span class="dcc-flabel">{{localize "DCC.Header.Floor"}}</span>
+            <input class="dcc-fline" type="number" step="1" name="system.floor" value="{{systemSource.floor}}">
+          </label>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="dcc-col dcc-col-l">
+    <div class="dcc-box dcc-health">
+      <div class="dcc-bar">
+        <span>{{localize "DCC.Health.Bar"}}</span>
+        {{#if health.dying}}<span class="dcc-dying">{{localize "DCC.Health.Dying"}}</span>{{/if}}
+      </div>
+      {{> "systems/dungeon-crawler-carl/templates/actor/partials/health-bar.hbs"}}
+    </div>
+
+    <div class="dcc-box dcc-vcard">
+      <div class="dcc-bar">{{localize "DCC.Vehicle.StatBlock"}}</div>
+    {{!-- Core stats (R20 first .dcc-vrow). --}}
+    <div class="dcc-fields">
+      <label class="dcc-field dcc-grow-2">
+        <span class="dcc-flabel">{{localize "DCC.Vehicle.Kind"}}</span>
+        <select class="dcc-fline" name="system.kind">
+          {{selectOptions kindOptions selected=systemSource.kind localize=true}}
+        </select>
+      </label>
+      <label class="dcc-field dcc-grow-2">
+        <span class="dcc-flabel">{{localize "DCC.Vehicle.Size"}}</span>
+        <select class="dcc-fline" name="system.size">
+          {{selectOptions sizeOptions selected=systemSource.size}}
+        </select>
+      </label>
+      <label class="dcc-field dcc-field--num">
+        <span class="dcc-flabel">{{localize "DCC.Vehicle.Speed"}}</span>
+        <input class="dcc-fline" type="number" step="1" name="system.speed" value="{{systemSource.speed}}">
+      </label>
+      <label class="dcc-field dcc-field--num">
+        <span class="dcc-flabel">{{localize "DCC.Vehicle.SpeedMax"}}</span>
+        <input class="dcc-fline" type="number" step="1" name="system.speedMax" value="{{systemSource.speedMax}}">
+      </label>
+      <label class="dcc-field dcc-field--num" data-tooltip="{{localize 'DCC.Vehicle.ConstitutionModifierTooltip'}}">
+        <span class="dcc-flabel">{{localize "DCC.Vehicle.ConstitutionModifier"}}</span>
+        <input class="dcc-fline" type="number" step="1" min="1" name="system.constitutionModifier" value="{{systemSource.constitutionModifier}}" placeholder="5">
+      </label>
+      <label class="dcc-field dcc-field--num">
+        <span class="dcc-flabel">{{localize "DCC.Vehicle.Passengers"}}</span>
+        <input class="dcc-fline" type="number" step="1" name="system.passengers" value="{{systemSource.passengers}}">
+      </label>
+    </div>
+
+      {{!-- Drive skill, DR and the derived movement values (R20 second .dcc-vrow). --}}
+      <div class="dcc-fields dcc-vrow">
+        <label class="dcc-field dcc-grow-3" data-tooltip="{{localize 'DCC.Vehicle.DriveSkillTooltip'}}">
+          <span class="dcc-flabel">{{localize "DCC.Vehicle.DriveSkill"}}</span>
+          <input class="dcc-fline" type="text" name="system.driveSkill" value="{{systemSource.driveSkill}}">
+        </label>
+        <label class="dcc-field dcc-field--num" data-tooltip="{{localize 'DCC.Vehicle.ArmorTooltip'}}">
+          <span class="dcc-flabel">{{localize "DCC.Vehicle.Armor"}}</span>
+          <input class="dcc-fline" type="number" step="1" name="system.armor" value="{{systemSource.armor}}">
+        </label>
+        <div class="dcc-field dcc-field--num">
+          <span class="dcc-flabel">{{localize "DCC.Vehicle.DamageResistanceTotal"}}</span>
+          <span class="dcc-vderived">{{system.damageResistance}}</span>
+        </div>
+        <div class="dcc-field dcc-field--num">
+          <span class="dcc-flabel">{{localize "DCC.Vehicle.Move"}}</span>
+          <span class="dcc-vderived">{{localize "DCC.Vehicle.MoveValue" n=system.move}}</span>
+        </div>
+        <div class="dcc-field dcc-field--num">
+          <span class="dcc-flabel">{{localize "DCC.Vehicle.Cruise"}}</span>
+          <span class="dcc-vderived">{{system.cruise}}</span>
+        </div>
+        {{#if isMount}}
+        <div class="dcc-field dcc-field--num">
+          <span class="dcc-flabel">{{localize "DCC.Vehicle.Step"}}</span>
+          <span class="dcc-vderived">{{localize "DCC.Vehicle.StepValue"}}</span>
+        </div>
+        {{/if}}
+      </div>
+
+      {{!-- Attacked-vehicle rules strip: display only (attackers roll on their own sheets). --}}
+      <div class="dcc-vstrip">
+        <span class="dcc-vchip">
+          {{localize "DCC.Vehicle.Penalty"}} <span class="val">{{system.penalty}}</span> {{localize "DCC.Vehicle.PenaltyNote"}}
+        </span>
+        <span class="dcc-vchip dim">{{localize "DCC.Vehicle.RuleSize"}}</span>
+        <span class="dcc-vchip dim">{{#if isMount}}{{localize "DCC.Vehicle.RuleMount"}}{{else}}{{localize "DCC.Vehicle.RuleVehicle"}}{{/if}}</span>
+      </div>
+    
+      {{> "systems/dungeon-crawler-carl/templates/actor/partials/unresolved.hbs"}}
+    </div>
+
+    {{!-- Rollable actions (R20 .dcc-vactions). Adv / Dis is read by Driving and Race; Ram always
+          rolls at Disadvantage. Apply aftermath chunks the typed damage into the slots (no DR). --}}
+    <div class="dcc-box dcc-vactions">
+      <div class="dcc-bar">{{localize "DCC.Vehicle.Actions"}}</div>
+      <div class="dcc-vrow">
+        <label class="dcc-field dcc-vfield" data-tooltip="{{localize 'DCC.Vehicle.AdvantageTooltip'}}">
+          <span class="dcc-flabel">{{localize "DCC.Vehicle.Advantage"}}</span>
+          <select class="dcc-fline" name="system.rollAdvantage">
+            {{selectOptions advantageOptions selected=systemSource.rollAdvantage localize=true}}
+          </select>
+        </label>
+      </div>
+      <div class="dcc-vrow">
+        <label class="dcc-field dcc-vfield">
+          <span class="dcc-flabel">{{localize "DCC.Vehicle.DrivingMode"}}</span>
+          <select class="dcc-fline" name="system.drivingMode">
+            {{selectOptions modeOptions selected=systemSource.drivingMode localize=true}}
+          </select>
+        </label>
+        <label class="dcc-field dcc-field--num dcc-vfield" data-tooltip="{{localize 'DCC.Vehicle.DrivingTargetTooltip'}}">
+          <span class="dcc-flabel">{{localize "DCC.Vehicle.DrivingTarget"}}</span>
+          <input class="dcc-fline" type="number" step="1" name="system.drivingTarget" value="{{systemSource.drivingTarget}}">
+        </label>
+        <button type="button" class="dcc-rollbtn" data-action="rollDriving">{{localize "DCC.Vehicle.Drive"}}</button>
+      </div>
+      <div class="dcc-vrow">
+        <label class="dcc-field dcc-field--num dcc-vfield">
+          <span class="dcc-flabel">{{localize "DCC.Vehicle.TargetEvade"}}</span>
+          <input class="dcc-fline" type="number" step="1" name="system.ramTargetEvade" value="{{systemSource.ramTargetEvade}}">
+        </label>
+        <label class="dcc-vcheck" data-tooltip="{{localize 'DCC.Vehicle.TargetLargerTooltip'}}">
+          <input type="checkbox" name="system.ramTargetLarger" {{checked systemSource.ramTargetLarger}}>
+          <span>{{localize "DCC.Vehicle.TargetLarger"}}</span>
+        </label>
+        <button type="button" class="dcc-rollbtn dcc-rollbtn--hot" data-action="rollRam">{{localize "DCC.Vehicle.Ram"}}</button>
+        <label class="dcc-field dcc-field--num dcc-vfield" data-tooltip="{{localize 'DCC.Vehicle.DealtTooltip'}}">
+          <span class="dcc-flabel">{{localize "DCC.Vehicle.Dealt"}}</span>
+          <input class="dcc-fline" type="number" step="1" name="system.ramDamageDealt" value="{{systemSource.ramDamageDealt}}">
+        </label>
+        {{#if editable}}
+        <button type="button" class="dcc-rollbtn" data-action="applyRam" data-tooltip="{{localize 'DCC.Vehicle.ApplyRamTooltip'}}">{{localize "DCC.Vehicle.ApplyRam"}}</button>
+        {{/if}}
+      </div>
+      <div class="dcc-vrow">
+        <label class="dcc-field dcc-field--num dcc-vfield">
+          <span class="dcc-flabel">{{localize "DCC.Vehicle.RacersAhead"}}</span>
+          <input class="dcc-fline" type="number" step="1" name="system.raceAhead" value="{{systemSource.raceAhead}}">
+        </label>
+        <button type="button" class="dcc-rollbtn" data-action="rollRace">{{localize "DCC.Vehicle.Race"}}</button>
+        {{#if editable}}
+        <button type="button" class="dcc-rollbtn" data-action="damageResistanceAbsorbed" data-tooltip="{{localize 'DCC.Vehicle.DamageResistanceAbsorbedTooltip'}}">{{localize "DCC.Vehicle.DamageResistanceAbsorbed"}}</button>
+        {{/if}}
+      </div>
+    </div>
+
+    {{!-- Crew (R20 .dcc-crew rows; rows from crewRows). Drop a PC / Mob on the sheet to add it as a
+          passenger. Each row reads the live crew actor; one that no longer exists shows "(missing)"
+          with its role as text (a missing member can't take a role) and stays removable. Below
+          Observer on a crew actor (`limited`), its row shows only the name and role; below Limited
+          (`unknown`, e.g. a hidden Mob) a generic label replaces the name. Row controls
+          have no `name` (not part of the actor form):
+          VehicleSheet#_onChangeForm handles the role select (Driver / each Gunner slot exclusive)
+          and the quick-roll selects (_onCrewRoll rolls them from the vehicle). Ids key on the crew index, since two crew
+          actors can share embedded item ids. --}}
+    <div class="dcc-box dcc-vcrew">
+      <div class="dcc-bar">{{localize "DCC.Vehicle.Crew"}}</div>
+      <ol class="dcc-vcrew-list">
+        {{#each crew}}
+        <li class="dcc-crewrow{{#if missing}} dcc-crewrow--missing{{/if}}" data-crew-uuid="{{uuid}}">
+          <div class="dcc-crewhead">
+            {{#if missing}}
+            <span class="dcc-crew-name" data-tooltip-text="{{uuid}}">{{localize "DCC.Crew.Missing"}}</span>
+            <span class="dcc-crew-role dcc-vchip dim">{{localize roleLabel}}</span>
+            {{else}}
+            {{#if unknown}}
+            <span class="dcc-crew-name">{{localize "DCC.Crew.Unknown"}}</span>
+            {{else if limited}}
+            <span class="dcc-crew-name">{{name}}</span>
+            {{else}}
+            <button type="button" class="dcc-iname dcc-crew-name" data-action="openCrew" data-view-only
+                    data-tooltip="{{localize 'DCC.Crew.OpenTooltip'}}"><span>{{name}}</span></button>
+            {{/if}}
+            <select class="dcc-iselect dcc-crew-role" id="{{@root.rootId}}-crew{{index}}-role" data-crew-role
+                    aria-label="{{localize 'DCC.Crew.RoleLabel'}}">
+              {{selectOptions roleOptions selected=role localize=true}}
+            </select>
+            {{/if}}
+            {{#unless (or missing limited)}}
+            <span class="dcc-crew-stat dcc-crew-hb">
+              <span class="dcc-flabel">{{localize "DCC.Crew.HealthBarShort"}}</span>
+              <span class="dcc-vderived">{{healthBar}} / {{healthBarSlots}}</span>
+            </span>
+            <span class="dcc-crew-stat dcc-crew-dr">
+              <span class="dcc-flabel">{{localize "DCC.Crew.DamageResistanceShort"}}</span>
+              <span class="dcc-vderived">{{damageResistance}}</span>
+            </span>
+            {{/unless}}
+            {{#if @root.editable}}
+            <button type="button" class="dcc-row-remove" id="{{@root.rootId}}-crew{{index}}-remove" data-action="removeCrew"
+                    data-tooltip="{{localize 'DCC.Crew.Remove'}}" aria-label="{{localize 'DCC.Crew.Remove'}}">
+              <i class="fa-solid fa-user-minus" inert></i>
+            </button>
+            {{/if}}
+          </div>
+          {{#unless (or missing limited)}}
+          <div class="dcc-crewbody">
+            <select class="dcc-iselect dcc-crew-roll" id="{{@root.rootId}}-crew{{index}}-rollSkill" data-crew-roll="skill"
+                    aria-label="{{localize 'DCC.Crew.RollSkill'}}" {{#if skills.length}}data-view-only{{/if}} {{disabled (not skills.length)}}>
+              <option value="">{{localize "DCC.Crew.RollSkill"}}</option>
+              {{#each skills}}<option value="{{id}}">{{name}} {{numberFormat bonus sign=true}}</option>{{/each}}
+            </select>
+            <select class="dcc-iselect dcc-crew-roll" id="{{@root.rootId}}-crew{{index}}-rollAttack" data-crew-roll="attack"
+                    aria-label="{{localize 'DCC.Crew.RollAttack'}}" {{#if attacks.length}}data-view-only{{/if}} {{disabled (not attacks.length)}}>
+              <option value="">{{localize "DCC.Crew.RollAttack"}}</option>
+              {{#each attacks}}<option value="{{id}}">{{name}} {{numberFormat toHit sign=true}}</option>{{/each}}
+            </select>
+          </div>
+          {{/unless}}
+        </li>
+        {{else}}
+        <li class="dcc-iempty">{{localize "DCC.Vehicle.CrewEmpty"}}</li>
+        {{/each}}
+      </ol>
+      <label class="dcc-field">
+        <span class="dcc-flabel">{{localize "DCC.Vehicle.PassengersNote"}}</span>
+        <input class="dcc-fline" type="text" name="system.passengersNote" value="{{systemSource.passengersNote}}"
+               placeholder="{{localize 'DCC.Vehicle.PassengersNotePlaceholder'}}">
+      </label>
+    </div>
+  </div>
+
+  <div class="dcc-col dcc-col-r">
+    {{> "systems/dungeon-crawler-carl/templates/actor/partials/vehicle-weapon-list.hbs" mount=isMount}}
+  </div>
+</section>

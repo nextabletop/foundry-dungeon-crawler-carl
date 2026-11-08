@@ -1,0 +1,38 @@
+{{!-- Sheet settings (R20 views/_settings.pug) in the Configure Sheet dialog (DCCSheetConfig).
+      Only actor types with settings render the fieldset. --}}
+<section class="standard-form dcc-sheet-settings">
+  {{#if (eq dccType "pc")}}
+  <fieldset>
+    <legend>{{localize "DCC.Tab.settings"}}</legend>
+    <div class="form-group">
+      <label for="{{rootId}}-manaStat">{{localize "DCC.Settings.ManaStat"}}</label>
+      <div class="form-fields">
+        <select id="{{rootId}}-manaStat" name="system.manaStat" {{disabled (not canEdit)}}>
+          {{selectOptions statOptions selected=systemSource.manaStat localize=true}}
+        </select>
+      </div>
+      <p class="hint">{{localize "DCC.Settings.ManaStatHint"}}</p>
+    </div>
+    <div class="form-group">
+      <label for="{{rootId}}-autoEnableCast">{{localize "DCC.Settings.AutoEnableCast"}}</label>
+      <div class="form-fields">
+        <input type="checkbox" id="{{rootId}}-autoEnableCast" name="system.autoEnableCast"
+               {{checked systemSource.autoEnableCast}} {{disabled (not canEdit)}}>
+      </div>
+      <p class="hint">{{localize "DCC.Settings.AutoEnableCastHint"}}</p>
+    </div>
+  </fieldset>
+  {{else if (eq dccType "mob")}}
+  <fieldset>
+    <legend>{{localize "DCC.Tab.settings"}}</legend>
+    <div class="form-group">
+      <label for="{{rootId}}-mobPublic">{{localize "DCC.Mob.Public"}}</label>
+      <div class="form-fields">
+        <input type="checkbox" id="{{rootId}}-mobPublic" name="system.mobPublic"
+               {{checked systemSource.mobPublic}} {{disabled (not canEdit)}}>
+      </div>
+      <p class="hint">{{localize "DCC.Mob.PublicHint"}}</p>
+    </div>
+  </fieldset>
+  {{/if}}
+</section>

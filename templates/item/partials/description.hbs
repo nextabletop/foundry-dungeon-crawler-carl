@@ -1,0 +1,11 @@
+{{!-- Description (every item type): a toggled <prose-mirror> for editors; read-only viewers get the
+      enriched HTML. Not a <label>: a form-associated custom element is labelable, so clicks in the label
+      would be re-dispatched to the editor. --}}
+<div class="dcc-box dcc-item-desc">
+  <div class="dcc-bar" id="{{rootId}}-description-label">{{systemFields.description.label}}</div>
+  {{#if editable}}
+  {{formInput systemFields.description value=systemSource.description enriched=descriptionHTML toggled=true}}
+  {{else}}
+  <div class="dcc-item-view" role="group" aria-labelledby="{{rootId}}-description-label">{{#if descriptionEmpty}}<span class="dcc-item-empty">&mdash;</span>{{else}}{{{descriptionHTML}}}{{/if}}</div>
+  {{/if}}
+</div>

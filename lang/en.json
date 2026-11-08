@@ -1,0 +1,570 @@
+{
+  "TYPES": {
+    "Actor": {
+      "pc": "Crawler",
+      "mob": "Mob",
+      "vehicle": "Vehicle",
+      "gmscreen": "GM Screen"
+    },
+    "Item": {
+      "weapon": "Weapon",
+      "skill": "Skill",
+      "spell": "Spell",
+      "gear": "Gear"
+    }
+  },
+  "DCC": {
+    "Sheet": {
+      "pc": "DCC Crawler Sheet",
+      "mob": "DCC Mob Sheet",
+      "vehicle": "DCC Vehicle Sheet",
+      "gmscreen": "DCC GM Screen",
+      "item": "DCC Item Sheet",
+      "Name": "Name",
+      "EditImage": "Edit image",
+      "effect": "DCC Modifier Sheet"
+    },
+    "Effect": {
+      "ChangeType": "DCC Modifier",
+      "Header": "Effects",
+      "Create": "Modifier",
+      "NewName": "Modifier",
+      "Edit": "Edit Effect",
+      "Delete": "Delete Effect",
+      "None": "No effects.",
+      "Inactive": "Inactive"
+    },
+    "Item": {
+      "FIELDS": {
+        "description": {
+          "label": "Description"
+        },
+        "onHotlist": {
+          "label": "On Hotlist",
+          "hint": "Show on the Crawler hotlist (first 10)."
+        },
+        "stat": {
+          "label": "Ability"
+        },
+        "rank": {
+          "label": "Rank"
+        },
+        "skill": {
+          "label": "Skill",
+          "hint": "Name of a skill whose base rank replaces this rank.",
+          "placeholder": "e.g. Knives"
+        },
+        "die": {
+          "label": "Damage Die",
+          "placeholder": "1d6"
+        },
+        "damageBonus": {
+          "label": "Damage Bonus"
+        },
+        "damageType": {
+          "label": "Damage Type"
+        },
+        "quantity": {
+          "label": "Quantity"
+        },
+        "slot": {
+          "label": "Slot"
+        },
+        "active": {
+          "label": "Active",
+          "hint": "Its modifiers apply even in the pack (worn items are always active)."
+        },
+        "accessory": {
+          "label": "Accessory",
+          "hint": "Listed under Accessories while active."
+        },
+        "gunnerSlot": {
+          "label": "Gunner Slot",
+          "hint": "Vehicle weapons only: which crew slot fires it."
+        },
+        "skillName": {
+          "label": "Crew Skill",
+          "hint": "Vehicle weapons only: the skill the gunner rolls.",
+          "placeholder": "e.g. Gunnery"
+        },
+        "mark": {
+          "label": "Advancement Mark",
+          "hint": "Set when you use this skill."
+        },
+        "enabled": {
+          "label": "Enabled",
+          "hint": "This item's modifiers apply."
+        },
+        "checkType": {
+          "label": "Check"
+        },
+        "passive": {
+          "label": "Passive",
+          "hint": "Never rolls to advance at End Session / End Floor."
+        },
+        "class": {
+          "label": "Class"
+        },
+        "manaCost": {
+          "label": "Mana Cost"
+        },
+        "attack": {
+          "label": "Attack",
+          "enabled": {
+            "label": "Attack Spell",
+            "hint": "Also list this spell under Attacks."
+          },
+          "die": {
+            "label": "Damage Die",
+            "placeholder": "1d6"
+          },
+          "damageBonus": {
+            "label": "Damage Bonus"
+          },
+          "damageType": {
+            "label": "Damage Type"
+          }
+        }
+      }
+    },
+    "ItemSheet": {
+      "Attack": "Attack",
+      "Inventory": "Inventory",
+      "VehicleWeapon": "Vehicle Weapon",
+      "Skill": "Skill",
+      "Spell": "Spell",
+      "SpellAttack": "Spell Attack",
+      "Flags": "Flags"
+    },
+    "DamageType": {
+      "none": "—",
+      "slashing": "Slashing",
+      "piercing": "Piercing",
+      "bludgeoning": "Bludgeoning",
+      "fire": "Fire",
+      "cold": "Cold",
+      "lightning": "Lightning",
+      "poison": "Poison",
+      "psychic": "Psychic",
+      "force": "Force",
+      "necrotic": "Necrotic"
+    },
+    "Drop": {
+      "Rejected": "A {actorType} cannot own a {type} item."
+    },
+    "Card": {
+      "Crit": "Crit!",
+      "Fumble": "Fumble!",
+      "Target": "target",
+      "DC": "DC",
+      "ManaCost": "Mana Cost",
+      "InsufficientMana": "⚠ Insufficient mana"
+    },
+    "Bio": {
+      "Popularity": "Popularity",
+      "PastTrauma": "Past Trauma",
+      "LooseEnds": "Loose Ends",
+      "Regrets": "Regrets",
+      "Notes": "Notes"
+    },
+    "Settings": {
+      "ManaStat": "Mana Ability",
+      "ManaStatHint": "The enhanced ability score that sets Max Mana.",
+      "AutoEnableCast": "Auto-enable skill modifiers on cast",
+      "AutoEnableCastHint": "Casting a spell turns its skill modifiers on."
+    },
+    "Setting": {
+      "GmScreen": {
+        "Name": "GM Screen",
+        "Hint": "The GM Screen actor that gates floor ends and Level Up for the Crawlers on its roster. Leave blank to turn the integration off."
+      }
+    },
+    "GmScreen": {
+      "DropRejected": "Only Crawler (PC) world actors can join the GM Screen roster.",
+      "AlreadyRostered": "{name} is already on the roster.",
+      "UndoBlocked": "Can't undo the floor end: {names} already used it (or joined since). Undoing would swallow their next floor end.",
+      "UndoRaced": "Floor end undone, but {names} ended the floor at the same time and is now ahead of the counter. Check their floor-end cursor.",
+      "AddFailed": "{name} could not be baselined, so they were not added to the roster. Try again.",
+      "Safehouse": "Safehouse",
+      "Badge": "In safehouse",
+      "BadgeTooltip": "The GM has declared a safehouse: Level Up is allowed.",
+      "FloorEnds": "Floor ends",
+      "EndFloor": "End Floor",
+      "UndoFloor": "Undo End Floor",
+      "UndoFloorTooltip": "Take back the last floor end (−1)",
+      "UndoFloorNone": "No floor end to undo.",
+      "ReadOnly": "You can't edit the GM screen.",
+      "ConfirmTitle": "End the floor?",
+      "ConfirmContent": "End the floor for: {names}? Each Crawler can then run their own End Floor once.",
+      "ConfirmEmpty": "The roster is empty. End the floor anyway? Crawlers added later start with no floor ends.",
+      "ConfirmUndoTitle": "Undo the floor end?",
+      "ConfirmUndoContent": "Take back the last floor end (−1)? This is refused while any rostered Crawler has already used it.",
+      "Roster": "Roster",
+      "Col": {
+        "Name": "Crawler",
+        "Floor": "Floor",
+        "Pending": "Pending",
+        "Available": "Floor ends"
+      },
+      "Missing": "(missing)",
+      "Invalid": "(not a Crawler)",
+      "Remove": "Remove from roster",
+      "RosterEmpty": "No Crawlers on the roster.",
+      "Inconsistent": "This Crawler’s floor-end cursor is ahead of the counter (an End Floor raced an Undo or a re-baseline). Remove and re-add them to re-baseline.",
+      "DropHint": "Drag Crawler actors here to add them to the roster.",
+      "NotConfigured": "This GM Screen isn’t selected in the system settings, so it gates nobody."
+    },
+    "Tab": {
+      "combat": "Combat",
+      "inventory": "Inventory",
+      "skills": "Skills",
+      "bio": "Bio",
+      "settings": "Settings"
+    },
+    "Header": {
+      "Type": "Type",
+      "Race": "Race",
+      "Pronouns": "Gender / Pronouns",
+      "Class": "Class",
+      "CrawlerNumber": "Crawler #",
+      "Level": "Level",
+      "Floor": "Floor",
+      "AiFavor": "AI Favor"
+    },
+    "Advance": {
+      "Label": "Advancement",
+      "EndSession": "End Session",
+      "EndFloor": "End Floor",
+      "LevelUp": "Level Up",
+      "Undo": "Undo",
+      "EndSessionTooltip": "End the session: marked skills and spells at rank 4 or lower roll 1d20 to advance; +1 pending level",
+      "EndFloorTooltip": "End the floor: marked skills and spells at rank 5 or higher roll 1d20 to advance; Floor +1",
+      "LevelUpTooltip": "Apply a pending level: Level +1, +3 stat points",
+      "UndoTooltip": "Undo the last End Session / End Floor",
+      "UndoEmpty": "Nothing to undo.",
+      "ReadOnly": "You can't edit this Crawler.",
+      "Blocked": {
+        "NoPending": "Level Up needs a pending level — end a session first.",
+        "Saferoom": "Level Up needs a saferoom (Floor 3 or deeper).",
+        "Safehouse": "The GM hasn't declared a safehouse."
+      },
+      "FloorWaiting": "Waiting for the GM to end the floor.",
+      "FloorAvailable": "Floor end available ({n})",
+      "PendingLevels": "Pending",
+      "StatPoints": "Stat Pts",
+      "PendingLevelsTooltip": "Pending levels (earned at session end, applied with Level Up)",
+      "StatPointsTooltip": "Unspent stat points",
+      "SkillLine": "{name}: rank {from} → {to} (d20 {d20})",
+      "LevelLine": "Level {from} → {to}, +{points} stat points",
+      "NoneDue": "No marked skills were due.",
+      "PendingLine": "Pending levels: {from} → {to}",
+      "FloorLine": "Floor: {from} → {to}",
+      "ConfirmFloorTitle": "End Floor?",
+      "ConfirmFloorContent": "End the floor for {name}? Marked skills and spells at rank 5 or higher roll to advance, and Floor goes up by 1. Undo can revert it."
+    },
+    "Abilities": "Abilities",
+    "Stat": {
+      "strength": "Strength",
+      "intelligence": "Intelligence",
+      "constitution": "Constitution",
+      "dexterity": "Dexterity",
+      "charisma": "Charisma"
+    },
+    "StatAbbr": {
+      "strength": "STR",
+      "intelligence": "INT",
+      "constitution": "CON",
+      "dexterity": "DEX",
+      "charisma": "CHA"
+    },
+    "Ability": {
+      "Unenhanced": "Unenh",
+      "Enhanced": "Enh"
+    },
+    "Roll": {
+      "Ability": "Ability",
+      "Defense": "Defense",
+      "AbilityLabel": "Roll {stat} check",
+      "ToHit": "To Hit",
+      "Damage": "Damage",
+      "Cast": "Cast"
+    },
+    "Health": {
+      "Bar": "Health Bar",
+      "Dying": "Dying",
+      "Slot": "Slot {n}",
+      "HealthPointsShort": "HP",
+      "HealSlot": "Heal slot"
+    },
+    "Mana": {
+      "Label": "Mana",
+      "Current": "Current",
+      "Max": "Max"
+    },
+    "Defense": {
+      "Evade": "Evade",
+      "DexterityModifier": "Dex Mod",
+      "Buffs": "Buffs",
+      "EvadeTotal": "Evade Total",
+      "EvadeRollTooltip": "Roll Evade: 1d20 + Dex Mod + Int Mod",
+      "Move": "Move",
+      "Step": "Step",
+      "Size": "Size",
+      "DamageResistance": "Damage Resistance",
+      "Armor": "Armor",
+      "DamageResistanceTotal": "DR Total",
+      "DamageResistanceShort": "DR"
+    },
+    "CheckType": {
+      "opposed": "Opposed",
+      "unopposed": "Unopposed",
+      "generic": "Generic"
+    },
+    "Items": {
+      "New": "New {type}",
+      "Attacks": "Attacks",
+      "Skills": "Skills",
+      "Spells": "Spells",
+      "Stat": "Stat",
+      "Rank": "Rank",
+      "Bonus": "Bonus",
+      "ManaCost": "Mana cost",
+      "ManaChip": "{cost} MP",
+      "CheckType": "Check",
+      "Passive": "Passive",
+      "Enabled": "On",
+      "EnabledTooltip": "Enabled: this item's modifiers apply",
+      "Mark": "Mark",
+      "MarkTooltip": "Advancement mark — set when you use this skill",
+      "Edit": "Edit Item",
+      "Delete": "Delete Item",
+      "RollTooltip": "Roll 1d20 + skill bonus",
+      "CastTooltip": "Cast: 1d20 + skill bonus, spends mana",
+      "CastTooltipNoMana": "Cast: 1d20 + skill bonus",
+      "RankEffectiveTooltip": "Effective rank (with modifiers)",
+      "NoAttacks": "No weapons or attack spells.",
+      "NoSkills": "No skills.",
+      "NoSpells": "No spells."
+    },
+    "Chip": {
+      "PassiveOn": "Passive",
+      "PassiveOff": "Passive",
+      "PassiveTooltip": "Passive: never rolls to advance at End Session / End Floor",
+      "EnabledOn": "Enabled",
+      "EnabledOff": "Enable",
+      "HotlistOn": "On hotlist",
+      "HotlistOff": "Hotlist"
+    },
+    "Buff": {
+      "Header": "Buffs & Debuffs",
+      "Create": "Buff",
+      "NewName": "Buff",
+      "Enable": "Enable",
+      "Disable": "Disable",
+      "None": "No buffs or debuffs."
+    },
+    "Mob": {
+      "LevelTooltip": "Level sets the Health Bar slot count (1–10)",
+      "Surprise": "Surprise",
+      "SurpriseTooltip": "The DC to surprise this mob",
+      "Descriptors": "Descriptors",
+      "DescriptorsPlaceholder": "e.g. undead, flying, boss",
+      "Public": "Rolls are public",
+      "PublicHint": "When on, this mob's rolls post publicly instead of whispering to the GM",
+      "ToHit": "To-Hit",
+      "ToHitTooltip": "Static To-Hit target: 10 + Str Mod + Floor",
+      "EvadeTooltip": "Static Evade target: 10 + Dex Mod + Floor",
+      "StaticToHitTooltip": "Static To-Hit target: 10 + to-hit + Floor (crawlers roll against it)"
+    },
+    "Vehicle": {
+      "StatBlock": "Vehicle / Mount",
+      "Kind": "Kind",
+      "Kinds": {
+        "vehicle": "Vehicle",
+        "mount": "Mount"
+      },
+      "Size": "Size",
+      "SizeOption": "{v} · {name}",
+      "Sizes": {
+        "1": "Tiny",
+        "2": "Small",
+        "3": "Petite",
+        "4": "Medium",
+        "5": "Large",
+        "6": "Huge",
+        "7": "Gargantuan",
+        "8": "Colossal"
+      },
+      "Speed": "Speed",
+      "SpeedMax": "Max",
+      "ConstitutionModifier": "Con Mod",
+      "ConstitutionModifierTooltip": "Hit points per Health Bar slot. Blank = 5 (the rulebook vehicle default); a mount uses its own Con Mod",
+      "Passengers": "Passengers",
+      "DriveSkill": "Drive skill",
+      "DriveSkillTooltip": "The skill the Driver / Rider rolls, e.g. Driving, Riding, Chopper Pilot",
+      "Armor": "DR (occupants)",
+      "ArmorTooltip": "Vehicle DR protects the occupants, not the vehicle",
+      "DamageResistanceTotal": "DR Total",
+      "Move": "Move / action",
+      "MoveValue": "{n} ft",
+      "Cruise": "Cruise mph",
+      "Step": "Step",
+      "StepValue": "10 ft",
+      "Penalty": "To-Hit penalty vs this",
+      "PenaltyNote": "(none head-on / trunk-on)",
+      "RuleSize": "Advantage if it is 2+ size classes larger than the attacker; Disadvantage if 2+ smaller",
+      "RuleVehicle": "Vehicles don't Evade · DR protects occupants · a near miss hits the vehicle",
+      "RuleMount": "Riders take -3 to non-Riding rolls · mounts act independently (1 Move + 1 Any)",
+      "Actions": "Actions",
+      "Advantage": "Adv / Dis",
+      "AdvantageTooltip": "Roll option for the Driving check and Race / Chase (Ram always rolls at Disadvantage)",
+      "AdvantageNone": "—",
+      "AdvantageChip": {
+        "adv": "Advantage",
+        "dis": "Disadvantage"
+      },
+      "DrivingMode": "Driving mode",
+      "Mode": {
+        "accelerate": "Accelerate to…",
+        "stop": "Stop",
+        "longhaul": "Long-distance hour"
+      },
+      "DrivingTarget": "Target Speed",
+      "DrivingTargetTooltip": "Desired Speed for Accelerate",
+      "Drive": "Driving check",
+      "TargetEvade": "Target Evade",
+      "TargetLarger": "Larger target",
+      "TargetLargerTooltip": "The target is a larger size class than this vehicle",
+      "Ram": "Ram / Trample",
+      "Dealt": "Damage dealt",
+      "DealtTooltip": "Type the damage rolled, then Apply",
+      "ApplyRam": "Apply aftermath",
+      "ApplyRamTooltip": "Self-damage into the Health Bar (no DR) and reduce Speed: vs same size or smaller half damage, Speed halved; vs larger full damage, Speed 0",
+      "RacersAhead": "Racers ahead",
+      "Race": "Race / Chase",
+      "DamageResistanceAbsorbed": "DR absorbed a hit (-1 slot)",
+      "DamageResistanceAbsorbedTooltip": "The vehicle loses one Health Bar slot whenever its DR reduced damage to an occupant",
+      "Weapons": "Vehicle Weapons",
+      "MountAttacks": "Mount Attacks",
+      "NoWeapons": "No weapons.",
+      "Gunner": "Gunner",
+      "GunnerSlot": {
+        "1": "Gunner 1",
+        "2": "Gunner 2",
+        "3": "Gunner 3",
+        "4": "Gunner 4",
+        "none": "—",
+        "driver": "Driver"
+      },
+      "SkillName": "Skill",
+      "SkillNamePlaceholder": "e.g. Gunnery",
+      "Crew": "Crew",
+      "CrewEmpty": "No crew. Drag a Crawler or Mob from the Actors sidebar onto this sheet.",
+      "PassengersNote": "Passengers aboard",
+      "PassengersNotePlaceholder": "who else is aboard",
+      "Card": {
+        "DrivingName": "{skill}: {what}",
+        "Accelerate": "Accelerate to {n}",
+        "Stop": "Stop",
+        "Longhaul": "Long-distance hour",
+        "DrivingTag": "Driving check",
+        "AccelerateFail": "on a failure reach Speed {n}",
+        "Ram": "Ram",
+        "Trample": "Trample",
+        "RamTag": "{skill} vs Evade",
+        "RamAftermath": "vs same size or smaller: self 50% damage, Speed halved · vs larger: full damage, Speed 0 · occupants take half minus their DR and vehicle DR",
+        "Race": "Race / Chase",
+        "RaceTag": "{skill} + Speed",
+        "RaceSpeed": "Speed {speed}, {ahead} ahead",
+        "RaceGm": "GM racers assume a 10 (+5 in round 1 instead of Advantage)",
+        "NoDriver": "No driver assigned",
+        "NoRider": "No rider assigned",
+        "Driver": "Driver: {name}",
+        "Rider": "Rider: {name}",
+        "DriverUntrained": "Driver: {name} (untrained)",
+        "RiderUntrained": "Rider: {name} (untrained)"
+      }
+    },
+    "Crew": {
+      "Role": {
+        "driver": "Driver",
+        "rider": "Rider",
+        "gunner1": "Gunner 1",
+        "gunner2": "Gunner 2",
+        "gunner3": "Gunner 3",
+        "gunner4": "Gunner 4",
+        "passenger": "Passenger"
+      },
+      "RoleLabel": "Crew role",
+      "Missing": "(missing)",
+      "Unknown": "(unknown crew member)",
+      "HealthBarShort": "HB",
+      "DamageResistanceShort": "DR",
+      "OpenTooltip": "Open this crew member's sheet",
+      "OpenVehicleTooltip": "Open this vehicle's sheet",
+      "Remove": "Remove from crew",
+      "RollSkill": "Roll skill…",
+      "RollAttack": "Roll attack…",
+      "Crewing": "Crewing",
+      "Card": {
+        "SkillName": "{crew} — {skill}",
+        "Aboard": "aboard {vehicle}",
+        "AboardPenalty": "aboard {vehicle}: {penalty}",
+        "DriverDisadvantage": "driver: disadvantage",
+        "NoGunner": "No gunner",
+        "Gunner": "Gunner: {name} ({skill})",
+        "GunnerUntrained": "Gunner: {name} (untrained {skill} — stat mod only)",
+        "AnySkill": "skill",
+        "AnyVehicle": "vehicle"
+      },
+      "AlreadyAboard": "{name} is already on this crew.",
+      "Reject": {
+        "vehicle": "{name} is a vehicle and can't crew one.",
+        "type": "{name} can't crew a vehicle: only a Crawler or Mob can.",
+        "notWorld": "{name} can't crew a vehicle: drag the actor from the Actors sidebar (unlinked token and compendium actors can't crew)."
+      }
+    },
+    "Unresolved": {
+      "Label": "⚠ Unresolved modifiers:",
+      "Tooltip": "These modifiers target nothing on this actor and were not applied."
+    },
+    "Slot": {
+      "pack": "Pack",
+      "head": "Head",
+      "torso": "Torso",
+      "arms": "Arms",
+      "hands": "Hands",
+      "legs": "Legs",
+      "feet": "Feet"
+    },
+    "Inventory": {
+      "Header": "Inventory",
+      "GearSlots": "Gear Slots",
+      "Accessories": "Accessories",
+      "AccessoryCount": "{n}/{cap}",
+      "DollSlot": "{slot}: {name}",
+      "SlotConflict": "Another item fills this slot on the paper doll; this one still counts as worn (active)",
+      "NoAccessories": "No accessories. Tick Accessory on an active item.",
+      "NoItems": "No gear or weapons.",
+      "Quantity": "Qty",
+      "Slot": "Slot",
+      "Active": "Active",
+      "ActiveTooltip": "Active: this item's effects apply even in the pack (worn items are always active)",
+      "Accessory": "Acc",
+      "AccessoryTooltip": "Accessory: listed under Accessories while the item is active"
+    },
+    "Hotlist": {
+      "Label": "Hotlist",
+      "Short": "Hot",
+      "Toggle": "Show on the hotlist (first {cap})",
+      "Cell": "{name} — {action}",
+      "CellQuantity": "{name} ×{quantity} — {action}",
+      "Use": {
+        "spell": "Cast",
+        "weapon": "Roll to hit",
+        "skill": "Roll check",
+        "gear": "Show in chat"
+      }
+    }
+  }
+}

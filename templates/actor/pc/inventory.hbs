@@ -1,0 +1,94 @@
+{{!-- Inventory & Gear. The paper doll and Accessories are derived from the item list
+      (buildGear / buildAccessories); the list's inline controls carry data-field and no
+      name, so the sheet's _onChangeForm updates the item. Weapons are also listed under
+      Attacks, so their rows here use idSuffix="-inv". --}}
+<section class="tab dcc-tab {{tab.cssClass}}" data-group="primary" data-tab="inventory">
+  <div class="dcc-invtop">
+    <div class="dcc-box dcc-doll-box">
+      <div class="dcc-bar">{{localize "DCC.Inventory.GearSlots"}}</div>
+      <div class="dcc-doll">
+        {{#each gearSlots}}
+        <div class="dcc-doll-slot dcc-doll-slot--{{slot}}{{#if item}} filled{{/if}}">
+          <span class="dcc-flabel">{{localize label}}</span>
+          {{#if item}}
+          <button type="button" class="dcc-doll-occ" id="{{@root.rootId}}-{{item.id}}-doll" data-item-id="{{item.id}}" data-action="editItem" data-view-only
+                  data-tooltip="{{localize 'DCC.Items.Edit'}}" aria-label="{{localize 'DCC.Inventory.DollSlot' slot=(localize label) name=item.name}}">{{item.name}}</button>
+          {{else}}
+          <span class="dcc-doll-occ dcc-doll-occ--empty">—</span>
+          {{/if}}
+        </div>
+        {{/each}}
+      </div>
+    </div>
+    <div class="dcc-box dcc-acc-box">
+      <div class="dcc-bar">{{localize "DCC.Inventory.Accessories"}} <span class="dcc-acc-count">{{localize "DCC.Inventory.AccessoryCount" n=accessories.length cap=@root.accessoryCap}}</span></div>
+      <ol class="dcc-acc">
+        {{#each accessories}}
+        <li><button type="button" class="dcc-acc-item" id="{{@root.rootId}}-{{id}}-accessory" data-item-id="{{id}}" data-action="editItem" data-view-only
+                    data-tooltip="{{localize 'DCC.Items.Edit'}}">{{name}}</button></li>
+        {{else}}
+        <li class="dcc-iempty">{{localize "DCC.Inventory.NoAccessories"}}</li>
+        {{/each}}
+      </ol>
+    </div>
+  </div>
+
+  <div class="dcc-box dcc-list">
+    <div class="dcc-bar dcc-bar--list">
+      <span>{{localize "DCC.Inventory.Header"}}</span>
+      {{#if editable}}
+      <span class="dcc-addbtns">
+        <button type="button" class="dcc-addbtn" id="{{@root.rootId}}-inv-add-gear" data-action="createItem" data-type="gear">
+          <i class="fa-solid fa-plus" inert></i> {{localize "TYPES.Item.gear"}}
+        </button>
+        <button type="button" class="dcc-addbtn" id="{{@root.rootId}}-inv-add-weapon" data-action="createItem" data-type="weapon">
+          <i class="fa-solid fa-plus" inert></i> {{localize "TYPES.Item.weapon"}}
+        </button>
+      </span>
+      {{/if}}
+    </div>
+    <ol class="dcc-ilist dcc-ilist--inventory">
+      <li class="dcc-ihead">
+        <span>{{localize "DCC.Sheet.Name"}}</span>
+        <span>{{localize "DCC.Inventory.Quantity"}}</span>
+        <span>{{localize "DCC.Inventory.Slot"}}</span>
+        <span>{{localize "DCC.Inventory.Active"}}</span>
+        <span>{{localize "DCC.Inventory.Accessory"}}</span>
+        <span>{{localize "DCC.Hotlist.Short"}}</span>
+        <span></span>
+      </li>
+      {{#each inventory}}
+      {{#> "systems/dungeon-crawler-carl/templates/actor/partials/item-row.hbs" idSuffix="-inv"}}
+        <span class="dcc-icell">
+          <input class="dcc-iinput" type="number" step="1" id="{{@root.rootId}}-{{id}}-quantity" data-field="system.quantity" value="{{quantity}}"
+                 aria-label="{{localize 'DCC.Inventory.Quantity'}}">
+        </span>
+        <span class="dcc-icell">
+          <select class="dcc-iselect{{#if worn}} dcc-iselect--worn{{/if}}{{#if slotConflict}} dcc-iselect--conflict{{/if}}" id="{{@root.rootId}}-{{id}}-slot" data-field="system.slot"
+                  {{#if slotConflict}}data-tooltip="{{localize 'DCC.Inventory.SlotConflict'}}"{{/if}} aria-label="{{localize 'DCC.Inventory.Slot'}}">
+            {{selectOptions @root.slotOptions selected=slot localize=true}}
+          </select>
+        </span>
+        <span class="dcc-icell">
+          <input class="dcc-icheck" type="checkbox" id="{{@root.rootId}}-{{id}}-active" data-field="system.active" {{checked active}}
+                 data-tooltip="{{localize 'DCC.Inventory.ActiveTooltip'}}" aria-label="{{localize 'DCC.Inventory.Active'}}">
+        </span>
+        <span class="dcc-icell">
+          {{#if isWeapon}}
+          <i class="fa-solid fa-khanda dcc-ispell" role="img" aria-label="{{localize 'TYPES.Item.weapon'}}" data-tooltip="{{localize 'TYPES.Item.weapon'}}"></i>
+          {{else}}
+          <input class="dcc-icheck" type="checkbox" id="{{@root.rootId}}-{{id}}-accessory" data-field="system.accessory" {{checked accessory}}
+                 data-tooltip="{{localize 'DCC.Inventory.AccessoryTooltip'}}" aria-label="{{localize 'DCC.Inventory.Accessory'}}">
+          {{/if}}
+        </span>
+        <span class="dcc-icell">
+          <input class="dcc-icheck" type="checkbox" id="{{@root.rootId}}-{{id}}-hotlist" data-field="system.onHotlist" {{checked onHotlist}}
+                 data-tooltip="{{localize 'DCC.Hotlist.Toggle' cap=@root.hotlistCap}}" aria-label="{{localize 'DCC.Hotlist.Label'}}">
+        </span>
+      {{/"systems/dungeon-crawler-carl/templates/actor/partials/item-row.hbs"}}
+      {{else}}
+      <li class="dcc-iempty">{{localize "DCC.Inventory.NoItems"}}</li>
+      {{/each}}
+    </ol>
+  </div>
+</section>

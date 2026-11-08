@@ -1,0 +1,1825 @@
+/* Dungeon Crawler Carl — sheet + chat styles (loaded in the "system" layer). */
+
+.dcc.sheet .dcc-json {
+  white-space: pre-wrap;
+  font-size: var(--font-size-12);
+}
+
+/* ── Roll chat card (templates/chat/card.hbs) ──
+   Port of the R20 roll template (rolltemplate/_index.pug +scss('roll')).
+   Chat messages are always parchment/light in v14 (theme-dark only touches the
+   chat input), so only the light --rt-* palette is ported. .message-content is
+   overflow:hidden, so the card's own margin leaves room for the portrait breakout. */
+.dcc-card {
+  --rt-card: #f3f2ef;
+  --rt-ink: #161616;
+  --rt-ink-dim: #555555;
+  --rt-line: #b3b1ab;
+  --rt-bar: #101010;
+  --rt-bar-text: #ffffff;
+  --rt-pill-bg: #ffffff;
+  --rt-gold: #c98a06;
+  position: relative;
+  margin: 22px 2px 6px 18px;
+  font-family: "Arial Narrow", "Roboto Condensed", "Oswald", system-ui, sans-serif;
+  background: var(--rt-card);
+  color: var(--rt-ink);
+  border: 1px solid var(--rt-line);
+  border-radius: 7px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+}
+
+/* Header bar */
+.dcc-card .dcc-card-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 46px;
+  padding: 6px 10px;
+  border-radius: 6px 6px 0 0;
+  background: var(--rt-bar);
+  color: var(--rt-bar-text);
+}
+.dcc-card .dcc-card-token {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  margin: -22px 8px -8px -18px;
+  border-radius: 50%;
+  border: 2px solid var(--rt-bar-text);
+  background: radial-gradient(circle at 50% 34%, #9bb0cc 0 36%, #41566f 37% 100%);
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+.dcc-card .dcc-card-token img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  margin: 0;
+  border: none;
+  object-fit: cover;
+}
+.dcc-card .dcc-card-titles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.12;
+}
+.dcc-card .dcc-card-actname {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.dcc-card .dcc-card-char {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--rt-gold);
+}
+.dcc-card .dcc-card-sub {
+  align-self: flex-start;
+  margin-left: auto;
+  margin-top: 3px;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+}
+
+/* Header tints */
+.dcc-card .dcc-card-head.gold-red {
+  background: linear-gradient(90deg, #d31f29, #8c1018);
+  color: var(--d-bar-text);
+}
+.dcc-card .dcc-card-head.gold-red .dcc-card-char { color: #ffe0a3; }
+.dcc-card .dcc-card-head.crit {
+  background: linear-gradient(90deg, #c98a06, #b9850b);
+  color: #1a1205;
+}
+.dcc-card .dcc-card-head.crit .dcc-card-char { color: #7a5803; }
+.dcc-card .dcc-card-head.crit .dcc-card-token { border-color: #1a1205; }
+.dcc-card .dcc-card-head.fail {
+  background: #3a3f48;
+  color: #e7e7e7;
+}
+.dcc-card .dcc-card-head.fail .dcc-card-char { color: #c98a06; }
+
+/* Body */
+.dcc-card .dcc-card-pad { padding: 9px 11px; }
+.dcc-card .dcc-card-opt,
+.dcc-card .dcc-card-note,
+.dcc-card .dcc-card-cast,
+.dcc-card .dcc-card-insufficient { padding-top: 0; }
+.dcc-card .dcc-card-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.dcc-card .dcc-card-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.dcc-card .dcc-card-n {
+  padding: 1px 12px;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--rt-ink);
+  background: var(--rt-pill-bg);
+  border: 1px solid var(--rt-line);
+  border-radius: 6px;
+}
+.dcc-card .dcc-card-n.rcrit { color: #2e7d32; border-color: #2e7d32; }
+.dcc-card .dcc-card-n.rfail { color: #b71c1c; border-color: #b71c1c; }
+.dcc-card .dcc-card-u {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--rt-ink-dim);
+}
+
+/* Chips */
+.dcc-card .dcc-card-chip {
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--d-bar-text);
+}
+.dcc-card .dcc-card-chip.crit { background: #2e7d32; }
+.dcc-card .dcc-card-chip.fumble { background: #b71c1c; }
+.dcc-card .dcc-card-chip.adv { background: #c98a06; color: #1a1205; }
+.dcc-card .dcc-card-opt { text-align: center; }
+
+/* Free-text lines (driver note, aboard penalty, ram aftermath) */
+.dcc-card .dcc-card-note {
+  font-size: 10px;
+  line-height: 1.3;
+  text-align: center;
+  color: var(--rt-ink-dim);
+}
+/* Multi-line notes (gear descriptions from the hotlist) keep their line breaks. */
+.dcc-card .dcc-card-note > span { white-space: pre-line; }
+
+/* DC / mana-cost lines + insufficient notice */
+.dcc-card .dcc-card-cast {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--rt-ink-dim);
+}
+.dcc-card .dcc-card-castlabel {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.dcc-card .dcc-card-castval {
+  font-weight: 800;
+  color: var(--rt-ink);
+}
+.dcc-card .dcc-card-insufficient {
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+  color: #b71c1c;
+}
+
+/* Collapsible dice breakdown (core Roll#getTooltip markup inside <details>) */
+.dcc-card .dcc-card-dice {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--rt-ink-dim);
+}
+.dcc-card .dcc-card-dice > summary {
+  cursor: pointer;
+  text-align: center;
+  letter-spacing: 0.03em;
+}
+.dcc-card .dcc-card-dice[open] > summary { margin-bottom: 4px; }
+
+/* ── Sheet tokens (port of character-sheet/source/scss/_variables.scss).
+   Declared on the window element only (DCC sheets, plus DCC dialogs / config windows
+   marked .dcc-app), never on bare .dcc, so the chat card (.dcc-card, its own light --rt-* palette) is unaffected. */
+.dcc.sheet,
+.dcc.dcc-app {
+  --d-cond: "Arial Narrow", "Roboto Condensed", "Oswald", "Helvetica Neue", system-ui, sans-serif;
+  --d-paper: #d7d5d0;
+  --d-paper-2: #e7e6e2;
+  --d-field: #ffffff;
+  /* Behind portraits and item / effect icons: Foundry's default icons are white SVGs, so art never sits on white. */
+  --d-art-bg: #3b3f47;
+  --d-ink: #161616;
+  --d-ink-dim: #5a5a5a;
+  --d-ink-faint: #8a8a86;
+  --d-line: #1b1b1b;
+  --d-line-soft: #b9b7b1;
+  --d-bar: #101010;
+  --d-bar-text: #ffffff;
+  /* --d-hot = fills (stat mod, dying, borders); --d-accent = text / outlines (lighter in dark for contrast). */
+  --d-hot: #d31f29;
+  --d-accent: #d31f29;
+  /* GM screen safehouse badge: a green "all clear" tint. */
+  --d-safe-bg: #e2f0e5;
+  --d-safe-line: #2e7d45;
+  --d-safe-ink: #1b5e30;
+  /* Paper-grain overlay layers (R20 .dcc-stage), themed so the background is one rule. */
+  --d-grain-1: rgba(0, 0, 0, 0.05);
+  --d-grain-2: rgba(0, 0, 0, 0.06);
+  --d-grain-3: rgba(0, 0, 0, 0.018);
+}
+
+/* Dark palette (R20 @mixin dark, body.sheet-darkmode). v14 resolves a sheet's
+   theme two ways: the "Applications" color scheme (or browser default) puts
+   theme-dark on <body> (Game#configureUI), and a per-sheet / per-type theme
+   picked in Configure Sheet puts `themed theme-<x>` on the sheet element itself
+   (DocumentSheetV2#_initializeApplicationOptions). A per-sheet light theme wins
+   over a dark body, as in core. */
+body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
+.dcc:is(.sheet, .dcc-app).theme-dark {
+  color-scheme: dark;
+  --d-paper: #14161b;
+  --d-paper-2: #1d2026;
+  --d-field: #0d0f13;
+  --d-art-bg: #0d0f13;
+  --d-ink: #e7e7e7;
+  --d-ink-dim: #9aa0aa;
+  --d-ink-faint: #6b7079;
+  --d-line: #646a75; /* R20 #3a3f48 lifted to >=3:1 vs --d-paper / --d-paper-2 for input borders */
+  --d-line-soft: #2a2e35;
+  --d-bar: #2c323c;
+  --d-bar-text: #f0f0f0;
+  --d-hot: #d31f29;
+  --d-accent: #ff5a63;
+  --d-safe-bg: #13261a;
+  --d-safe-line: #3f9e5c;
+  --d-safe-ink: #86d9a0;
+  --d-grain-1: rgba(255, 255, 255, 0.035);
+  --d-grain-2: rgba(0, 0, 0, 0.4);
+  --d-grain-3: rgba(255, 255, 255, 0.012);
+}
+
+/* Stage shell: the R20 paper + grain background. */
+.dcc:is(.sheet, .dcc-app) .window-content {
+  background:
+    radial-gradient(circle at 18% 22%, var(--d-grain-1), transparent 42%),
+    radial-gradient(circle at 82% 78%, var(--d-grain-2), transparent 46%),
+    repeating-linear-gradient(116deg, var(--d-grain-3) 0 2px, transparent 2px 6px),
+    var(--d-paper);
+  color: var(--d-ink);
+}
+
+.dcc.sheet.actor .window-content {
+  gap: 8px;
+  padding: 8px 10px;
+}
+
+/* Header part (identity, vitals, abilities) stays put; tab parts scroll. */
+.dcc.sheet.actor .dcc-header { flex: none; display: flex; flex-direction: column; gap: 8px; }
+
+/* PC frame (R20 .dcc-frame): header across the top; abilities down the left, spanning the vitals,
+   tab strip and tab body; hotlist pinned across the bottom. The window height is fixed, so only
+   the 1fr tab-body row (and the abilities strip, if it overflows) scrolls. contain: size keeps the
+   row-spanning abilities strip from stretching the auto vitals / tab-strip rows. */
+.dcc.sheet.actor.pc .window-content {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "header  header"
+    "abil    vitals"
+    "abil    nav"
+    "abil    body"
+    "hotlist hotlist";
+}
+.dcc.sheet.actor.pc .dcc-header { grid-area: header; }
+.dcc.sheet.actor.pc .dcc-a-abil { grid-area: abil; align-self: stretch; contain: size; overflow-y: auto; }
+.dcc.sheet.actor.pc .dcc-vitals { grid-area: vitals; }
+.dcc.sheet.actor.pc nav.sheet-tabs { grid-area: nav; }
+.dcc.sheet.actor.pc .dcc-tab { grid-area: body; height: 100%; }
+.dcc.sheet.actor.pc .dcc-a-hotlist { grid-area: hotlist; }
+.dcc.sheet.actor.pc .dcc-a-abil .dcc-stats { display: flex; flex-direction: column; }
+.dcc.sheet.actor.pc .dcc-a-abil .dcc-stat-cols { gap: 6px; }
+.dcc.sheet.actor .dcc-tab { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-gutter: stable; }
+/* system.css loads in the "system" cascade layer, which outranks core's layer, so
+   our .dcc-tab display would beat core's tab hiding; state the rule explicitly. */
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .tab[data-tab]:not(.active) { display: none; }
+
+/* Section bar + box */
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 4px 8px;
+  border-radius: 3px;
+  background: var(--d-bar);
+  color: var(--d-bar-text);
+  font-family: var(--d-cond);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.dcc.sheet.actor .dcc-header > .dcc-bar { margin: 0; }
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-box {
+  overflow: hidden;
+  padding: 8px;
+  border: 1px solid var(--d-line);
+  border-radius: 5px;
+  background: var(--d-field);
+  color: var(--d-ink);
+}
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-box > .dcc-bar:first-child { margin: -8px -8px 8px; border-radius: 0; }
+
+/* Labels, line fields, buttons */
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-flabel {
+  font-family: var(--d-cond);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--d-ink-dim);
+}
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) input.dcc-fline {
+  width: 100%;
+  height: 24px;
+  padding: 0 4px 2px;
+  border: none;
+  border-bottom: 1px solid var(--d-line);
+  border-radius: 0;
+  background: transparent;
+  font-family: var(--d-cond);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--d-ink);
+}
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-rollbtn {
+  flex: none;
+  width: auto;
+  padding: 4px 9px;
+  border: 1px solid var(--d-line);
+  border-radius: 3px;
+  background: var(--d-paper-2);
+  color: var(--d-ink);
+  font-family: var(--d-cond);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-rollbtn:not(:disabled):hover { border-color: var(--d-accent); color: var(--d-accent); }
+
+/* Identity header */
+.dcc.sheet.actor .dcc-headgrid { display: flex; gap: 12px; align-items: flex-start; }
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-portrait {
+  flex: none;
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  border: 1px solid var(--d-line);
+  border-radius: 4px;
+  background: var(--d-art-bg);
+  cursor: pointer;
+}
+.dcc.sheet.actor .dcc-headmain { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+/* PC header (R20 _header.pug): portrait + advancement on the left; fields in two rows on the right. */
+.dcc.sheet.actor .dcc-headside { flex: 0 0 200px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.dcc.sheet.actor .dcc-headside .dcc-portrait { width: 80px; height: 80px; }
+.dcc.sheet.actor .dcc-pcfields {
+  display: grid;
+  /* Type is `auto` so the nowrap badge sets its width instead of overflowing into Race. */
+  grid-template-columns: minmax(0, 2fr) auto minmax(0, 1.3fr) minmax(0, 1.4fr) minmax(0, 1.3fr) minmax(0, 0.7fr);
+  grid-template-areas:
+    "name  type  race  pron class lvl"
+    "crawl crawl floor .    favor .";
+  align-content: start;
+  gap: 8px 10px;
+}
+/* Label at the top, input pinned to the bottom, so inputs line up when a label wraps (Gender / Pronouns). */
+.dcc.sheet.actor .dcc-pcfields .dcc-field { min-width: 0; justify-content: space-between; }
+.dcc.sheet.actor .dcc-f-name { grid-area: name; }
+.dcc.sheet.actor .dcc-f-type { grid-area: type; }
+.dcc.sheet.actor .dcc-f-race { grid-area: race; }
+.dcc.sheet.actor .dcc-f-pronouns { grid-area: pron; }
+.dcc.sheet.actor .dcc-f-class { grid-area: class; }
+.dcc.sheet.actor .dcc-f-level { grid-area: lvl; }
+.dcc.sheet.actor .dcc-f-crawler { grid-area: crawl; }
+.dcc.sheet.actor .dcc-f-floor { grid-area: floor; }
+.dcc.sheet.actor .dcc-f-favor { grid-area: favor; }
+/* Read-only actor type (R20 .dcc-type-badge). */
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-type-badge {
+  align-self: flex-start;
+  padding: 2px 6px;
+  border: 1px solid var(--d-accent);
+  border-radius: 3px;
+  color: var(--d-accent);
+  font-family: var(--d-cond);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.dcc.sheet.actor .dcc-fields { display: flex; flex-wrap: wrap; gap: 8px 10px; align-content: start; }
+.dcc.sheet.actor .dcc-field { display: flex; flex: 1 1 0; flex-direction: column; gap: 2px; min-width: 96px; }
+.dcc.sheet.actor .dcc-field--num { min-width: 64px; }
+/* Identity field width weights (flex-basis 0, so widths follow these). */
+.dcc.sheet.actor .dcc-grow-2 { flex-grow: 2; }
+.dcc.sheet.actor .dcc-grow-3 { flex-grow: 3; }
+.dcc.sheet.actor .dcc-grow-5 { flex-grow: 5; }
+.dcc.sheet.actor .dcc-grow-6 { flex-grow: 6; }
+.dcc.sheet.actor .dcc-hdr-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.dcc.sheet.actor .dcc-hdr-actions:empty { display: none; }
+/* Advancement row: each button sits in a tooltip-carrying wrapper (a disabled button fires no pointer events). */
+.dcc.sheet.actor .dcc-advancement { display: inline-flex; }
+.dcc.sheet.actor .dcc-advancement > button:disabled { pointer-events: none; } /* hover reaches the span's tooltip */
+/* Visually hidden, still read by screen readers (aria-describedby targets). */
+.dcc.sheet.actor .dcc-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.dcc.sheet.actor .dcc-rollbtn--hot { border-color: var(--d-hot); color: var(--d-accent); }
+.dcc.sheet.actor .dcc-advancement-badge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 3px 7px;
+  border: 1px solid var(--d-line-soft);
+  border-radius: 3px;
+  background: var(--d-field);
+  font-family: var(--d-cond);
+}
+.dcc.sheet.actor .dcc-advancement-badge .lbl {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--d-ink-dim);
+}
+.dcc.sheet.actor .dcc-advancement-badge .val { font-size: 13px; font-weight: 800; color: var(--d-ink); }
+/* GM screen safehouse badge (--d-safe-* palette tokens). */
+.dcc.sheet.actor .dcc-advancement-badge.dcc-safehouse {
+  border-color: var(--d-safe-line);
+  background: var(--d-safe-bg);
+}
+.dcc.sheet.actor .dcc-advancement-badge.dcc-safehouse .lbl { color: var(--d-safe-ink); }
+
+/* Vitals: health bar box | mana box */
+.dcc.sheet.actor .dcc-vitals { display: grid; grid-template-columns: 1fr 170px; gap: 8px; }
+.dcc.sheet.actor .dcc-dying {
+  padding: 0 6px;
+  border-radius: 3px;
+  background: var(--d-hot);
+  color: var(--d-bar-text);
+  letter-spacing: 0.08em;
+}
+
+/* Health bar (port of components/_health.pug +scss) */
+.dcc.sheet.actor .dcc-hb { display: flex; gap: 2px; margin: 6px 0; }
+.dcc.sheet.actor .dcc-hb-slot {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px dashed var(--d-line);
+  border-radius: 3px;
+  background: var(--d-paper-2);
+  line-height: 1;
+  cursor: pointer;
+}
+.dcc.sheet.actor .dcc-hb-slot .cm {
+  font-family: var(--d-cond);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--d-ink-faint);
+}
+.dcc.sheet.actor .dcc-hb-slot .pct {
+  margin-top: 1px;
+  font-family: var(--d-cond);
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--d-ink-faint);
+}
+.dcc.sheet.actor .dcc-hb-slot.filled { border-style: solid; }
+.dcc.sheet.actor .dcc-hb-slot.filled .cm { color: rgba(0, 0, 0, 0.82); }
+.dcc.sheet.actor .dcc-hb-slot.filled .pct { color: rgba(0, 0, 0, 0.62); }
+/* Rainbow red (10%) -> green (100%), low slot on the left. */
+.dcc.sheet.actor .dcc-hb-slot.filled:nth-child(1) { background: hsl(0, 72%, 50%); }
+.dcc.sheet.actor .dcc-hb-slot.filled:nth-child(2) { background: hsl(14, 74%, 50%); }
+.dcc.sheet.actor .dcc-hb-slot.filled:nth-child(3) { background: hsl(28, 78%, 50%); }
+.dcc.sheet.actor .dcc-hb-slot.filled:nth-child(4) { background: hsl(42, 82%, 48%); }
+.dcc.sheet.actor .dcc-hb-slot.filled:nth-child(5) { background: hsl(56, 82%, 45%); }
+.dcc.sheet.actor .dcc-hb-slot.filled:nth-child(6) { background: hsl(70, 70%, 44%); }
+.dcc.sheet.actor .dcc-hb-slot.filled:nth-child(7) { background: hsl(84, 64%, 43%); }
+.dcc.sheet.actor .dcc-hb-slot.filled:nth-child(8) { background: hsl(98, 60%, 42%); }
+.dcc.sheet.actor .dcc-hb-slot.filled:nth-child(9) { background: hsl(110, 60%, 40%); }
+.dcc.sheet.actor .dcc-hb-slot.filled:nth-child(10) { background: hsl(122, 62%, 38%); }
+.dcc.sheet.actor .dcc-hb-slot:not(:disabled):hover { outline: 2px solid var(--d-accent); outline-offset: -2px; }
+/* Beyond the actor's slot count: blacked out and inert. */
+.dcc.sheet.actor .dcc-hb-slot.blocked {
+  border: 1px solid var(--d-bar);
+  background: var(--d-bar);
+  cursor: default;
+}
+.dcc.sheet.actor .dcc-hb-slot.blocked span { visibility: hidden; }
+.dcc.sheet.actor .dcc-hb-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.dcc.sheet.actor .dcc-hp { display: flex; align-items: baseline; gap: 4px; font-family: var(--d-cond); }
+.dcc.sheet.actor .dcc-hp-val { font-size: 20px; font-weight: 800; color: var(--d-accent); }
+.dcc.sheet.actor .dcc-hp-max { font-size: 20px; font-weight: 800; }
+.dcc.sheet.actor .dcc-hp .sep { color: var(--d-ink-faint); }
+
+/* Mana: current | / | max, labels on the same grid */
+.dcc.sheet.actor .dcc-mana,
+.dcc.sheet.actor .dcc-mana-lbl {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  column-gap: 6px;
+  font-family: var(--d-cond);
+}
+.dcc.sheet.actor .dcc-mana { align-items: baseline; justify-items: center; margin-top: 4px; }
+.dcc.sheet.actor .dcc-mana .cur,
+.dcc.sheet.actor .dcc-mana .max {
+  font-family: var(--d-cond);
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+}
+.dcc.sheet.actor .dcc-mana .cur {
+  width: 3ch;
+  height: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--d-accent);
+}
+.dcc.sheet.actor .dcc-mana .sep { font-size: 28px; color: var(--d-ink-faint); }
+.dcc.sheet.actor .dcc-mana-lbl {
+  margin-top: 2px;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--d-ink-faint);
+}
+.dcc.sheet.actor .dcc-mana-lbl span { text-align: center; }
+.dcc.sheet.actor .dcc-mana-lbl span:last-child { grid-column: 3; }
+
+/* Ability cards (port of components/_abilities.pug), laid out in one row */
+.dcc.sheet.actor .dcc-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.dcc.sheet.actor .dcc-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 5px 6px;
+  border: 1px solid var(--d-line);
+  border-radius: 4px;
+  background: var(--d-field);
+}
+.dcc.sheet.actor .dcc-stat .nm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-family: var(--d-cond);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+.dcc.sheet.actor .dcc-stat-cols { display: flex; justify-content: center; gap: 10px; }
+.dcc.sheet.actor .dcc-stat-col { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.dcc.sheet.actor .dcc-statbase {
+  width: 46px;
+  height: 22px;
+  border: 1px solid var(--d-line);
+  border-radius: 3px;
+  background: var(--d-paper-2);
+  color: var(--d-ink);
+  font-family: var(--d-cond);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}
+.dcc.sheet.actor .dcc-statenh {
+  width: 46px;
+  height: 22px;
+  line-height: 22px;
+  font-family: var(--d-cond);
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+}
+.dcc.sheet.actor .dcc-statmod {
+  display: inline-flex;
+  flex: none;
+  align-items: baseline;
+  gap: 1px;
+  width: auto;
+  height: auto;
+  padding: 2px 10px;
+  border: 1px solid var(--d-bar);
+  border-radius: 4px;
+  background: var(--d-hot);
+  color: var(--d-bar-text);
+  font-family: var(--d-cond);
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.1;
+  cursor: pointer;
+}
+.dcc.sheet.actor .dcc-statmod:not(:disabled):hover { filter: brightness(1.1); }
+.dcc.sheet.actor .dcc-statmod .pl { font-size: 12px; }
+
+/* Tab strip (core templates/generic/tab-navigation.hbs) */
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) nav.sheet-tabs {
+  flex: none;
+  justify-content: flex-start;
+  gap: 4px;
+  margin: 0;
+  border-bottom: 2px solid var(--d-line);
+}
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) nav.sheet-tabs > a {
+  flex: none;
+  padding: 5px 12px;
+  border: 1px solid var(--d-line);
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  background: var(--d-paper-2);
+  color: var(--d-ink-dim);
+  font-family: var(--d-cond);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) nav.sheet-tabs > a.active {
+  border-color: var(--d-bar);
+  background: var(--d-bar);
+  color: var(--d-bar-text);
+  text-shadow: none;
+}
+
+/* Defenses strip (port of sections/_combat.pug +scss) */
+.dcc.sheet.actor .dcc-combat-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 4px;
+}
+.dcc.sheet.actor .dcc-combat-top .cm { display: flex; align-items: flex-end; gap: 6px; }
+.dcc.sheet.actor .dcc-fgroup {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 5px 7px;
+  border: 1px solid var(--d-line-soft);
+  border-radius: 5px;
+  background: var(--d-paper-2);
+}
+.dcc.sheet.actor .dcc-fgroup .gl {
+  align-self: center;
+  max-width: 64px;
+  font-family: var(--d-cond);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.dcc.sheet.actor .dcc-fbox { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.dcc.sheet.actor .dcc-fbox .lab {
+  font-family: var(--d-cond);
+  font-size: 8px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--d-ink-dim);
+}
+.dcc.sheet.actor .dcc-fbox .bx {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  min-height: 26px;
+  margin: 0;
+  padding: 2px 4px;
+  border: 1px solid var(--d-line);
+  border-radius: 3px;
+  background: var(--d-field);
+  color: var(--d-ink);
+  font-family: var(--d-cond);
+  font-size: 15px;
+  font-weight: 800;
+  text-align: center;
+}
+.dcc.sheet.actor .dcc-fbox input.bx { width: 44px; height: 26px; }
+.dcc.sheet.actor .dcc-fbox .bx.tot { border-width: 2px; border-color: var(--d-accent); color: var(--d-accent); }
+.dcc.sheet.actor .dcc-fbox button.bx { width: auto; cursor: pointer; }
+.dcc.sheet.actor .dcc-fbox button.bx:not(:disabled):hover { filter: brightness(1.08); }
+.dcc.sheet.actor .dcc-fop {
+  padding-bottom: 4px;
+  font-family: var(--d-cond);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--d-ink-dim);
+}
+.dcc.sheet.actor .dcc-buffline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px;
+  margin: 8px 0 0;
+  font-family: var(--d-cond);
+  font-size: 11px;
+  color: var(--d-ink-dim);
+}
+
+/* Unresolved-modifier warning (combat tab) */
+.dcc.sheet.actor .dcc-unresolved {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 6px;
+  margin: 8px 0 0;
+  font-family: var(--d-cond);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--d-accent);
+}
+.dcc.sheet.actor .dcc-unresolved code {
+  padding: 0 4px;
+  border: 1px solid var(--d-line-soft);
+  border-radius: 3px;
+  background: var(--d-field);
+  color: var(--d-ink);
+  font-size: 11px;
+}
+
+/* Item / buff lists (combat + skills tabs). Each list sets its grid columns;
+   head and rows share them. */
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-list { margin-top: 8px; }
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-bar--list { justify-content: space-between; }
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-addbtn {
+  flex: none;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 1px 7px;
+  border: 1px solid var(--d-bar-text);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--d-bar-text);
+  font-family: var(--d-cond);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-addbtn:not(:disabled):hover { border-color: var(--d-accent); color: var(--d-accent); }
+/* Each list is its own container: Skills / Spells / Vehicle Weapons switch to two-line rows when the
+   list itself is too narrow (see "Narrow item lists" below), whatever sheet or column it sits in. */
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-ilist { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; container: ilist / inline-size; }
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-ihead,
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-irow {
+  display: grid;
+  align-items: center;
+  gap: 3px 6px;
+  padding: 3px 2px;
+}
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-ihead {
+  border-bottom: 1px solid var(--d-line);
+  font-family: var(--d-cond);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--d-ink-dim);
+}
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-ihead > span:not(:nth-child(-n+2)),
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-icell { text-align: center; }
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-irow { border-bottom: 1px solid var(--d-line-soft); }
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-irow:last-child { border-bottom: none; }
+.dcc.sheet.actor .dcc-irow--off { opacity: 0.55; }
+.dcc.sheet.actor .dcc-ilist--attacks > li { grid-template-columns: minmax(0, 1fr) 44px 40px 56px minmax(96px, auto) 44px; }
+.dcc.sheet.actor .dcc-ilist--attacks .dcc-ihead > span:nth-child(2) { text-align: center; }
+/* Skills / Spells: the self-labelling flags cell (check type, mana, passive / on / hot chips) sits
+   after the roll button, or wraps under the name on a narrow list (see "Narrow item lists"). Its
+   column is a fixed width, not max-content: every row (and the header, which has no flags cell) is
+   its own grid, so a content-sized column would differ per row and misalign the header. */
+.dcc.sheet.actor .dcc-ilist--skills > li {
+  grid-template-columns: 18px minmax(0, 1fr) 36px 56px 56px 292px 44px;
+  grid-template-areas: "mark name stat rank roll flags ctl";
+}
+.dcc.sheet.actor .dcc-ilist--spells > li {
+  grid-template-columns: 18px minmax(0, 1fr) 36px 56px 68px 348px 44px;
+  grid-template-areas: "mark name stat rank roll flags ctl";
+}
+.dcc.sheet.actor .dcc-ilist--inventory > li { grid-template-columns: minmax(0, 1fr) 48px 84px 44px 36px 36px 44px; }
+.dcc.sheet.actor .dcc-ilist--buffs > li { grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1.4fr) 44px; }
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-ilist > .dcc-iempty {
+  display: block;
+  padding: 6px 4px;
+  font-family: var(--d-cond);
+  font-size: 11px;
+  color: var(--d-ink-faint);
+}
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) button.dcc-iname {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  line-height: normal;
+  text-align: left;
+  font-family: var(--d-cond);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--d-ink);
+  cursor: pointer;
+}
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-iname img { flex: none; border: none; border-radius: 2px; background: var(--d-art-bg); }
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-iname span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) button.dcc-iname:disabled { cursor: default; }
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) button.dcc-iname:hover,
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) button.dcc-iname:focus { background: none; box-shadow: none; }
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) button.dcc-iname:focus-visible { outline: 2px solid var(--d-accent); outline-offset: 1px; }
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-iname:hover span,
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-iname:focus-visible span { color: var(--d-accent); text-decoration: underline; }
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-icell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-family: var(--d-cond);
+  font-size: 13px;
+  font-weight: 700;
+}
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-icell .dcc-rollbtn { padding: 3px 7px; font-size: 12px; text-transform: none; }
+.dcc.sheet.actor .dcc-rollbtn--wide { white-space: nowrap; }
+/* A damage label ("3d10 +12 bludgeoning") wraps inside its column rather than spilling over the
+   To Hit button and the row's edit control. */
+.dcc.sheet.actor .dcc-icell.dcc-c-dmg { min-width: 0; }
+.dcc.sheet.actor .dcc-c-dmg .dcc-rollbtn--wide { min-width: 0; max-width: 100%; line-height: 1.15; white-space: normal; overflow-wrap: anywhere; }
+.dcc.sheet.actor .dcc-ispell { font-size: 10px; color: var(--d-ink-dim); }
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) input.dcc-iinput {
+  width: 38px;
+  height: 22px;
+  padding: 0 2px;
+  border: 1px solid var(--d-line);
+  border-radius: 3px;
+  background: var(--d-paper-2);
+  color: var(--d-ink);
+  font-family: var(--d-cond);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+.dcc.sheet.actor .dcc-ieff {
+  font-size: 11px;
+  color: var(--d-accent);
+}
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) select.dcc-iselect {
+  width: 100%;
+  height: 22px;
+  padding: 0 2px;
+  border: 1px solid var(--d-line-soft);
+  border-radius: 3px;
+  background: var(--d-field);
+  color: var(--d-ink);
+  font-family: var(--d-cond);
+  font-size: 11px;
+}
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) input.dcc-icheck { width: 14px; height: 14px; margin: 0; }
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-ichanges {
+  overflow: hidden;
+  font-family: var(--d-cond);
+  font-size: 11px;
+  color: var(--d-ink-dim);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-icontrols { display: flex; justify-content: flex-end; gap: 2px; }
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-irow button.icon,
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-irow button.icon:hover {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+  color: var(--d-ink-dim);
+  font-size: 12px;
+}
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-irow button.icon:not(:disabled):hover { color: var(--d-accent); }
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-irow button.icon.dcc-itoggle { font-size: 16px; }
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-irow:not(.dcc-irow--off) button.icon.dcc-itoggle { color: var(--d-accent); }
+
+/* Inventory tab: paper doll (gear slots) | accessories, then the item list.
+   Loose port of character-sheet/source/sections/_inventory.pug (+scss). */
+.dcc.sheet.actor .dcc-ilist--inventory .dcc-ihead > span:nth-child(2) { text-align: center; }
+.dcc.sheet.actor select.dcc-iselect--worn { border-color: var(--d-accent); font-weight: 700; }
+.dcc.sheet.actor select.dcc-iselect--conflict { border-style: dashed; color: var(--d-ink-dim); }
+.dcc.sheet.actor .dcc-invtop { display: grid; grid-template-columns: 3fr 2fr; gap: 8px; }
+.dcc.sheet.actor .dcc-doll {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-areas:
+    ".    head  ."
+    "arms torso hands"
+    ".    legs  ."
+    ".    feet  .";
+  gap: 5px;
+}
+.dcc.sheet.actor .dcc-doll-slot--head { grid-area: head; }
+.dcc.sheet.actor .dcc-doll-slot--torso { grid-area: torso; }
+.dcc.sheet.actor .dcc-doll-slot--arms { grid-area: arms; }
+.dcc.sheet.actor .dcc-doll-slot--hands { grid-area: hands; }
+.dcc.sheet.actor .dcc-doll-slot--legs { grid-area: legs; }
+.dcc.sheet.actor .dcc-doll-slot--feet { grid-area: feet; }
+.dcc.sheet.actor .dcc-doll-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 0;
+  padding: 3px 4px;
+  border: 1px dashed var(--d-line-soft);
+  border-radius: 3px;
+  background: var(--d-paper-2);
+}
+.dcc.sheet.actor .dcc-doll-slot.filled { border: 1px solid var(--d-line); background: var(--d-field); }
+.dcc.sheet.actor .dcc-doll-occ {
+  max-width: 100%;
+  overflow: hidden;
+  font-family: var(--d-cond);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--d-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dcc.sheet.actor .dcc-doll-occ--empty { color: var(--d-ink-faint); font-weight: 400; }
+.dcc.sheet.actor button.dcc-doll-occ,
+.dcc.sheet.actor button.dcc-acc-item {
+  width: auto;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+  line-height: 1.3;
+  cursor: pointer;
+}
+.dcc.sheet.actor button.dcc-doll-occ:hover,
+.dcc.sheet.actor button.dcc-acc-item:hover { color: var(--d-accent); text-decoration: underline; }
+.dcc.sheet.actor .dcc-acc-count { font-weight: 400; letter-spacing: 0; opacity: 0.75; }
+.dcc.sheet.actor .dcc-acc { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.dcc.sheet.actor button.dcc-acc-item {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  padding: 1px 6px;
+  border-left: 2px solid var(--d-accent);
+  border-radius: 0;
+  font-family: var(--d-cond);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--d-ink);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dcc.sheet.actor .dcc-acc > .dcc-iempty {
+  padding: 4px;
+  font-family: var(--d-cond);
+  font-size: 11px;
+  color: var(--d-ink-faint);
+}
+.dcc.sheet.actor .dcc-addbtns { display: flex; gap: 4px; }
+
+/* Hotlist strip (header bottom, every tab). */
+.dcc.sheet.actor .dcc-hot-grid { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 5px; }
+.dcc.sheet.actor .dcc-hot-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: 30px;
+  margin: 0;
+  padding: 2px 3px;
+  border: 1px solid var(--d-line-soft);
+  border-radius: 3px;
+  background: var(--d-paper-2);
+  box-shadow: none;
+  font-family: var(--d-cond);
+  text-align: center;
+}
+.dcc.sheet.actor button.dcc-hot-cell.filled { border-color: var(--d-line); background: var(--d-field); cursor: pointer; }
+.dcc.sheet.actor button.dcc-hot-cell.filled:hover { border-color: var(--d-accent); }
+.dcc.sheet.actor button.dcc-hot-cell:focus-visible { outline: 2px solid var(--d-accent); outline-offset: 1px; }
+.dcc.sheet.actor .dcc-hot-cell .it {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.12;
+  color: var(--d-ink);
+  word-break: break-word;
+}
+.dcc.sheet.actor .dcc-hot-cell .quantity {
+  position: absolute;
+  top: 0;
+  right: 2px;
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--d-accent);
+}
+
+/* Disabled / read-only states (non-owners, locked sheets). The portrait only
+   carries data-action="editImage" when the sheet is editable. */
+.dcc.sheet.actor .dcc-statmod:disabled,
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-rollbtn:disabled,
+.dcc.sheet.actor .dcc-fbox button.bx:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-portrait:not([data-action]) { cursor: default; }
+
+/* Bio tab (port of sections/_bio.pug +scss): four narrative fields in a
+   2-col grid, Notes full width. Each is a toggled core <prose-mirror>; core
+   sizes it by --min-height and overlays .editor-content absolutely. */
+.dcc.sheet.actor .dcc-bio { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.dcc.sheet.actor .dcc-bio-f {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--d-line);
+  border-radius: 3px;
+  background: var(--d-field);
+}
+.dcc.sheet.actor .dcc-bio-f--wide { grid-column: 1 / -1; }
+.dcc.sheet.actor .dcc-bio-lab {
+  font-family: var(--d-cond);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--d-ink);
+}
+.dcc.sheet.actor .dcc-bio prose-mirror,
+.dcc.sheet.actor .dcc-bio-view {
+  padding: 4px 6px;
+  border: 1px solid var(--d-line-soft);
+  border-radius: 3px;
+  background: var(--d-paper-2);
+  color: var(--d-ink);
+  font-size: var(--font-size-13);
+  line-height: 1.4;
+}
+.dcc.sheet.actor .dcc-bio prose-mirror { --min-height: 110px; }
+.dcc.sheet.actor .dcc-bio-f--wide prose-mirror { --min-height: 180px; }
+/* An open editor gains the menu bar; give the text area room under it. */
+.dcc.sheet.actor .dcc-bio prose-mirror.active { --min-height: 220px; }
+.dcc.sheet.actor .dcc-bio-f--wide prose-mirror.active { --min-height: 280px; }
+.dcc.sheet.actor .dcc-bio prose-mirror:focus-within { border-color: var(--d-accent); }
+.dcc.sheet.actor .dcc-bio-view { min-height: 40px; }
+.dcc.sheet.actor .dcc-bio-view > :first-child { margin-top: 0; }
+.dcc.sheet.actor .dcc-bio-view > :last-child { margin-bottom: 0; }
+
+.dcc.sheet.actor .dcc-bio-empty { color: var(--d-ink-faint); }
+
+/* ── Mob + Vehicle stat blocks (R20 mode = mob / vehicle): no tabs ── */
+/* R20 _modes.scss: a full-width header, then a two-column card flow. The body part's wrapper is
+   display: contents, so its header and .dcc-col columns are cells of this grid; the Notes part sits
+   under the right column. The window content scrolls as one page. A narrow window stacks to one
+   column (container query on the application). */
+.dcc.sheet.actor.mob,
+.dcc.sheet.actor.vehicle { container-type: inline-size; }
+.dcc.sheet.actor.mob .window-content,
+.dcc.sheet.actor.vehicle .window-content {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* max-content, not auto: a .dcc-box clips (overflow: hidden) so its automatic minimum height is 0,
+     and when the page outgrows the window, auto rows shrank to that and the boxes stacked on each other. */
+  grid-template-rows: max-content max-content max-content minmax(0, 1fr);
+  grid-template-areas:
+    "head head"
+    "left right"
+    "left notes"
+    "left .";
+  align-items: start;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+@container (max-width: 600px) {
+  .dcc.sheet.actor.mob .window-content,
+  .dcc.sheet.actor.vehicle .window-content {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: max-content max-content max-content max-content minmax(0, 1fr);
+    grid-template-areas: "head" "left" "right" "notes" ".";
+  }
+}
+.dcc.sheet.actor .dcc-mob,
+.dcc.sheet.actor .dcc-vehicle { display: contents; }
+.dcc.sheet.actor.mob .dcc-header,
+.dcc.sheet.actor.vehicle .dcc-header { grid-area: head; }
+.dcc.sheet.actor .dcc-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.dcc.sheet.actor .dcc-col-l { grid-area: left; }
+.dcc.sheet.actor .dcc-col-r { grid-area: right; }
+.dcc.sheet.actor .dcc-mob-notes,
+.dcc.sheet.actor .dcc-vehicle-notes { grid-area: notes; }
+.dcc.sheet.actor .dcc-mob .dcc-list,
+.dcc.sheet.actor .dcc-vehicle .dcc-list { margin-top: 0; }
+
+/* Mob strip (port of sections/_combat.pug .dcc-mobstrip): stat mods, then static targets. */
+.dcc.sheet.actor .dcc-mobstrip {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--d-line);
+  border-radius: 5px;
+  background: var(--d-paper-2);
+}
+.dcc.sheet.actor .dcc-mobline { display: flex; flex-wrap: wrap; justify-content: space-around; gap: 6px 10px; }
+.dcc.sheet.actor .dcc-mobstat,
+.dcc.sheet.actor .dcc-mobtarget { display: inline-flex; align-items: baseline; gap: 5px; }
+.dcc.sheet.actor .dcc-mobval {
+  font-family: var(--d-cond);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--d-ink);
+}
+.dcc.sheet.actor .dcc-mobtarget .dcc-mobval,
+.dcc.sheet.actor .dcc-target {
+  min-width: 34px;
+  border: 2px solid var(--d-accent);
+  border-radius: 3px;
+  background: var(--d-field);
+  color: var(--d-accent);
+}
+.dcc.sheet.actor .dcc-mobtarget .dcc-mobval {
+  padding: 1px 6px;
+  text-align: center;
+}
+
+/* Abilities (base + mod only): a grid of small cards (R20 _modes.scss). */
+.dcc.sheet.actor .dcc-mob .dcc-stat { align-items: center; padding: 4px; }
+.dcc.sheet.actor .dcc-mob .dcc-stat .nm { align-self: stretch; }
+.dcc.sheet.actor .dcc-mob .dcc-stats { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+.dcc.sheet.actor .dcc-mob .dcc-statmod { padding: 1px 6px; font-size: 15px; }
+.dcc.sheet.actor .dcc-mob .dcc-statbase { width: 100%; max-width: 52px; }
+/* A mob rarely has all 10 slots: the per-slot percentage labels are noise (R20 _modes.scss). */
+.dcc.sheet.actor .dcc-mob .dcc-hb-slot .pct { display: none; }
+.dcc.sheet.actor .dcc-mob .dcc-combat-top .cm { flex-wrap: wrap; }
+
+/* Lean item lists (mob): no mark / stat+rank (attacks) / check / passive / hotlist columns. */
+/* Damage is a fixed column (its label wraps): an auto column grew to fit the label and squeezed the name. */
+.dcc.sheet.actor .dcc-ilist--attacks.dcc-ilist--lean > li { grid-template-columns: minmax(0, 1fr) 52px 96px 44px; }
+.dcc.sheet.actor .dcc-ilist--inventory.dcc-ilist--lean > li { grid-template-columns: minmax(0, 1fr) 48px 44px 44px; }
+.dcc.sheet.actor .dcc-ilist--skills.dcc-ilist--lean > li {
+  grid-template-columns: minmax(0, 1fr) 36px 56px 56px 66px 44px;
+  grid-template-areas: "name stat rank roll flags ctl";
+}
+.dcc.sheet.actor .dcc-ilist--spells.dcc-ilist--lean > li {
+  grid-template-columns: minmax(0, 1fr) 36px 56px 68px 66px 44px;
+  grid-template-areas: "name stat rank roll flags ctl";
+}
+.dcc.sheet.actor .dcc-ilist--lean .dcc-ihead > span:nth-child(2) { text-align: center; }
+/* Static To-Hit target (no roll): crawlers roll against it. */
+.dcc.sheet.actor .dcc-target {
+  display: inline-block;
+  padding: 2px 6px;
+  font-family: var(--d-cond);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+/* ── Vehicle / Mount stat block (port of views/_vehicle.pug; page layout shared with the mob above) ── */
+.dcc.sheet.actor .dcc-vehicle select.dcc-fline {
+  width: 100%;
+  height: 24px;
+  padding: 0 2px 2px;
+  border: none;
+  border-bottom: 1px solid var(--d-line);
+  border-radius: 0;
+  background: transparent;
+  font-family: var(--d-cond);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--d-ink);
+}
+.dcc.sheet.actor .dcc-vehicle select.dcc-fline:focus-visible { outline: 2px solid var(--d-accent); outline-offset: 1px; }
+.dcc.sheet.actor .dcc-vrow { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 10px; padding: 4px 0; }
+.dcc.sheet.actor .dcc-vrow > .dcc-rollbtn { margin-bottom: 2px; }
+.dcc.sheet.actor .dcc-vfield { flex: 0 1 auto; min-width: 80px; }
+.dcc.sheet.actor .dcc-vfield.dcc-field--num { width: 88px; }
+.dcc.sheet.actor .dcc-vderived {
+  display: inline-block;
+  min-width: 40px;
+  height: 24px;
+  padding: 0 4px;
+  font-family: var(--d-cond);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 24px;
+  color: var(--d-accent);
+}
+.dcc.sheet.actor .dcc-vcheck {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+  padding-bottom: 5px;
+  font-family: var(--d-cond);
+  font-size: 12px;
+  font-weight: 700;
+}
+.dcc.sheet.actor .dcc-vcheck input { flex: none; width: 16px; height: 16px; margin: 0; accent-color: var(--d-accent); }
+.dcc.sheet.actor .dcc-vcheck input:focus-visible { outline: 2px solid var(--d-accent); outline-offset: 1px; }
+
+/* Attacked-vehicle rules strip (display only). */
+/* Vehicle / Mount card (R20 views/_vehicle.pug): the stat rows, rules strip and unresolved list. */
+.dcc.sheet.actor .dcc-vcard { display: flex; flex-direction: column; gap: 6px; }
+.dcc.sheet.actor .dcc-vcard .dcc-bar { margin: 0; }
+.dcc.sheet.actor .dcc-vstrip { display: flex; flex-wrap: wrap; gap: 4px; }
+.dcc.sheet.actor .dcc-vchip {
+  padding: 2px 7px;
+  border: 1px solid var(--d-line);
+  border-radius: 10px;
+  background: var(--d-paper-2);
+  font-family: var(--d-cond);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--d-ink);
+}
+.dcc.sheet.actor .dcc-vchip.dim { border-color: var(--d-line-soft); font-weight: 400; color: var(--d-ink-dim); }
+.dcc.sheet.actor .dcc-vchip .val { font-weight: 800; color: var(--d-accent); }
+
+/* Vehicle Weapons: name, gunner, skill, rank, to hit, damage, controls. Mount Attacks drop gunner + skill;
+   the mount selector is one class more specific than the vehicle one, so source order doesn't matter. */
+.dcc.sheet.actor .dcc-ilist--attacks.dcc-ilist--vehicle > li {
+  grid-template-columns: minmax(0, 1fr) 84px 96px 40px 56px 96px 44px;
+  grid-template-areas: "name gun skill rank tohit dmg ctl";
+}
+.dcc.sheet.actor .dcc-ilist--attacks.dcc-ilist--vehicle.dcc-ilist--mount > li {
+  grid-template-columns: minmax(0, 1fr) 40px 56px 96px 44px;
+  grid-template-areas: "name rank tohit dmg ctl";
+}
+.dcc.sheet.actor input.dcc-iinput--text { width: 100%; text-align: left; font-weight: 400; }
+
+/* ── Narrow item lists: two lines per row ──
+   Skills, Spells and Vehicle Weapons place every cell by grid area (dcc-c-* classes; the name button,
+   mark box and edit/delete controls by their own classes), so a container query only swaps the
+   template. Each threshold is the list's one-line fixed columns + gaps + a ~100px name: below it the
+   row splits into the roll line (name · rolls · edit/delete) and a settings line under it. Scrolling
+   tabs reserve their scrollbar gutter so a taller two-line list can't flip itself back. */
+.dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells, .dcc-ilist--vehicle) > li > :is(.dcc-imark, .dcc-c-mark) { grid-area: mark; }
+.dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells, .dcc-ilist--vehicle) > li > :is(.dcc-iname, .dcc-c-name) { grid-area: name; }
+.dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells, .dcc-ilist--vehicle) > li > :is(.dcc-icontrols, .dcc-c-ctl) { grid-area: ctl; }
+.dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells, .dcc-ilist--vehicle) > li > .dcc-c-stat { grid-area: stat; }
+.dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells, .dcc-ilist--vehicle) > li > .dcc-c-rank { grid-area: rank; }
+.dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells, .dcc-ilist--vehicle) > li > .dcc-c-roll { grid-area: roll; }
+.dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells, .dcc-ilist--vehicle) > li > .dcc-c-flags { grid-area: flags; }
+.dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells, .dcc-ilist--vehicle) > li > .dcc-c-gun { grid-area: gun; }
+.dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells, .dcc-ilist--vehicle) > li > .dcc-c-skill { grid-area: skill; }
+.dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells, .dcc-ilist--vehicle) > li > .dcc-c-tohit { grid-area: tohit; }
+.dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells, .dcc-ilist--vehicle) > li > .dcc-c-dmg { grid-area: dmg; }
+/* Header labels follow their cells: text inputs / selects that fill a cell read left-aligned. */
+.dcc.sheet.actor .dcc-ihead > span:is(.dcc-c-stat, .dcc-c-rank, .dcc-c-roll, .dcc-c-tohit, .dcc-c-dmg) { text-align: center; }
+
+/* Flags cell: check-type select, mana chip and toggle chips, wrapping as one group. */
+.dcc.sheet.actor .dcc-icell.dcc-c-flags { flex-wrap: wrap; justify-content: flex-start; gap: 4px; min-width: 0; }
+.dcc.sheet.actor .dcc-c-flags select.dcc-iselect { width: auto; max-width: 110px; }
+.dcc.sheet.actor .dcc-c-flags .dcc-vchip { padding: 1px 7px; line-height: 16px; }
+/* Toggle chip: a label wrapping a visually hidden checkbox (data-field still drives the update, and
+   the checkbox keeps focus + screen-reader state). Filled = on; outlined = off. */
+.dcc.sheet.actor .dcc-tchip {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border: 1px solid var(--d-line);
+  border-radius: 10px;
+  background: transparent;
+  font-family: var(--d-cond);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+  color: var(--d-ink-dim);
+  cursor: pointer;
+  user-select: none;
+}
+.dcc.sheet.actor .dcc-tchip input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }
+/* Explicit text for each state: "✓ On hotlist" when set, "+ Hotlist" (the action) when not. */
+.dcc.sheet.actor .dcc-tchip i { font-size: 9px; }
+.dcc.sheet.actor .dcc-tchip-on { display: none; }
+.dcc.sheet.actor .dcc-tchip:has(input:checked) { border-color: var(--d-hot); background: var(--d-hot); color: #fff; }
+.dcc.sheet.actor .dcc-tchip:has(input:checked) .dcc-tchip-on { display: inline; }
+.dcc.sheet.actor .dcc-tchip:has(input:checked) .dcc-tchip-off { display: none; }
+.dcc.sheet.actor .dcc-tchip:not(:has(input:checked)):hover { border-color: var(--d-accent); color: var(--d-accent); }
+.dcc.sheet.actor .dcc-tchip:has(input:focus-visible) { outline: 2px solid var(--d-accent); outline-offset: 1px; }
+.dcc.sheet.actor .dcc-tchip:has(input:disabled) { cursor: default; }
+.dcc.sheet.actor .dcc-tchip:not(:has(input:checked)):has(input:disabled):hover { border-color: var(--d-line); color: var(--d-ink-dim); }
+.dcc.sheet.actor .dcc-ilist > .dcc-ihead > span:is(.dcc-c-name, .dcc-c-gun, .dcc-c-skill) { text-align: left; }
+
+/* In every two-line layout the edit / delete controls span both lines in a column of their own, so no
+   settings-line cell (and no header label) ever sits in the controls column. The line-1 roll button
+   spans the columns above the settings-line checkboxes instead. */
+/* Skills / Spells keep one header line (Name · Stat · Rank · Bonus/Cast): only the self-labelling
+   flags cell drops to line 2, under the name. */
+@container ilist (max-width: 719px) {
+  .dcc.sheet.actor .dcc-ilist--spells:not(.dcc-ilist--lean) > li {
+    grid-template-columns: 18px minmax(0, 1fr) 36px 56px 68px 44px;
+    grid-template-areas:
+      "mark name  stat  rank  roll  ctl"
+      ".    flags flags flags flags ctl";
+  }
+}
+@container ilist (max-width: 649px) {
+  .dcc.sheet.actor .dcc-ilist--skills:not(.dcc-ilist--lean) > li {
+    grid-template-columns: 18px minmax(0, 1fr) 36px 56px 56px 44px;
+    grid-template-areas:
+      "mark name  stat  rank  roll  ctl"
+      ".    flags flags flags flags ctl";
+  }
+}
+@container ilist (max-width: 409px) {
+  .dcc.sheet.actor .dcc-ilist--spells.dcc-ilist--lean > li {
+    grid-template-columns: minmax(0, 1fr) 36px 56px 68px 44px;
+    grid-template-areas:
+      "name  stat  rank  roll  ctl"
+      "flags flags flags flags ctl";
+  }
+}
+@container ilist (max-width: 389px) {
+  .dcc.sheet.actor .dcc-ilist--skills.dcc-ilist--lean > li {
+    grid-template-columns: minmax(0, 1fr) 36px 56px 56px 44px;
+    grid-template-areas:
+      "name  stat  rank  roll  ctl"
+      "flags flags flags flags ctl";
+  }
+}
+@container ilist (max-width: 549px) {
+  .dcc.sheet.actor .dcc-ilist--vehicle:not(.dcc-ilist--mount) > li {
+    grid-template-columns: 72px minmax(0, 1fr) 44px 56px 28px 44px;
+    grid-template-areas:
+      "name name  tohit dmg   dmg  ctl"
+      "gun  skill skill skill rank ctl";
+  }
+}
+@container ilist (max-width: 359px) {
+  .dcc.sheet.actor .dcc-ilist--attacks.dcc-ilist--vehicle.dcc-ilist--mount > li {
+    grid-template-columns: 40px 44px minmax(0, 1fr) 44px;
+    grid-template-areas:
+      "name name  name ctl"
+      "rank tohit dmg  ctl";
+  }
+}
+/* PC Attacks stay one line; in a narrow list the damage column stops growing to fit its label (it wraps). */
+@container ilist (max-width: 479px) {
+  .dcc.sheet.actor .dcc-ilist--attacks:not(.dcc-ilist--lean, .dcc-ilist--vehicle) > li { grid-template-columns: minmax(0, 1fr) 44px 40px 56px 96px 44px; }
+}
+@container ilist (max-width: 359px) {
+  .dcc.sheet.actor .dcc-ilist--mount > li > .dcc-c-dmg { justify-content: flex-start; text-align: left; }
+}
+
+/* Crew rows (port of the R20 .dcc-crewrow card): name, role, HB / DR, remove; quick-roll selects below. */
+.dcc.sheet.actor .dcc-vcrew { display: flex; flex-direction: column; gap: 6px; }
+.dcc.sheet.actor .dcc-vcrew-list { display: flex; flex-direction: column; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.dcc.sheet.actor .dcc-vcrew .dcc-iempty {
+  margin: 0;
+  padding: 2px 4px;
+  font-family: var(--d-cond);
+  font-size: 11px;
+  color: var(--d-ink-faint);
+}
+.dcc.sheet.actor .dcc-crewrow {
+  border: 1px solid var(--d-line-soft);
+  border-radius: 4px;
+  background: var(--d-field);
+}
+.dcc.sheet.actor .dcc-crewhead,
+.dcc.sheet.actor .dcc-crewbody { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 5px 8px; }
+.dcc.sheet.actor .dcc-crewbody { padding-top: 0; }
+/* Fixed head layout, whatever the name length: name · role · remove, then HB · DR. */
+.dcc.sheet.actor .dcc-crewhead {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    "name name name role remove"
+    "hb   dr   .    .    .";
+  gap: 4px 12px;
+}
+.dcc.sheet.actor .dcc-crewhead > .dcc-crew-name { grid-area: name; }
+.dcc.sheet.actor .dcc-crewhead > .dcc-crew-role { grid-area: role; }
+.dcc.sheet.actor .dcc-crewhead > .dcc-crew-hb { grid-area: hb; }
+.dcc.sheet.actor .dcc-crewhead > .dcc-crew-dr { grid-area: dr; }
+.dcc.sheet.actor .dcc-crewhead > .dcc-row-remove { grid-area: remove; justify-self: end; }
+/* The name is a .dcc-iname button (open the actor), or a plain span on a missing / limited row. */
+.dcc.sheet.actor .dcc-crew-name { flex: 1 1 120px; min-width: 0; }
+.dcc.sheet.actor span.dcc-crew-name {
+  overflow: hidden;
+  font-family: var(--d-cond);
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--d-ink);
+}
+.dcc.sheet.actor .dcc-crewrow--missing .dcc-crew-name { font-style: italic; color: var(--d-ink-faint); }
+.dcc.sheet.actor select.dcc-iselect.dcc-crew-role { flex: none; width: 96px; }
+.dcc.sheet.actor .dcc-vchip.dcc-crew-role { flex: none; }
+.dcc.sheet.actor select.dcc-iselect.dcc-crew-roll { flex: 1 1 150px; width: auto; min-width: 0; }
+.dcc.sheet.actor .dcc-crew-stat { display: flex; flex: none; align-items: baseline; gap: 3px; }
+.dcc.sheet.actor .dcc-crew-stat .dcc-vderived { min-width: 0; height: auto; line-height: normal; }
+
+/* Crewing line on a PC / Mob sheet (read-only; each chip opens its vehicle). */
+.dcc.sheet.actor .dcc-crewing { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; padding-top: 4px; }
+
+/* Button reset shared by the row Remove icon (crew, GM screen roster) and the Crewing chips (core button chrome off). */
+.dcc.sheet.actor button.dcc-row-remove,
+.dcc.sheet.actor button.dcc-row-remove:hover,
+.dcc.sheet.actor button.dcc-crewing-chip,
+.dcc.sheet.actor button.dcc-crewing-chip:hover {
+  flex: none;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  line-height: normal;
+  box-shadow: none;
+  cursor: pointer;
+}
+.dcc.sheet.actor button.dcc-row-remove,
+.dcc.sheet.actor button.dcc-row-remove:hover {
+  width: 22px;
+  height: 22px;
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--d-ink-dim);
+  font-size: 12px;
+}
+.dcc.sheet.actor button.dcc-row-remove:hover { color: var(--d-accent); }
+.dcc.sheet.actor button.dcc-crewing-chip:hover { border-color: var(--d-accent); }
+.dcc.sheet.actor button.dcc-row-remove:focus-visible,
+.dcc.sheet.actor button.dcc-crewing-chip:focus-visible { outline: 2px solid var(--d-accent); outline-offset: 1px; }
+
+/* ── GM screen (Chunk 8): safehouse, floor-end counter, roster. One part that scrolls on its own
+   (scrollable: ['']); the actor window-content is an overflow:hidden flex column. Colours are
+   --d-* tokens only, so the dark palette above themes it. ── */
+.dcc.sheet.actor .dcc-gmscreen { display: flex; flex: 1 1 auto; flex-direction: column; gap: 8px; min-height: 0; overflow-y: auto; }
+.dcc.sheet.actor .dcc-gmscreen > * { flex: none; }
+.dcc.sheet.actor .dcc-gmscreen .dcc-portrait { width: 64px; height: 64px; }
+.dcc.sheet.actor .dcc-gmscreen .dcc-list { margin-top: 0; }
+.dcc.sheet.actor .dcc-gm-hint {
+  margin: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--d-hot);
+  border-radius: 3px;
+  background: var(--d-paper-2);
+  font-family: var(--d-cond);
+  font-size: 12px;
+  color: var(--d-ink);
+}
+.dcc.sheet.actor .dcc-gm-hint > i { color: var(--d-accent); }
+.dcc.sheet.actor .dcc-gm-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+/* The GM Screen card (R20 .dcc-a-gmscreen): bar, floor controls, then the roster under a sub-heading. */
+.dcc.sheet.actor .dcc-gmcard { display: flex; flex-direction: column; gap: 8px; }
+.dcc.sheet.actor .dcc-gmcard .dcc-bar { margin: 0; }
+.dcc.sheet.actor .dcc-subhead {
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--d-line-soft);
+  color: var(--d-ink-dim);
+  font-family: var(--d-cond);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.dcc.sheet.actor .dcc-gm-check {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--d-cond);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--d-ink);
+  cursor: pointer;
+}
+.dcc.sheet.actor .dcc-gm-check input { flex: none; width: 16px; height: 16px; margin: 0; accent-color: var(--d-accent); }
+.dcc.sheet.actor .dcc-gm-check input:focus-visible { outline: 2px solid var(--d-accent); outline-offset: 1px; }
+.dcc.sheet.actor .dcc-gm-counter .val { color: var(--d-accent); }
+.dcc.sheet.actor .dcc-gm-actions { display: flex; flex-wrap: wrap; gap: 5px; margin-left: auto; }
+/* Roster: name, floor, pending, available, remove. */
+.dcc.sheet.actor .dcc-ilist--roster > li { grid-template-columns: minmax(0, 1fr) 48px 56px 72px 30px; }
+.dcc.sheet.actor .dcc-ilist--roster .dcc-ihead > span:nth-child(2) { text-align: center; }
+.dcc.sheet.actor .dcc-ilist--roster .dcc-irow { min-height: 30px; }
+.dcc.sheet.actor .dcc-gm-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-family: var(--d-cond);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--d-ink);
+}
+.dcc.sheet.actor .dcc-gm-name > img { flex: none; border: none; object-fit: contain; border-radius: 2px; background: var(--d-art-bg); }
+.dcc.sheet.actor .dcc-gm-name > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dcc.sheet.actor .dcc-ilist--roster .dcc-icell { font-family: var(--d-cond); font-size: 13px; font-weight: 700; color: var(--d-ink); }
+.dcc.sheet.actor .dcc-ilist--roster .dcc-irow--missing .dcc-gm-name,
+.dcc.sheet.actor .dcc-ilist--roster .dcc-irow--missing .dcc-icell { font-style: italic; font-weight: 400; color: var(--d-ink-faint); }
+.dcc.sheet.actor .dcc-gm-warn { margin-left: 3px; color: var(--d-accent); }
+.dcc.sheet.actor .dcc-ilist--roster button.dcc-row-remove { margin: 0 auto; }
+.dcc.sheet.actor .dcc-gm-drophint {
+  margin: 6px 0 0;
+  font-family: var(--d-cond);
+  font-size: 11px;
+  font-style: italic;
+  color: var(--d-ink-dim);
+}
+
+/* ── Form kit: core form markup ({{formGroup}}, fieldsets, form footers) in the item sheet, the
+   modifier editor (ActiveEffectConfig), Configure Sheet and DCC dialogs. Colours are --d-* tokens
+   only, so the dark palette themes it. ── */
+.dcc:is(.sheet.item, .sheet.effect, .dcc-app) .form-group { margin: 0; }
+.dcc:is(.sheet.item, .sheet.effect, .dcc-app) .form-group > label,
+.dcc:is(.sheet.item, .sheet.effect, .dcc-app) .form-group > .label {
+  font-family: var(--d-cond);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--d-ink-dim);
+}
+.dcc:is(.sheet.item, .sheet.effect, .dcc-app) :is(input:is([type="text"], [type="number"], :not([type])), select, textarea) {
+  border: 1px solid var(--d-line);
+  border-radius: 3px;
+  background: var(--d-field);
+  color: var(--d-ink);
+  font-family: var(--d-cond);
+  font-size: 13px;
+  font-weight: 700;
+}
+.dcc:is(.sheet.item, .sheet.effect, .dcc-app) :is(input:is([type="text"], [type="number"], :not([type])), select) { height: 26px; }
+.dcc:is(.sheet.item, .sheet.effect, .dcc-app) :is(input, select, textarea):focus {
+  border-color: var(--d-accent);
+  outline: none;
+  box-shadow: 0 0 0 1px var(--d-accent);
+}
+.dcc:is(.sheet.item, .sheet.effect, .dcc-app) :is(input, select, textarea)::placeholder { color: var(--d-ink-faint); font-weight: 400; }
+/* Core draws its own checkbox from these variables (accent-color has no effect on it). */
+.dcc:is(.sheet.item, .sheet.effect, .dcc-app) input[type="checkbox"] {
+  --checkbox-size: 16px;
+  --checkbox-background-color: var(--d-paper-2);
+  --checkbox-checked-color: var(--d-hot);
+  --checkbox-checkmark-color: var(--d-bar-text);
+  margin: 0;
+}
+.dcc:is(.sheet.item, .sheet.effect, .dcc-app) :is(input, select, textarea):disabled { opacity: 0.7; }
+.dcc:is(.sheet.item, .sheet.effect, .dcc-app) .hint {
+  margin: 0;
+  font-family: var(--d-cond);
+  font-size: 11px;
+  color: var(--d-ink-dim);
+}
+/* Core fieldsets (Configure Sheet, effect duration) read as a DCC box with its bar. */
+.dcc:is(.sheet.item, .sheet.effect, .dcc-app) fieldset {
+  margin: 0;
+  padding: 0 8px 8px;
+  border: 1px solid var(--d-line);
+  border-radius: 5px;
+  background: var(--d-field);
+}
+.dcc:is(.sheet.item, .sheet.effect, .dcc-app) fieldset > legend {
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: var(--d-bar);
+  color: var(--d-bar-text);
+  font-family: var(--d-cond);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+/* Footer buttons (Submit Changes, dialog Yes / No): the roll-button look; the default action is the black bar. */
+.dcc:is(.sheet.item, .sheet.effect, .dcc-app) .form-footer button {
+  border: 1px solid var(--d-line);
+  border-radius: 3px;
+  background: var(--d-paper-2);
+  color: var(--d-ink);
+  font-family: var(--d-cond);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.dcc:is(.sheet.item, .sheet.effect, .dcc-app) .form-footer button:is([type="submit"], .default) {
+  border-color: var(--d-bar);
+  background: var(--d-bar);
+  color: var(--d-bar-text);
+}
+.dcc:is(.sheet.item, .sheet.effect, .dcc-app) .form-footer button:not(:disabled):hover {
+  border-color: var(--d-accent);
+  color: var(--d-accent);
+  box-shadow: none;
+}
+.dcc:is(.sheet.item, .sheet.effect, .dcc-app) .form-footer button:is([type="submit"], .default):not(:disabled):hover {
+  border-color: var(--d-hot);
+  background: var(--d-hot);
+  color: var(--d-bar-text);
+}
+.dcc:is(.sheet.item, .sheet.effect, .dcc-app) .form-footer button:focus-visible { outline: 2px solid var(--d-accent); outline-offset: 1px; }
+.dcc:is(.sheet.item, .sheet.effect, .dcc-app) .inline-control { color: var(--d-ink-dim); }
+.dcc:is(.sheet.item, .sheet.effect, .dcc-app) .inline-control:not(:disabled):hover { color: var(--d-accent); text-shadow: none; }
+
+/* DCC dialogs (Yes / No confirms, delete confirms). */
+.dcc.dcc-app.dialog .window-content { gap: 10px; padding: 10px 12px; }
+.dcc.dcc-app.dialog .dialog-content { color: var(--d-ink); }
+.dcc.dcc-app.dialog .dialog-content strong { color: var(--d-accent); }
+/* Every dialog button is type="submit"; only the default (autofocused) one gets the black bar. */
+.dcc.dcc-app.dialog .form-footer button:not([autofocus]) {
+  border-color: var(--d-line);
+  background: var(--d-paper-2);
+  color: var(--d-ink);
+}
+
+/* Configure Sheet: the DCC settings fieldset above core's sheet / theme choices. */
+.dcc.dcc-app.dcc-sheet-config .window-content { gap: 8px; padding: 8px 10px; }
+
+/* ── Item sheet (templates/item/*.hbs): identity header, one DCC box per field group, the
+   description, then the modifiers list. The whole window scrolls (window-content is an
+   overflow:hidden flex column in core). ── */
+.dcc.sheet.item .window-content { gap: 8px; padding: 8px 10px; overflow-y: auto; scrollbar-gutter: stable; }
+.dcc.sheet.item .dcc-item-body { display: flex; flex: none; flex-direction: column; gap: 8px; }
+.dcc.sheet.item .dcc-item-header { display: flex; align-items: center; gap: 10px; }
+.dcc.sheet.item .dcc-item-header .dcc-portrait { width: 64px; height: 64px; }
+.dcc.sheet.item .dcc-item-ident { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.dcc.sheet.item .dcc-item-ident input.dcc-fline { height: 30px; font-size: 18px; }
+.dcc.sheet.item .dcc-item-header .dcc-type-badge { align-self: center; }
+.dcc.sheet.item .dcc-item-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px 10px;
+}
+/* Label above its input (the R20 field look), hint under both. */
+.dcc.sheet.item .dcc-item-grid .form-group { flex-direction: column; align-items: stretch; gap: 3px; }
+.dcc.sheet.item .dcc-item-grid .form-group > label { flex: none; line-height: 1.2; }
+.dcc.sheet.item .dcc-item-grid .form-fields { width: 100%; }
+.dcc.sheet.item .dcc-item-wide { grid-column: 1 / -1; }
+/* Checkbox flags: [box] label, hint under the label. */
+.dcc.sheet.item .dcc-item-flags {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 6px 12px;
+}
+.dcc.sheet.item .dcc-item-grid + .dcc-item-flags,
+.dcc.sheet.item .dcc-item-flags + .dcc-item-grid {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--d-line-soft);
+}
+.dcc.sheet.item .dcc-item-flags .form-group {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas: "box label" ". hint";
+  align-items: center;
+  gap: 1px 8px;
+}
+.dcc.sheet.item .dcc-item-flags .form-group > label { grid-area: label; color: var(--d-ink); }
+.dcc.sheet.item .dcc-item-flags .form-fields { grid-area: box; flex: none; }
+.dcc.sheet.item .dcc-item-flags .hint { grid-area: hint; }
+/* Description: a toggled prose-mirror (editors) or the enriched text (viewers). */
+.dcc.sheet.item .dcc-item-desc prose-mirror,
+.dcc.sheet.item .dcc-item-view {
+  padding: 4px 6px;
+  border: 1px solid var(--d-line-soft);
+  border-radius: 3px;
+  background: var(--d-paper-2);
+  color: var(--d-ink);
+  font-size: var(--font-size-13);
+  line-height: 1.4;
+}
+.dcc.sheet.item .dcc-item-desc prose-mirror { --min-height: 120px; }
+.dcc.sheet.item .dcc-item-desc prose-mirror.active { --min-height: 260px; }
+.dcc.sheet.item .dcc-item-desc prose-mirror:focus-within { border-color: var(--d-accent); }
+.dcc.sheet.item .dcc-item-view { min-height: 40px; }
+.dcc.sheet.item .dcc-item-view > :first-child { margin-top: 0; }
+.dcc.sheet.item .dcc-item-view > :last-child { margin-bottom: 0; }
+.dcc.sheet.item .dcc-item-empty { color: var(--d-ink-faint); }
+/* Modifiers list (the actor Buffs list layout): name, changes, inactive badge, controls. */
+.dcc.sheet.item .dcc-item-effects { flex: none; }
+.dcc.sheet.item .dcc-item-effects .dcc-list { margin-top: 0; }
+.dcc.sheet.item .dcc-ilist--effects > li { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto 44px; }
+.dcc.sheet.item .dcc-irow--off { opacity: 0.55; }
+.dcc.sheet.item .dcc-effect-badge {
+  padding: 0 5px;
+  border: 1px solid var(--d-ink-faint);
+  border-radius: 3px;
+  color: var(--d-ink-dim);
+  font-family: var(--d-cond);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ── Modifier editor (DCCActiveEffectConfig = core ActiveEffectConfig markup). ── */
+.dcc.sheet.effect .window-content { gap: 8px; padding: 8px 10px; }
+.dcc.sheet.effect .sheet-header { display: flex; align-items: center; gap: 10px; }
+.dcc.sheet.effect .sheet-header img {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  border: 1px solid var(--d-line);
+  border-radius: 4px;
+  background: var(--d-art-bg);
+  cursor: pointer;
+}
+.dcc.sheet.effect .sheet-header input[name="name"] {
+  flex: 1;
+  height: 30px;
+  padding: 0 4px 2px;
+  border: none;
+  border-bottom: 1px solid var(--d-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 18px;
+}
+.dcc.sheet.effect nav.sheet-tabs > a { display: flex; align-items: center; justify-content: center; gap: 5px; }
+.dcc.sheet.effect .tab[data-tab] {
+  padding: 8px;
+  border: 1px solid var(--d-line);
+  border-top: none;
+  border-radius: 0 0 5px 5px;
+  background: var(--d-field);
+}
+.dcc.sheet.effect .tab[data-tab="details"] .form-group { padding: 4px 0; border-bottom: 1px solid var(--d-line-soft); }
+.dcc.sheet.effect .tab[data-tab="details"] .form-group:last-child { border-bottom: none; }
+.dcc.sheet.effect .tab[data-tab="details"] prose-mirror { border: 1px solid var(--d-line-soft); border-radius: 3px; background: var(--d-paper-2); }
+.dcc.sheet.effect .tab[data-tab="duration"] fieldset { border-color: var(--d-line-soft); }
+/* Changes table: the item-list head / row look (dcc-ihead / dcc-irow). */
+.dcc.sheet.effect .tab.changes > header {
+  padding: 3px 2px;
+  border-bottom: 1px solid var(--d-line);
+  font-family: var(--d-cond);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--d-ink-dim);
+}
+.dcc.sheet.effect .tab.changes ol[data-changes] > li { padding: 4px 2px; border-bottom: 1px solid var(--d-line-soft); }
+.dcc.sheet.effect .tab.changes ol[data-changes] > li:last-child { border-bottom: none; }

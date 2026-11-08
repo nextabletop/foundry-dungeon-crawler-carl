@@ -1,0 +1,104 @@
+{{!-- GM screen (Chunk 8): party-wide gates for rostered Crawlers. Safehouse is a plain form
+      checkbox (submitOnChange); the floor-end counter is display-only, so the Undo guard can't be
+      bypassed by typing. Core disables every control of a non-editable sheet (Observer players). --}}
+<section class="dcc-gmscreen">
+  <header class="dcc-header dcc-box">
+    <div class="dcc-headgrid">
+      <img class="dcc-portrait" src="{{document.img}}" alt="{{document.name}}" {{#if editable}}data-action="editImage" data-edit="img" data-tooltip="{{localize 'DCC.Sheet.EditImage'}}"{{/if}}>
+      <div class="dcc-headmain">
+        <div class="dcc-fields">
+          <label class="dcc-field dcc-grow-6">
+            <span class="dcc-flabel">{{localize "DCC.Sheet.Name"}}</span>
+            <input class="dcc-fline" type="text" name="name" value="{{document.name}}">
+          </label>
+          <div class="dcc-field dcc-field--num dcc-grow-2">
+            <span class="dcc-flabel">{{localize "DCC.Header.Type"}}</span>
+            <span class="dcc-type-badge">{{localize (concat "TYPES.Actor." document.type)}}</span>
+          </div>
+        </div>
+        {{#unless isConfigured}}
+        <p class="dcc-gm-hint" role="note"><i class="fa-solid fa-circle-info" inert></i> {{localize "DCC.GmScreen.NotConfigured"}}</p>
+        {{/unless}}
+      </div>
+    </div>
+  </header>
+
+  {{!-- The GM Screen card (R20 views/_gmscreen.pug): the floor controls, then the roster. --}}
+  <div class="dcc-box dcc-gmcard">
+    <div class="dcc-bar">{{localize "TYPES.Actor.gmscreen"}}</div>
+    <div class="dcc-gm-controls">
+      <label class="dcc-gm-check">
+        <input type="checkbox" name="system.safehouse" {{checked systemSource.safehouse}}>
+        <span>{{localize "DCC.GmScreen.Safehouse"}}</span>
+      </label>
+      <span class="dcc-advancement-badge dcc-gm-counter">
+        <span class="lbl">{{localize "DCC.GmScreen.FloorEnds"}}</span>
+        <span class="val">{{floorEndSeq}}</span>
+      </span>
+      {{!-- Tooltips on wrapper spans: a disabled button fires no pointer events (as the PC header). --}}
+      <span class="dcc-gm-actions">
+        <span class="dcc-advancement">
+          <button type="button" class="dcc-rollbtn dcc-rollbtn--hot" id="{{@root.rootId}}-gm-endFloor" data-action="gmEndFloor">{{localize "DCC.GmScreen.EndFloor"}}</button>
+        </span>
+        {{!-- undoFloorTooltip is pre-localized (a blocked Undo names the Crawlers). --}}
+        <span class="dcc-advancement" data-tooltip-text="{{undoFloorTooltip}}">
+          <button type="button" class="dcc-rollbtn" id="{{@root.rootId}}-gm-undoFloor" data-action="gmUndoFloor"
+                  {{#unless canUndoFloor}}aria-describedby="{{@root.rootId}}-gm-undoFloor-why"{{/unless}}
+                  {{disabled (not canUndoFloor)}}>{{localize "DCC.GmScreen.UndoFloor"}}</button>
+          {{#unless canUndoFloor}}<span class="dcc-sr-only" id="{{@root.rootId}}-gm-undoFloor-why">{{undoFloorTooltip}}</span>{{/unless}}
+        </span>
+      </span>
+    </div>
+
+
+    {{!-- Roster (rows from gmRosterRows). A deleted actor shows "(missing)" and keeps its Remove
+          button (an entry that is not a Crawler shows "(not a Crawler)"); a cursor above the counter (a cross-client race) is flagged. Ids key on the row index. --}}
+    <div class="dcc-list dcc-gm-roster">
+      <div class="dcc-subhead">{{localize "DCC.GmScreen.Roster"}}</div>
+      <ol class="dcc-ilist dcc-ilist--roster">
+        <li class="dcc-ihead">
+          <span>{{localize "DCC.GmScreen.Col.Name"}}</span>
+          <span>{{localize "DCC.GmScreen.Col.Floor"}}</span>
+          <span>{{localize "DCC.GmScreen.Col.Pending"}}</span>
+          <span>{{localize "DCC.GmScreen.Col.Available"}}</span>
+          <span><span class="dcc-sr-only">{{localize "DCC.GmScreen.Remove"}}</span></span>
+        </li>
+        {{#each roster}}
+        <li class="dcc-irow{{#if missing}} dcc-irow--missing{{/if}}" data-uuid="{{uuid}}">
+          {{#if missing}}
+          <span class="dcc-gm-name" data-tooltip-text="{{uuid}}">{{#if invalid}}{{localize "DCC.GmScreen.Invalid"}}{{else}}{{localize "DCC.GmScreen.Missing"}}{{/if}}</span>
+          <span class="dcc-icell">—</span>
+          <span class="dcc-icell">—</span>
+          <span class="dcc-icell">—</span>
+          {{else}}
+          <span class="dcc-gm-name">
+            <img src="{{img}}" alt="" width="20" height="20">
+            <span>{{name}}</span>
+          </span>
+          <span class="dcc-icell">{{floor}}</span>
+          <span class="dcc-icell">{{pendingLevels}}</span>
+          <span class="dcc-icell">
+            {{available}}
+            {{#if inconsistent}}
+            <i class="fa-solid fa-triangle-exclamation dcc-gm-warn" id="{{@root.rootId}}-gm-row{{@index}}-warn" role="img"
+               data-tooltip="{{localize 'DCC.GmScreen.Inconsistent'}}" aria-label="{{localize 'DCC.GmScreen.Inconsistent'}}"></i>
+            {{/if}}
+          </span>
+          {{/if}}
+          <span class="dcc-icell">
+            {{#if @root.editable}}
+            <button type="button" class="dcc-row-remove" id="{{@root.rootId}}-gm-row{{@index}}-remove" data-action="gmRemove"
+                    data-tooltip="{{localize 'DCC.GmScreen.Remove'}}" aria-label="{{localize 'DCC.GmScreen.Remove'}}">
+              <i class="fa-solid fa-user-minus" inert></i>
+            </button>
+            {{/if}}
+          </span>
+        </li>
+        {{else}}
+        <li class="dcc-iempty">{{localize "DCC.GmScreen.RosterEmpty"}}</li>
+        {{/each}}
+      </ol>
+      <p class="dcc-gm-drophint">{{localize "DCC.GmScreen.DropHint"}}</p>
+    </div>
+  </div>
+</section>

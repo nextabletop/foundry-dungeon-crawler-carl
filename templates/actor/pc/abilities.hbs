@@ -1,0 +1,25 @@
+{{!-- Abilities: the R20 left-hand strip (components/_abilities.pug), one card per stat stacked vertically. --}}
+<aside class="dcc-a-abil dcc-box">
+  <div class="dcc-bar">{{localize "DCC.Abilities"}}</div>
+  <div class="dcc-stats">
+    {{#each stats as |s|}}
+    <div class="dcc-stat">
+      <div class="nm">
+        <span data-tooltip="{{localize s.label}}">{{localize s.abbr}}</span>
+        <button type="button" class="dcc-statmod" data-action="rollAbility" data-stat="{{s.key}}"
+          data-tooltip="{{localize s.label}}" aria-label="{{localize 'DCC.Roll.AbilityLabel' stat=(localize s.label)}}"><span class="pl">+</span>{{s.modifier}}</button>
+      </div>
+      <div class="dcc-stat-cols">
+        <label class="dcc-stat-col">
+          <span class="dcc-flabel">{{localize "DCC.Ability.Unenhanced"}}</span>
+          <input class="dcc-statbase" type="number" step="1" name="system.stats.{{s.key}}.base" value="{{s.base}}">
+        </label>
+        <div class="dcc-stat-col">
+          <span class="dcc-flabel">{{localize "DCC.Ability.Enhanced"}}</span>
+          <span class="dcc-statenh">{{s.enhancement}}</span>
+        </div>
+      </div>
+    </div>
+    {{/each}}
+  </div>
+</aside>

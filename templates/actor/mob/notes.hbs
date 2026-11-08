@@ -1,0 +1,6 @@
+{{!-- Mob Notes (the one bio field a mob keeps). Its own part so an open editor survives
+      re-renders of the stat block (see DCCActorSheetBase#_configureRenderOptions). --}}
+<section class="dcc-mob-notes dcc-box">
+  <div class="dcc-bar">{{localize "DCC.Tab.bio"}}</div>
+  {{> "systems/dungeon-crawler-carl/templates/actor/partials/rich-fields.hbs"}}
+</section>
