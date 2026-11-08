@@ -1,7 +1,7 @@
 {
   "id": "dungeon-crawler-carl",
   "title": "Dungeon Crawler Carl",
-  "description": "Unofficial Dungeon Crawler Carl system (port of the NexTableTop Roll20 sheet).",
+  "description": "Dungeon Crawler Carl system.",
   "version": "0.1.0",
   "compatibility": { "minimum": "14", "verified": "14" },
   "authors": [{ "name": "NexTableTop" }],
@@ -10,7 +10,15 @@
   "languages": [{ "lang": "en", "name": "English", "path": "lang/en.json" }],
   "documentTypes": {
     "Actor": {
-      "pc": { "htmlFields": ["notes", "popularity", "pastTrauma", "looseEnds", "regrets"] },
+      "pc": {
+        "htmlFields": [
+          "notes",
+          "popularity",
+          "pastTrauma",
+          "looseEnds",
+          "regrets"
+        ]
+      },
       "mob": { "htmlFields": ["notes"] },
       "vehicle": { "htmlFields": ["notes"] },
       "gmscreen": {}
