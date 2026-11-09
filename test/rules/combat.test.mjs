@@ -42,9 +42,10 @@ describe('mobToHit (10 + Stat Mod + Floor)', () => {
   });
 });
 
-describe('mobEvade (10 + Dex Mod + Floor)', () => {
+describe('mobEvade (base + Floor)', () => {
   it('adds the floor bonus', () => {
-    expect(mobEvade(2, 5)).toBe(17);
+    expect(mobEvade(2, 5)).toBe(7);
+    expect(mobEvade(0, 5)).toBe(5);
   });
 });
 

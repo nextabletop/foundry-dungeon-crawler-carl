@@ -435,6 +435,17 @@ describe('crewAttackCard (R20 crewAttackRollFields)', () => {
     expect(r.fields.advantage).toBeUndefined();
     expect(r.damage).toBe('1d8 + 4');
   });
+  it('does not recreate a None target for a Mob crew attack', () => {
+    const items = [{ id: 'a', type: 'attack', name: 'Aura', system: {
+      die: '1d6', derived: { toHit: 0, mobToHitNone: true, damageBase: 1 },
+    } }];
+    const attack = crewCacheFrom({ items }).attacks[0];
+    const result = crewAttackCard({ crewName: 'Goblin', attack, mob: true, penalty: -2, floor: 3 }, t);
+    expect(attack.mobToHitNone).toBe(true);
+    expect(result.fields.target).toBeUndefined();
+    expect(result.roll).toBeUndefined();
+    expect(result.damage).toBe('1d6 + 1');
+  });
   it('no penalty and not driving: no penalty line', () => {
     expect(crewAttackCard({ crewName: 'Carl', attack: spear, penalty: 0 }, t).fields.penalty).toBeUndefined();
   });

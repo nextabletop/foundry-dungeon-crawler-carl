@@ -83,6 +83,7 @@ export const crewCacheFrom = ({ statModifiers = {}, items = [] } = {}) => {
       id: idOf(i),
       name: i.name,
       toHit: num(d.toHit),
+      ...(d.mobToHitNone ? { mobToHitNone: true } : {}),
       die: d.damageDice ?? src.die ?? '',
       damageBase: num(d.damageBase),
       damageType: src.damageType ?? '',
@@ -163,7 +164,8 @@ export const crewAttackCard = ({ crewName, attack = {}, mob = false, vehicleName
   const damage = signedFormula(attack.die, num(attack.damageBase));
   if (mob) {
     if (reasons.length) fields.penalty = reasons.join(', ');
-    return { fields: { ...fields, target: mobToHit(hit + aboardPenalty, floor) }, damage };
+    if (!attack.mobToHitNone) fields.target = mobToHit(hit + aboardPenalty, floor);
+    return { fields, damage };
   }
   if (driver) {
     fields.advantage = t('DCC.Vehicle.AdvantageChip.dis');

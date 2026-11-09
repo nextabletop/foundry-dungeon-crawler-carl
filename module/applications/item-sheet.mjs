@@ -130,6 +130,7 @@ export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.app
       systemSource,
       systemFields,
       selectOptions,
+      showMobToHit: this.document.type === 'attack' && (!this.document.parent || this.document.parent.type === 'mob'),
       typeLabel: game.i18n.localize(CONFIG.Item.typeLabels[this.document.type] ?? this.document.type),
       descriptionLabel: game.i18n.localize(
         ['skill', 'spell'].includes(this.document.type)

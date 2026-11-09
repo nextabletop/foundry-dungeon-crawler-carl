@@ -2,7 +2,7 @@ import { VEHICLE_SIZE_MAX, VEHICLE_CONSTITUTION_MODIFIER_DEFAULT, CREW_ROLES, ST
 import { int, str, bool, html, pool } from '../_fields.mjs';
 import { deriveVehicle } from '../../rules/derive.mjs';
 import { crewCacheFrom, crewSkillBonus, crewSlotRole } from '../../rules/crew.mjs';
-import { resetModifiers, ownedItems, engineItems, assignItemDerived, assignHealth, rewriteHealthPointsEdit } from './_derive-wiring.mjs';
+import { resetModifiers, ownedItems, engineItems, assignItemDerived, assignHealth, rewriteHealthPointsEdit, rewriteHealthBarSlotCount } from './_derive-wiring.mjs';
 
 const DERIVED_ITEM_TYPES = new Set(['attack']);
 
@@ -101,7 +101,9 @@ export default class VehicleModel extends foundry.abstract.TypeDataModel {
    * @override
    */
   async _preUpdate(changes, options, user) {
+    const explicitHealthBar = Object.hasOwn(changes.system ?? {}, 'healthBar');
     rewriteHealthPointsEdit(this, changes);
+    rewriteHealthBarSlotCount(this, changes, 'vehicle', explicitHealthBar);
     return super._preUpdate(changes, options, user);
   }
 

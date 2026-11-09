@@ -1,23 +1,36 @@
 {{!-- Abilities: the R20 left-hand strip (components/_abilities.pug), one card per stat stacked vertically. --}}
 <aside class="dcc-a-abil dcc-box">
-  <div class="dcc-bar">{{localize "DCC.Abilities"}}</div>
+  <div class="dcc-bar">
+    <span>{{localize "DCC.Abilities"}}</span>
+    {{#if editable}}
+    <label class="dcc-pc-edit-toggle dcc-pc-abilities-edit" data-tooltip="{{localize 'DCC.Ability.Edit'}}">
+      <input type="checkbox" name="system.pcAbilitiesEdit" {{checked systemSource.pcAbilitiesEdit}} aria-label="{{localize 'DCC.Ability.Edit'}}">
+      <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+    </label>
+    {{/if}}
+  </div>
   <div class="dcc-stats">
     {{#each stats as |s|}}
     <div class="dcc-stat">
       <div class="nm">
-        <span data-tooltip="{{localize s.label}}">{{localize s.abbr}}</span>
         <button type="button" class="dcc-statmod" data-action="rollAbility" data-stat="{{s.key}}"
-          data-tooltip="{{localize s.label}}" aria-label="{{localize 'DCC.Roll.AbilityLabel' stat=(localize s.label)}}"><span class="pl">+</span>{{s.modifier}}</button>
+          data-tooltip="{{localize s.label}}" aria-label="{{localize 'DCC.Roll.AbilityLabel' stat=(localize s.label)}}">{{localize s.label}}</button>
       </div>
       <div class="dcc-stat-cols">
-        <label class="dcc-stat-col">
-          <span class="dcc-flabel">{{localize "DCC.Ability.Unenhanced"}}</span>
-          <input class="dcc-statbase" type="number" step="1" name="system.stats.{{s.key}}.base" value="{{s.base}}">
-        </label>
         <div class="dcc-stat-col">
-          <span class="dcc-flabel">{{localize "DCC.Ability.Enhanced"}}</span>
           <span class="dcc-statenh">{{s.enhancement}}</span>
+          <span class="dcc-flabel">{{localize "DCC.Ability.Enhanced"}}</span>
         </div>
+        <span class="dcc-stat-separator" aria-hidden="true">/</span>
+        <label class="dcc-stat-col">
+          <span class="dcc-statenh dcc-statbase-view">{{s.base}}</span>
+          <input class="dcc-statbase" type="number" step="1" name="system.stats.{{s.key}}.base" value="{{s.base}}">
+          <span class="dcc-flabel">{{localize "DCC.Ability.Unenhanced"}}</span>
+        </label>
+      </div>
+      <div class="dcc-stat-col">
+        <span class="dcc-statenh">{{numberFormat s.modifier sign=true}}</span>
+        <span class="dcc-flabel">{{localize "DCC.Ability.Modifier"}}</span>
       </div>
     </div>
     {{/each}}

@@ -5,6 +5,19 @@
     <div class="dcc-item-grid">
       {{formGroup systemFields.stat value=systemSource.stat options=selectOptions.stat rootId=rootId}}
       {{formGroup systemFields.rank value=attackLink.rank disabled=attackLink.rankLinked rootId=rootId}}
+      {{#if showMobToHit}}
+      <div class="form-group">
+        <label class="dcc-mob-tohit-label">
+          <span>{{localize "DCC.Item.FIELDS.mobToHitBase.label"}}</span>
+          <span class="form-fields">
+            {{formInput systemFields.mobToHitBase value=systemSource.mobToHitBase disabled=systemSource.mobToHitNone}}
+            <span>{{localize "DCC.Mob.PlusFloor"}}</span>
+          </span>
+        </label>
+        <p class="hint">{{localize "DCC.Item.FIELDS.mobToHitBase.hint"}}</p>
+      </div>
+      {{formGroup systemFields.mobToHitNone value=systemSource.mobToHitNone rootId=rootId}}
+      {{/if}}
       <div class="dcc-item-damage-grid">
         {{formGroup systemFields.die value=systemSource.die rootId=rootId}}
         {{formGroup systemFields.damageBonus value=systemSource.damageBonus rootId=rootId}}

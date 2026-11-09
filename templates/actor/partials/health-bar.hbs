@@ -1,20 +1,13 @@
-{{!-- Health bar: 10 rainbow slots (slot i shows Con Mod and i x 10%). Slots at or
-      below healthBar are filled; slots above healthBarSlots are blacked out and disabled.
-      Clicking slot i sets healthBar = i; clicking the current slot clears it (i - 1). --}}
-<div class="dcc-hb">
+{{!-- Clicking the current top slot clears it; other slots fill up to the clicked slot. --}}
+<div class="dcc-hb" style="--dcc-hb-columns: {{health.columns}}">
   {{#each health.slots as |slot|}}
-  <button type="button" class="dcc-hb-slot{{#if slot.filled}} filled{{/if}}{{#if slot.disabled}} blocked{{/if}}"
-    data-action="setSlots" data-slot="{{slot.i}}" {{disabled slot.disabled}}
-    aria-label="{{localize 'DCC.Health.Slot' n=slot.i}}">
-    <span class="cm">{{@root.health.constitutionModifier}}</span>
-    <span class="pct">{{slot.percent}}%</span>
-  </button>
+  <div class="dcc-hb-cell">
+    <button type="button" class="dcc-hb-slot tier-{{slot.tier}}{{#if slot.filled}} filled{{/if}}"
+      data-action="setSlots" data-slot="{{slot.i}}"
+      aria-label="{{localize 'DCC.Health.Slot' n=slot.i}}">
+      <span class="cm">{{@root.health.constitutionModifier}}</span>
+    </button>
+    <span class="dcc-hb-percent">{{slot.percent}}%</span>
+  </div>
   {{/each}}
-</div>
-<div class="dcc-hb-foot">
-  <span class="dcc-hp">
-    <span class="dcc-flabel">{{localize "DCC.Health.HealthPointsShort"}}</span>
-    <span class="dcc-hp-val">{{system.healthPoints.value}}</span><span class="sep">/</span><span class="dcc-hp-max">{{system.healthPoints.max}}</span>
-  </span>
-  <button type="button" class="dcc-rollbtn" data-action="healSlot">{{localize "DCC.Health.HealSlot"}}</button>
 </div>

@@ -11,7 +11,7 @@ const keys = Model => Object.keys(Model.defineSchema());
 describe('actor schemas', () => {
   it('CreatureModel has the shared creature fields', () => {
     expect(keys(CreatureModel)).toEqual(expect.arrayContaining(
-      ['level', 'floor', 'stats', 'healthBar', 'healthPoints', 'armor', 'moveBase', 'stepBase', 'size',
+      ['level', 'floor', 'stats', 'healthBar', 'healthBarSlotsCustom', 'healthPoints', 'armor', 'moveBase', 'stepBase', 'size',
         'showRangeInChat', 'showNotesInChat', 'notes']));
   });
 
@@ -20,8 +20,25 @@ describe('actor schemas', () => {
     expect(k).not.toContain('move');
     expect(k).not.toContain('step');
     const schema = CreatureModel.defineSchema();
-    expect(schema.moveBase.initial).toBe(0);
-    expect(schema.stepBase.initial).toBe(5);
+    expect(schema.moveBase.initial).toBe(20);
+    expect(schema.stepBase.initial).toBe(10);
+  });
+
+  it('PCs and Mobs inherit the current move and step defaults', () => {
+    for (const model of [PcModel, MobModel]) {
+      const schema = model.defineSchema();
+      expect(schema.moveBase.initial).toBe(20);
+      expect(schema.stepBase.initial).toBe(10);
+    }
+  });
+
+  it('PCs and Mobs have a nullable custom Health Bar count bounded to 1–100', () => {
+    for (const model of [PcModel, MobModel]) {
+      const field = model.defineSchema().healthBarSlotsCustom;
+      expect(field.initial).toBeNull();
+      expect(field.options).toMatchObject({ nullable: true, integer: true, min: 1, max: 100 });
+    }
+    expect(keys(VehicleModel)).not.toContain('healthBarSlotsCustom');
   });
 
   it('stats has exactly the 5 STATS, each with base initial 1', () => {
@@ -34,9 +51,13 @@ describe('actor schemas', () => {
     const k = keys(PcModel);
     expect(k).toEqual(expect.arrayContaining(keys(CreatureModel)));
     expect(k).toEqual(expect.arrayContaining([
-      'race', 'pronouns', 'class', 'crawlerNumber', 'aiFavor', 'pendingLevels', 'statPoints',
+      'race', 'pronouns', 'class', 'crawlerNumber', 'aiFavor', 'pcCombatEdit', 'pcAbilitiesEdit', 'pendingLevels', 'statPoints',
       'undoStack', 'mana', 'manaStat', 'autoEnableCast', 'popularity', 'pastTrauma', 'looseEnds', 'regrets']));
     const schema = PcModel.defineSchema();
+    expect(schema.pcCombatEdit).toBeInstanceOf(foundry.data.fields.BooleanField);
+    expect(schema.pcCombatEdit.initial).toBe(false);
+    expect(schema.pcAbilitiesEdit).toBeInstanceOf(foundry.data.fields.BooleanField);
+    expect(schema.pcAbilitiesEdit.initial).toBe(false);
     expect(schema.manaStat.initial).toBe('intelligence');
     // Choice arrays become value→value records so <select> option values are the strings, not indices.
     expect(schema.manaStat.options.choices).toEqual(Object.fromEntries(STATS.map(s => [s, s])));
@@ -53,10 +74,26 @@ describe('actor schemas', () => {
     }
   });
 
-  it('MobModel extends creature and adds descriptors, surprise, mobPublic', () => {
+  it('MobModel extends creature and defaults Mob whispers off', () => {
     const k = keys(MobModel);
     expect(k).toEqual(expect.arrayContaining(keys(CreatureModel)));
-    expect(k).toEqual(expect.arrayContaining(['descriptors', 'surprise', 'mobPublic']));
+    expect(k).toEqual(expect.arrayContaining(['descriptors', 'surprise', 'mobEvadeBase', 'mana', 'mobCombatEdit', 'mobAbilitiesEdit', 'mobWhisper']));
+    expect(k).not.toContain('mobPublic');
+    expect(MobModel.defineSchema().mobWhisper.initial).toBe(false);
+    expect(MobModel.defineSchema().mobCombatEdit.initial).toBe(false);
+    expect(MobModel.defineSchema().mobAbilitiesEdit.initial).toBe(false);
+    expect(keys(PcModel)).not.toContain('mobAbilitiesEdit');
+    expect(MobModel.defineSchema().mobEvadeBase.initial).toBe(10);
+  });
+
+  it('optional Mob sections default hidden and are not added to PCs or Vehicles', () => {
+    const mob = MobModel.defineSchema();
+    for (const field of ['mobShowInventory', 'mobShowSkills', 'mobShowBuffs']) {
+      expect(mob[field]).toBeInstanceOf(foundry.data.fields.BooleanField);
+      expect(mob[field].initial).toBe(false);
+      expect(keys(PcModel)).not.toContain(field);
+      expect(keys(VehicleModel)).not.toContain(field);
+    }
   });
 
   it('VehicleModel has kind, size, crew and its roll inputs', () => {
@@ -122,12 +159,14 @@ describe('item schemas', () => {
 
   it('attack is the canonical offensive-action record', () => {
     expect(keys(AttackModel)).toEqual([
-      ...base, 'stat', 'rank', 'primarySkillId', 'skillUses',
+      ...base, 'stat', 'rank', 'mobToHitBase', 'mobToHitNone', 'primarySkillId', 'skillUses',
       'die', 'damageBonus', 'damageType', 'range', 'gunnerSlot', 'skillName',
     ]);
     const schema = AttackModel.defineSchema();
     expect(schema.linkedItemIds.initial).toEqual([]);
     expect(schema.primarySkillId.initial).toBe('');
+    expect(schema.mobToHitBase.initial).toBeNull();
+    expect(schema.mobToHitNone.initial).toBe(false);
     expect(schema.skillUses.initial).toEqual([]);
     expect(schema.skillUses.element.fields).toHaveProperty('skillId');
     expect(schema.skillUses.element.fields.stat.options.choices)

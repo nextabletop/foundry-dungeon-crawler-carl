@@ -1,7 +1,7 @@
-import { STATS, ROLL_ABBR } from '../../config.mjs';
+import { STATS, ROLL_ABBR, HEALTH_BAR_SLOT_GUARD } from '../../config.mjs';
 import { deriveCreature } from '../../rules/derive.mjs';
 import { int, str, bool, html, pool } from '../_fields.mjs';
-import { resetModifiers, ownedItems, engineItems, assignItemDerived, assignHealth, rewriteHealthPointsEdit } from './_derive-wiring.mjs';
+import { resetModifiers, ownedItems, engineItems, assignItemDerived, assignHealth, rewriteHealthPointsEdit, rewriteHealthBarSlotCount } from './_derive-wiring.mjs';
 
 const DERIVED_ITEM_TYPES = new Set(['attack', 'skill', 'spell']);
 
@@ -17,9 +17,9 @@ const DERIVED_ITEM_TYPES = new Set(['attack', 'skill', 'spell']);
  * - `healthConstitutionModifier` — the Con Mod the health bar uses (hit
  *   points per slot): the constitution stat modifier
  * - `evade`, `evadeBonus`, `evadeDice`, `evadeBuffLabel`, `evadeRollLabel`, and
- *   `damageResistance`, `move`, `step` with their flat bonuses (the stored bases are `armor`,
- *   `moveBase`, `stepBase`)
- * - `mobToHit`, `mobEvade` — mob static targets
+ *   `damageResistance`, `move`, `step` with their bonuses (the stored bases are `armor`,
+ *   `moveBase`, `stepBase`; movement bonuses include percentage effects)
+ * - `mobEvade`, `mobSurprise`, `mobMove` — Mob combat totals
  * - `unresolvedModifiers` — modifiers the engine could not apply
  * - `item.system.derived` on every owned item
  */
@@ -40,10 +40,11 @@ export default class CreatureModel extends foundry.abstract.TypeDataModel {
         STATS.map(s => [s, new fields.SchemaField({ base: int(1) })]),
       )),
       healthBar: int(10, { min: 0 }),
+      healthBarSlotsCustom: new fields.NumberField({ required: true, nullable: true, integer: true, min: 1, max: HEALTH_BAR_SLOT_GUARD, initial: null }),
       healthPoints: pool(),
       armor: int(0),
-      moveBase: int(0),
-      stepBase: int(5),
+      moveBase: int(20),
+      stepBase: int(10),
       size: str('M'),
       showRangeInChat: bool(true),
       showNotesInChat: bool(true),
@@ -66,9 +67,12 @@ export default class CreatureModel extends foundry.abstract.TypeDataModel {
       level: this.level,
       floor: this.floor,
       healthBar: this.healthBar,
+      healthBarSlotsCustom: this.healthBarSlotsCustom,
       armor: this.armor,
       moveBase: this.moveBase,
       stepBase: this.stepBase,
+      surpriseBase: this.surprise,
+      mobEvadeBase: this.mobEvadeBase,
       stats: this.stats,
       manaStat: this.manaStat,
       modifiers: this._modifiers ?? [],
@@ -92,8 +96,9 @@ export default class CreatureModel extends foundry.abstract.TypeDataModel {
     this.evadeBuffLabel = d.evadeBuffLabel;
     this.evadeRollLabel = d.evadeRollLabel;
     this.damageResistanceBonus = d.damageResistanceBonus;
-    this.mobToHit = d.mobToHit;
     this.mobEvade = d.mobEvade;
+    this.mobSurprise = d.mobSurprise;
+    this.mobMove = d.mobMove;
     this._applyDerived(d);
 
     assignItemDerived(items, d.items);
@@ -104,7 +109,9 @@ export default class CreatureModel extends foundry.abstract.TypeDataModel {
    * @override
    */
   async _preUpdate(changes, options, user) {
+    const explicitHealthBar = Object.hasOwn(changes.system ?? {}, 'healthBar');
     rewriteHealthPointsEdit(this, changes);
+    rewriteHealthBarSlotCount(this, changes, this.constructor.creatureType, explicitHealthBar);
     return super._preUpdate(changes, options, user);
   }
 

@@ -244,7 +244,7 @@ body.theme-dark .dcc-card {
   --d-line-soft: #b9b7b1;
   --d-bar: #101010;
   --d-bar-text: #ffffff;
-  /* --d-hot = fills (stat mod, dying, borders); --d-accent = text / outlines (lighter in dark for contrast). */
+  /* Shared Roll20 red for fills, text, and outlines. */
   --d-hot: #d31f29;
   --d-accent: #d31f29;
   /* GM screen safehouse badge: a green "all clear" tint. */
@@ -278,7 +278,7 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
   --d-bar: #2c323c;
   --d-bar-text: #f0f0f0;
   --d-hot: #d31f29;
-  --d-accent: #ff5a63;
+  --d-accent: #d31f29;
   --d-safe-bg: #13261a;
   --d-safe-line: #3f9e5c;
   --d-safe-ink: #86d9a0;
@@ -323,11 +323,23 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 .dcc.sheet.actor.pc .dcc-header { grid-area: header; }
 .dcc.sheet.actor.pc .dcc-a-abil { grid-area: abil; align-self: stretch; contain: size; overflow-y: auto; }
 .dcc.sheet.actor.pc .dcc-vitals { grid-area: vitals; }
-.dcc.sheet.actor.pc nav.sheet-tabs { grid-area: nav; }
+.dcc.sheet.actor.pc nav.sheet-tabs { grid-area: nav; border-top: none; }
 .dcc.sheet.actor.pc .dcc-tab { grid-area: body; height: 100%; }
 .dcc.sheet.actor.pc .dcc-a-hotlist { grid-area: hotlist; }
-.dcc.sheet.actor.pc .dcc-a-abil .dcc-stats { display: flex; flex-direction: column; }
-.dcc.sheet.actor.pc .dcc-a-abil .dcc-stat-cols { gap: 6px; }
+.dcc.sheet.actor.pc .dcc-a-abil .dcc-stats { display: flex; flex-direction: column; gap: 16px; }
+.dcc.sheet.actor.pc .dcc-a-abil > .dcc-bar { display: grid; grid-template-columns: 1fr auto 1fr; }
+.dcc.sheet.actor.pc .dcc-a-abil > .dcc-bar > span { grid-column: 2; }
+.dcc.sheet.actor.pc .dcc-a-abil .dcc-pc-abilities-edit { padding: 1px 4px; }
+.dcc.sheet.actor.pc .dcc-a-abil .dcc-stat { gap: 8px; padding: 0; border: none; }
+.dcc.sheet.actor.pc .dcc-a-abil .dcc-stat .nm { justify-content: center; text-align: center; }
+.dcc.sheet.actor.pc .dcc-a-abil .dcc-stat-cols { display: grid; width: 100%; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 10px; }
+.dcc.sheet.actor.pc .dcc-a-abil :is(.dcc-stat-col, .dcc-statbase, .dcc-statenh) { width: 100%; min-width: 0; }
+.dcc.sheet.actor.pc .dcc-a-abil .dcc-statbase { display: none; border: none; border-bottom: 1px solid var(--d-line); border-radius: 0; background: transparent; }
+.dcc.sheet.actor.pc .dcc-a-abil:has(.dcc-pc-abilities-edit input:checked) .dcc-statbase { display: block; }
+.dcc.sheet.actor.pc .dcc-a-abil:has(.dcc-pc-abilities-edit input:checked) .dcc-statbase-view { display: none; }
+.dcc.sheet.actor.pc .dcc-a-abil .dcc-statbase:focus-visible { outline: 2px solid var(--d-accent); outline-offset: 1px; }
+.dcc.sheet.actor.pc .dcc-a-abil .dcc-stat-separator { font-size: 24px; line-height: 1; }
+.dcc.sheet.actor.pc .dcc-a-abil .dcc-statmod { min-width: 46px; min-height: 0; padding: 4px 12px; align-items: center; justify-content: center; font-size: 13px; }
 .dcc.sheet.actor .dcc-tab { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-gutter: stable; }
 /* system.css loads in the "system" cascade layer, which outranks core's layer, so
    our .dcc-tab display would beat core's tab hiding; state the rule explicitly. */
@@ -359,6 +371,7 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
   background: var(--d-field);
   color: var(--d-ink);
 }
+.dcc.sheet.actor:is(.pc, .mob, .vehicle) .dcc-header.dcc-box { border: none; }
 .dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-box > .dcc-bar:first-child { margin: -8px -8px 8px; border-radius: 0; }
 
 /* Labels, line fields, buttons */
@@ -413,15 +426,14 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 }
 .dcc.sheet.actor .dcc-headmain { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 /* PC header (R20 _header.pug): portrait + advancement on the left; fields in two rows on the right. */
-.dcc.sheet.actor .dcc-headside { flex: 0 0 200px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.dcc.sheet.actor .dcc-headside { flex: 0 0 80px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
 .dcc.sheet.actor .dcc-headside .dcc-portrait { width: 80px; height: 80px; }
 .dcc.sheet.actor .dcc-pcfields {
   display: grid;
-  /* Type is `auto` so the nowrap badge sets its width instead of overflowing into Race. */
-  grid-template-columns: minmax(0, 2fr) auto minmax(0, 1.3fr) minmax(0, 1.4fr) minmax(0, 1.3fr) minmax(0, 0.7fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr)) max-content repeat(6, minmax(0, 1fr));
   grid-template-areas:
-    "name  type  race  pron class lvl"
-    "crawl crawl floor .    favor .";
+    "name name name name type race race race pron pron pron"
+    "lvl lvl crawl crawl crawl class class class class floor floor";
   align-content: start;
   gap: 8px 10px;
 }
@@ -435,7 +447,6 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 .dcc.sheet.actor .dcc-f-level { grid-area: lvl; }
 .dcc.sheet.actor .dcc-f-crawler { grid-area: crawl; }
 .dcc.sheet.actor .dcc-f-floor { grid-area: floor; }
-.dcc.sheet.actor .dcc-f-favor { grid-area: favor; }
 /* Read-only actor type (R20 .dcc-type-badge). */
 .dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-type-badge {
   align-self: flex-start;
@@ -453,6 +464,11 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 .dcc.sheet.actor .dcc-fields { display: flex; flex-wrap: wrap; gap: 8px 10px; align-content: start; }
 .dcc.sheet.actor .dcc-field { display: flex; flex: 1 1 0; flex-direction: column; gap: 2px; min-width: 96px; }
 .dcc.sheet.actor .dcc-field--num { min-width: 64px; }
+.dcc.sheet.actor .dcc-mobfields { display: grid; grid-template-columns: minmax(0, 1fr) max-content; gap: 8px 10px; }
+.dcc.sheet.actor .dcc-mobfields .dcc-field { min-width: 0; }
+.dcc.sheet.actor .dcc-mobfields .dcc-mobfield-centered { text-align: center; }
+.dcc.sheet.actor .dcc-mobfields .dcc-type-badge { align-self: stretch; }
+.dcc.sheet.actor .dcc-mobfields input[name="system.floor"] { box-sizing: border-box; width: 48px; text-align: center; }
 /* Identity field width weights (flex-basis 0, so widths follow these). */
 .dcc.sheet.actor .dcc-grow-2 { flex-grow: 2; }
 .dcc.sheet.actor .dcc-grow-3 { flex-grow: 3; }
@@ -464,7 +480,8 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 .dcc.sheet.actor .dcc-advancement { display: inline-flex; }
 .dcc.sheet.actor .dcc-advancement > button:disabled { pointer-events: none; } /* hover reaches the span's tooltip */
 /* Visually hidden, still read by screen readers (aria-describedby targets). */
-.dcc.sheet.actor .dcc-sr-only {
+.dcc.sheet.actor .dcc-sr-only,
+.dcc.sheet.actor .dcc-mob-notes .dcc-bio-lab {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -512,11 +529,10 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 }
 
 /* Health bar (port of components/_health.pug +scss) */
-.dcc.sheet.actor .dcc-hb { display: flex; gap: 2px; margin: 6px 0; }
+.dcc.sheet.actor .dcc-hb { display: grid; grid-template-columns: repeat(var(--dcc-hb-columns), minmax(0, 1fr)); gap: 8px 2px; margin: 6px 0; }
 .dcc.sheet.actor .dcc-hb-slot {
   position: relative;
   display: flex;
-  flex: 1;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -525,7 +541,7 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
   margin: 0;
   padding: 0;
   overflow: hidden;
-  border: 1px dashed var(--d-line);
+  border: 1px dashed #000;
   border-radius: 3px;
   background: var(--d-paper-2);
   line-height: 1;
@@ -533,44 +549,31 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 }
 .dcc.sheet.actor .dcc-hb-slot .cm {
   font-family: var(--d-cond);
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 800;
-  color: var(--d-ink-faint);
-}
-.dcc.sheet.actor .dcc-hb-slot .pct {
-  margin-top: 1px;
-  font-family: var(--d-cond);
-  font-size: 8px;
-  font-weight: 700;
-  color: var(--d-ink-faint);
+  color: var(--d-ink);
 }
 .dcc.sheet.actor .dcc-hb-slot.filled { border-style: solid; }
-.dcc.sheet.actor .dcc-hb-slot.filled .cm { color: rgba(0, 0, 0, 0.82); }
-.dcc.sheet.actor .dcc-hb-slot.filled .pct { color: rgba(0, 0, 0, 0.62); }
+.dcc.sheet.actor .dcc-hb-slot.filled .cm { color: #fff; }
 /* Rainbow red (10%) -> green (100%), low slot on the left. */
-.dcc.sheet.actor .dcc-hb-slot.filled:nth-child(1) { background: hsl(0, 72%, 50%); }
-.dcc.sheet.actor .dcc-hb-slot.filled:nth-child(2) { background: hsl(14, 74%, 50%); }
-.dcc.sheet.actor .dcc-hb-slot.filled:nth-child(3) { background: hsl(28, 78%, 50%); }
-.dcc.sheet.actor .dcc-hb-slot.filled:nth-child(4) { background: hsl(42, 82%, 48%); }
-.dcc.sheet.actor .dcc-hb-slot.filled:nth-child(5) { background: hsl(56, 82%, 45%); }
-.dcc.sheet.actor .dcc-hb-slot.filled:nth-child(6) { background: hsl(70, 70%, 44%); }
-.dcc.sheet.actor .dcc-hb-slot.filled:nth-child(7) { background: hsl(84, 64%, 43%); }
-.dcc.sheet.actor .dcc-hb-slot.filled:nth-child(8) { background: hsl(98, 60%, 42%); }
-.dcc.sheet.actor .dcc-hb-slot.filled:nth-child(9) { background: hsl(110, 60%, 40%); }
-.dcc.sheet.actor .dcc-hb-slot.filled:nth-child(10) { background: hsl(122, 62%, 38%); }
+.dcc.sheet.actor .dcc-hb-slot.filled.tier-1 { background: hsl(0, 65%, 34%); }
+.dcc.sheet.actor .dcc-hb-slot.filled.tier-2 { background: hsl(14, 67%, 36%); }
+.dcc.sheet.actor .dcc-hb-slot.filled.tier-3 { background: hsl(28, 69%, 37%); }
+.dcc.sheet.actor .dcc-hb-slot.filled.tier-4 { background: hsl(42, 70%, 36%); }
+.dcc.sheet.actor .dcc-hb-slot.filled.tier-5 { background: hsl(56, 68%, 33%); }
+.dcc.sheet.actor .dcc-hb-slot.filled.tier-6 { background: hsl(70, 60%, 31%); }
+.dcc.sheet.actor .dcc-hb-slot.filled.tier-7 { background: hsl(84, 56%, 29%); }
+.dcc.sheet.actor .dcc-hb-slot.filled.tier-8 { background: hsl(98, 54%, 27%); }
+.dcc.sheet.actor .dcc-hb-slot.filled.tier-9 { background: hsl(110, 56%, 25%); }
+.dcc.sheet.actor .dcc-hb-slot.filled.tier-10 { background: hsl(122, 58%, 23%); }
 .dcc.sheet.actor .dcc-hb-slot:not(:disabled):hover { outline: 2px solid var(--d-accent); outline-offset: -2px; }
-/* Beyond the actor's slot count: blacked out and inert. */
-.dcc.sheet.actor .dcc-hb-slot.blocked {
-  border: 1px solid var(--d-bar);
-  background: var(--d-bar);
-  cursor: default;
-}
-.dcc.sheet.actor .dcc-hb-slot.blocked span { visibility: hidden; }
-.dcc.sheet.actor .dcc-hb-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.dcc.sheet.actor .dcc-hp { display: flex; align-items: baseline; gap: 4px; font-family: var(--d-cond); }
-.dcc.sheet.actor .dcc-hp-val { font-size: 20px; font-weight: 800; color: var(--d-accent); }
-.dcc.sheet.actor .dcc-hp-max { font-size: 20px; font-weight: 800; }
-.dcc.sheet.actor .dcc-hp .sep { color: var(--d-ink-faint); }
+.dcc.sheet.actor .dcc-health > .dcc-bar { display: grid; grid-template-columns: 1fr auto 1fr; }
+.dcc.sheet.actor .dcc-health > .dcc-bar > span:not(.dcc-dying) { grid-column: 2; grid-row: 1; }
+.dcc.sheet.actor .dcc-health > .dcc-bar > .dcc-dying { grid-column: 1; grid-row: 1; justify-self: start; }
+.dcc.sheet.actor .dcc-health > .dcc-bar > .dcc-addbtn { grid-column: 3; grid-row: 1; justify-self: end; }
+.dcc.sheet.actor .dcc-hb-cell { min-width: 0; text-align: center; container-type: inline-size; }
+.dcc.sheet.actor .dcc-hb-cell .dcc-hb-slot { width: 100%; }
+.dcc.sheet.actor .dcc-hb-percent { display: block; padding-top: 3px; color: var(--d-ink); font-family: var(--d-cond); font-size: clamp(8px, 30cqi, 12px); line-height: 1.2; }
 
 /* Mana: current | / | max, labels on the same grid */
 .dcc.sheet.actor .dcc-mana,
@@ -594,6 +597,8 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
   height: auto;
   padding: 0;
   border: none;
+  border-bottom: 1px solid var(--d-line);
+  border-radius: 0;
   background: transparent;
   color: var(--d-accent);
 }
@@ -703,6 +708,80 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 }
 
 /* Defenses strip (port of sections/_combat.pug +scss) */
+.dcc.sheet.actor.pc .dcc-pc-combat > .dcc-bar { display: grid; grid-template-columns: 1fr auto 1fr; }
+.dcc.sheet.actor.pc .dcc-pc-combat > .dcc-bar > span { grid-column: 2; }
+.dcc.sheet.actor.pc .dcc-pc-edit-toggle {
+  position: relative;
+  grid-column: 3;
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  border: 1px solid var(--d-bar-text);
+  border-radius: 3px;
+  color: var(--d-bar-text);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.dcc.sheet.actor.pc .dcc-pc-edit-toggle input { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip-path: inset(50%); }
+.dcc.sheet.actor.pc .dcc-pc-edit-toggle:has(input:checked) { border-color: var(--d-hot); background: var(--d-hot); color: #fff; }
+.dcc.sheet.actor.pc .dcc-pc-edit-toggle:has(input:focus-visible) { outline: 2px solid var(--d-accent); outline-offset: 2px; }
+.dcc.sheet.actor.pc .dcc-pc-defense-viewport { overflow-x: auto; }
+.dcc.sheet.actor.pc .dcc-pc-defense-grid {
+  display: grid;
+  grid-template-columns: minmax(62px, 1fr) 44px 12px minmax(40px, 1fr) 12px minmax(50px, 0.9fr) minmax(50px, 0.9fr) minmax(50px, 0.9fr);
+  align-items: start;
+  gap: 10px 4px;
+  min-width: 480px;
+}
+.dcc.sheet.actor.pc .dcc-pc-defense-name { align-self: start; padding-top: 3px; font-family: var(--d-cond); font-size: 11px; font-weight: 800; text-transform: uppercase; }
+.dcc.sheet.actor.pc .dcc-pc-defense-grid .dcc-fbox { min-width: 0; }
+.dcc.sheet.actor.pc .dcc-pc-defense-grid .dcc-fbox .bx { max-width: 100%; overflow-wrap: anywhere; }
+.dcc.sheet.actor.pc .dcc-pc-defense-grid .dcc-fbox :is(span, button).bx:not(.dcc-pc-defense-buff) {
+  border: 1px solid var(--d-line);
+  color: var(--d-ink);
+}
+.dcc.sheet.actor.pc .dcc-pc-defense-grid .dcc-fbox button.bx[data-action="rollEvade"] {
+  border-color: #000;
+  background: var(--d-hot);
+  color: #fff;
+}
+.dcc.sheet.actor.pc .dcc-pc-defense-grid .dcc-fbox button.bx[data-action="rollEvade"]:not(:disabled):hover {
+  border-color: var(--dcc-hot-hover);
+  background: var(--dcc-hot-hover);
+  color: #fff;
+  box-shadow: none;
+  filter: none;
+}
+.dcc.sheet.actor.pc .dcc-pc-defense-grid .dcc-fbox button.bx[data-action="rollEvade"]:focus-visible {
+  outline: 2px solid var(--d-accent);
+  outline-offset: 2px;
+}
+.dcc.sheet.actor.pc .dcc-pc-defense-grid .dcc-fbox input.bx {
+  border: none;
+  border-bottom: 1px solid var(--d-line);
+  border-radius: 0;
+  background: transparent;
+}
+.dcc.sheet.actor.pc .dcc-pc-defense-grid .dcc-fbox input.bx:focus-visible { outline: 2px solid var(--d-accent); outline-offset: 1px; }
+.dcc.sheet.actor.pc .dcc-pc-defense-grid .dcc-fbox .lab { white-space: normal; text-align: center; }
+.dcc.sheet.actor.pc .dcc-pc-defense-grid .dcc-fop { align-self: start; padding: 3px 0 0; text-align: center; }
+.dcc.sheet.actor.pc .dcc-pc-defense-grid .dcc-pc-defense-buff {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.dcc.sheet.actor.pc .dcc-pc-combat .dcc-pc-edit-only { display: none; }
+.dcc.sheet.actor.pc .dcc-pc-combat:has(.dcc-pc-combat-edit input:checked) .dcc-pc-edit-only { display: flex; }
+.dcc.sheet.actor.pc .dcc-pc-combat:has(.dcc-pc-combat-edit input:checked) .dcc-pc-view-only { display: none; }
 .dcc.sheet.actor .dcc-combat-top {
   display: flex;
   flex-wrap: wrap;
@@ -710,7 +789,8 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
   justify-content: space-between;
   gap: 8px 4px;
 }
-.dcc.sheet.actor .dcc-combat-top .cm { display: flex; align-items: flex-end; gap: 6px; }
+.dcc.sheet.actor .dcc-combat-top .cm { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px; }
+.dcc.sheet.actor .dcc-movement-group { display: flex; align-items: flex-end; gap: 4px; }
 .dcc.sheet.actor .dcc-fgroup {
   display: flex;
   align-items: flex-end;
@@ -766,17 +846,6 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
   font-weight: 700;
   color: var(--d-ink-dim);
 }
-.dcc.sheet.actor .dcc-buffline {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px;
-  margin: 8px 0 0;
-  font-family: var(--d-cond);
-  font-size: 11px;
-  color: var(--d-ink-dim);
-}
-
 /* Unresolved-modifier warning (combat tab) */
 .dcc.sheet.actor .dcc-unresolved {
   display: flex;
@@ -986,7 +1055,8 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 }
 .dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-icontrols { display: flex; justify-content: flex-end; gap: 2px; }
 .dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-irow button.icon,
-.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-irow button.icon:hover {
+.dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-irow button.icon:hover,
+.dcc.sheet.actor .dcc-mob-edit {
   flex: none;
   width: 20px;
   height: 20px;
@@ -1000,6 +1070,7 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
   font-size: 12px;
 }
 .dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-irow button.icon:not(:disabled):hover { color: var(--d-accent); }
+.dcc.sheet.actor .dcc-mob-edit:hover { color: var(--d-accent); }
 .dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-irow button.icon.dcc-itoggle { font-size: 16px; }
 .dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-irow:not(.dcc-irow--off) button.icon.dcc-itoggle { color: var(--d-accent); }
 
@@ -1184,31 +1255,94 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 
 .dcc.sheet.actor .dcc-bio-empty { color: var(--d-ink-faint); }
 
+.dcc.sheet.actor .dcc-mob-notes .dcc-bio-f { padding: 0; border: none; background: transparent; }
+.dcc.sheet.actor .dcc-mob-notes .dcc-bio :is(prose-mirror, .dcc-bio-view) { border: none; background: transparent; }
+.dcc.sheet.actor .dcc-mob-notes .dcc-bio prose-mirror:focus-within { outline: 2px solid var(--d-accent); outline-offset: -2px; }
+
 /* ── Mob + Vehicle stat blocks (R20 mode = mob / vehicle): no tabs ── */
-/* R20 _modes.scss: a full-width header, then a two-column card flow. The body part's wrapper is
-   display: contents, so its header and .dcc-col columns are cells of this grid; the Notes part sits
-   under the right column. The window content scrolls as one page. A narrow window stacks to one
-   column (container query on the application). */
+/* The body wrapper uses display: contents so its header and sections share the grid with Notes.
+   Mobs use one column; Vehicles stack only in narrow windows. */
+.dcc.sheet.actor {
+  --dcc-hot-hover: color-mix(in srgb, var(--d-hot) 75%, black);
+  --dcc-bar-hover: color-mix(in srgb, var(--d-bar) 75%, white);
+}
+.dcc.sheet.actor .dcc-rollbtn:not(:disabled):hover {
+  border-color: var(--dcc-bar-hover);
+  background: var(--dcc-bar-hover);
+  color: var(--d-bar-text);
+  box-shadow: none;
+  filter: none;
+}
+.dcc.sheet.actor .dcc-statmod:not(:disabled):hover,
+.dcc.sheet.actor .dcc-rollbtn--hot:not(:disabled):hover,
+.dcc.sheet.actor .dcc-rollbtn[data-action="rollAttack"][data-roll="damage"]:not(:disabled):hover {
+  border-color: var(--dcc-hot-hover);
+  background: var(--dcc-hot-hover);
+  color: #fff;
+  box-shadow: none;
+  filter: none;
+}
+.dcc.sheet.actor .dcc-addbtn:not(:disabled):hover {
+  border-color: var(--d-accent);
+  background: var(--d-accent);
+  color: #fff;
+  box-shadow: none;
+}
+.dcc.sheet.actor :is(.dcc-statmod, .dcc-rollbtn, .dcc-addbtn):focus-visible {
+  outline: 2px solid var(--d-accent);
+  outline-offset: 2px;
+}
+.dcc.sheet.actor:is(.pc, .mob, .vehicle) :is(.dcc-statmod, .dcc-rollbtn, .dcc-addbtn, .dcc-fbox button.bx):not(:hover) {
+  border: 1px solid #000;
+}
+.dcc.sheet.actor:is(.pc, .mob, .vehicle) .dcc-addbtn:not(:hover) { outline: 1px solid var(--d-bar-text); }
+.dcc.sheet.actor:is(.pc, .mob, .vehicle) .dcc-addbtn:focus-visible { outline: 2px solid var(--d-accent); }
+.dcc.sheet.actor.mob {
+  --d-cond: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --dcc-mob-note-size: 12px;
+}
+.dcc.sheet.actor.mob :is(.dcc-flabel, .dcc-ihead) {
+  color: var(--d-ink);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+.dcc.sheet.actor.mob .dcc-addbtn { font-size: 11px; letter-spacing: 0.02em; text-transform: capitalize; }
+.dcc.sheet.actor.mob .dcc-type-badge { text-transform: none; }
+.dcc.sheet.actor.mob :is(.dcc-attack-notes, .dcc-skill-summary, .dcc-ichanges, .dcc-iempty) { font-size: var(--dcc-mob-note-size); line-height: 1.35; }
+.dcc.sheet.actor.mob .dcc-mob-notes :is(.dcc-bio-view, prose-mirror .editor-content) {
+  font-family: var(--d-cond);
+  font-size: var(--dcc-mob-note-size);
+  line-height: 1.35;
+}
+.dcc.sheet.actor.mob .dcc-mob-notes :is(.dcc-bio-view, prose-mirror .editor-content) * {
+  font-size: var(--dcc-mob-note-size) !important;
+}
 .dcc.sheet.actor.mob,
 .dcc.sheet.actor.vehicle { container-type: inline-size; }
 .dcc.sheet.actor.mob .window-content,
 .dcc.sheet.actor.vehicle .window-content {
   display: grid;
+  align-items: start;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+.dcc.sheet.actor.mob .window-content {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: max-content max-content max-content max-content minmax(0, 1fr);
+  grid-template-areas: "head" "left" "right" "notes" ".";
+}
+.dcc.sheet.actor.vehicle .window-content {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  /* max-content, not auto: a .dcc-box clips (overflow: hidden) so its automatic minimum height is 0,
-     and when the page outgrows the window, auto rows shrank to that and the boxes stacked on each other. */
   grid-template-rows: max-content max-content max-content minmax(0, 1fr);
   grid-template-areas:
     "head head"
     "left right"
     "left notes"
     "left .";
-  align-items: start;
-  overflow-y: auto;
-  scrollbar-gutter: stable;
 }
 @container (max-width: 600px) {
-  .dcc.sheet.actor.mob .window-content,
   .dcc.sheet.actor.vehicle .window-content {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: max-content max-content max-content max-content minmax(0, 1fr);
@@ -1227,26 +1361,72 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 .dcc.sheet.actor .dcc-mob .dcc-list,
 .dcc.sheet.actor .dcc-vehicle .dcc-list { margin-top: 0; }
 
-/* Mob strip (port of sections/_combat.pug .dcc-mobstrip): stat mods, then static targets. */
+/* Mob combat totals and editable bases. */
 .dcc.sheet.actor .dcc-mobstrip {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  position: relative;
   padding: 6px 8px;
-  border: 1px solid var(--d-line);
+  border: none;
   border-radius: 5px;
-  background: var(--d-paper-2);
+  background: transparent;
 }
-.dcc.sheet.actor .dcc-mobline { display: flex; flex-wrap: wrap; justify-content: space-around; gap: 6px 10px; }
-.dcc.sheet.actor .dcc-mobstat,
-.dcc.sheet.actor .dcc-mobtarget { display: inline-flex; align-items: baseline; gap: 5px; }
-.dcc.sheet.actor .dcc-mobval {
+.dcc.sheet.actor .dcc-mob-combat-grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(80px, 1fr);
+  align-items: start;
+  gap: 2px;
+  overflow-x: auto;
+  padding-right: 24px;
+  padding-bottom: 4px;
+}
+.dcc.sheet.actor .dcc-mob-combat-stat {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+  text-align: center;
+}
+.dcc.sheet.actor .dcc-mob-combat-stat > .dcc-flabel { color: var(--d-ink); font-size: 11px; font-weight: 700; text-transform: none; }
+.dcc.sheet.actor .dcc-mob-total {
   font-family: var(--d-cond);
-  font-size: 16px;
+  font-size: 26px;
   font-weight: 800;
   color: var(--d-ink);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
-.dcc.sheet.actor .dcc-mobtarget .dcc-mobval,
+.dcc.sheet.actor .dcc-mob-edit { position: absolute; top: 6px; right: 8px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; }
+.dcc.sheet.actor :is(.dcc-mobstrip, .dcc-mob-abilities):is(:hover, :focus-within) .dcc-mob-edit,
+.dcc.sheet.actor .dcc-mob-edit:has(input:checked) { opacity: 1; }
+@media (hover: none) {
+  .dcc.sheet.actor :is(.dcc-mobstrip, .dcc-mob-abilities) .dcc-mob-edit { opacity: 1; }
+}
+.dcc.sheet.actor .dcc-mob-edit input { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip-path: inset(50%); }
+.dcc.sheet.actor .dcc-mob-edit input:focus-visible + i { outline: 2px solid var(--d-accent); outline-offset: 3px; }
+.dcc.sheet.actor .dcc-mob-edit input:checked + i { color: var(--d-accent); }
+.dcc.sheet.actor .dcc-mob-edit-fields { display: none; grid-auto-flow: column; grid-auto-columns: max-content; align-items: start; gap: 4px; }
+.dcc.sheet.actor :is(.dcc-mobstrip, .dcc-mob-abilities):has(.dcc-mob-edit input:checked) .dcc-mob-edit-fields { display: grid; }
+.dcc.sheet.actor .dcc-mob-part { display: grid; justify-items: center; gap: 2px; }
+.dcc.sheet.actor .dcc-mob-input,
+.dcc.sheet.actor .dcc-mob-derived {
+  box-sizing: border-box;
+  width: 32px;
+  height: 24px;
+  margin: 0;
+  padding: 0 2px;
+  border: none;
+  border-bottom: 1px solid var(--d-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--d-ink);
+  font-family: var(--d-cond);
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+}
+.dcc.sheet.actor .dcc-mob-derived { display: grid; place-items: center; }
+.dcc.sheet.actor .dcc-mob-op { padding-top: 5px; font-family: var(--d-cond); font-size: 14px; font-weight: 700; white-space: nowrap; }
 .dcc.sheet.actor .dcc-target {
   min-width: 34px;
   border: 2px solid var(--d-accent);
@@ -1254,24 +1434,42 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
   background: var(--d-field);
   color: var(--d-accent);
 }
-.dcc.sheet.actor .dcc-mobtarget .dcc-mobval {
-  padding: 1px 6px;
-  text-align: center;
+
+/* Mob abilities: enhanced score and modifier, with editable bases. */
+.dcc.sheet.actor .dcc-mob-abilities { position: relative; padding: 6px 8px; }
+.dcc.sheet.actor .dcc-mob .dcc-stat { container-type: inline-size; align-items: center; gap: 8px; padding: 4px 0; border: none; }
+.dcc.sheet.actor .dcc-mob .dcc-stats { grid-template-columns: repeat(5, minmax(80px, 1fr)); gap: 2px; overflow-x: auto; padding: 0 24px 4px 0; }
+.dcc.sheet.actor .dcc-mob-abilities--with-mana .dcc-stats { grid-template-columns: repeat(6, minmax(80px, 1fr)); }
+.dcc.sheet.actor .dcc-mob .dcc-statmod { min-width: 42px; height: 26px; min-height: 0; align-items: center; justify-content: center; padding: 0 6px; font-size: 13px; font-variant: small-caps; letter-spacing: 0.06em; text-transform: none; }
+.dcc.sheet.actor .dcc-mob-ability-value { display: flex; align-items: baseline; justify-content: center; gap: 3px; color: var(--d-ink); white-space: nowrap; }
+.dcc.sheet.actor .dcc-mob .dcc-statenh { width: auto; height: auto; color: inherit; font-size: 26px; font-weight: 800; line-height: 1; }
+.dcc.sheet.actor .dcc-mob-ability-mod { font-family: var(--d-cond); font-size: clamp(18px, 26cqi, 26px); font-weight: 700; line-height: 1; }
+@container (max-width: 90px) {
+  .dcc.sheet.actor.mob .dcc-mob-ability-mod { font-size: clamp(18px, 24cqi, 26px); }
 }
 
-/* Abilities (base + mod only): a grid of small cards (R20 _modes.scss). */
-.dcc.sheet.actor .dcc-mob .dcc-stat { align-items: center; padding: 4px; }
-.dcc.sheet.actor .dcc-mob .dcc-stat .nm { align-self: stretch; }
-.dcc.sheet.actor .dcc-mob .dcc-stats { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
-.dcc.sheet.actor .dcc-mob .dcc-statmod { padding: 1px 6px; font-size: 15px; }
-.dcc.sheet.actor .dcc-mob .dcc-statbase { width: 100%; max-width: 52px; }
-/* A mob rarely has all 10 slots: the per-slot percentage labels are noise (R20 _modes.scss). */
-.dcc.sheet.actor .dcc-mob .dcc-hb-slot .pct { display: none; }
-.dcc.sheet.actor .dcc-mob .dcc-combat-top .cm { flex-wrap: wrap; }
-
 /* Lean item lists (mob): no mark / stat+rank (attacks) / check / passive / hotlist columns. */
-/* Damage is a fixed column (its label wraps): an auto column grew to fit the label and squeezed the name. */
-.dcc.sheet.actor .dcc-ilist--attacks.dcc-ilist--lean > li { grid-template-columns: minmax(0, 1fr) 52px 96px 44px; }
+.dcc.sheet.actor .dcc-mob .dcc-list--attacks > .dcc-bar { display: grid; grid-template-columns: 1fr auto 1fr; }
+.dcc.sheet.actor .dcc-mob .dcc-list--attacks > .dcc-bar > span { grid-column: 2; }
+.dcc.sheet.actor .dcc-mob .dcc-list--attacks > .dcc-bar > .dcc-addbtn { grid-column: 3; justify-self: end; }
+.dcc.sheet.actor .dcc-ilist--attacks.dcc-ilist--lean { --dcc-mob-attack-size: 11px; }
+.dcc.sheet.actor .dcc-ilist--attacks.dcc-ilist--lean > li { grid-template-columns: minmax(0, 1fr) 60px clamp(90px, 23%, 126px) 44px; }
+.dcc.sheet.actor .dcc-ilist--attacks.dcc-ilist--lean .dcc-icell { font-size: var(--dcc-mob-attack-size); }
+.dcc.sheet.actor .dcc-ilist--attacks.dcc-ilist--lean .dcc-target { min-width: 0; border: 0; background: none; color: var(--d-ink); font-size: var(--dcc-mob-attack-size); }
+.dcc.sheet.actor .dcc-ilist--attacks.dcc-ilist--lean .dcc-c-dmg .dcc-rollbtn--wide { display: block; box-sizing: border-box; overflow: hidden; padding-inline: 4px; font-size: var(--dcc-mob-attack-size); letter-spacing: normal; text-overflow: ellipsis; white-space: nowrap; overflow-wrap: normal; }
+.dcc.sheet.actor .dcc-ilist--attacks.dcc-ilist--lean .dcc-icontrols { grid-column: 4; grid-row: 1; }
+.dcc.sheet.actor .dcc-attack-notes {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  min-width: 0;
+  padding: 1px 3px 2px;
+  color: var(--d-ink);
+  font-family: var(--d-cond);
+  font-size: 11px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
 .dcc.sheet.actor .dcc-ilist--inventory.dcc-ilist--lean > li { grid-template-columns: minmax(0, 1fr) 48px 44px 44px; }
 .dcc.sheet.actor .dcc-ilist--skills.dcc-ilist--lean > li {
   grid-template-columns: minmax(0, 1fr) 36px 56px 56px 66px 44px;
@@ -1781,6 +1979,14 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 
 /* Configure Sheet: the DCC settings fieldset above core's sheet / theme choices. */
 .dcc.dcc-app.dcc-sheet-config .window-content { gap: 8px; padding: 8px 10px; }
+.dcc.dcc-app.dcc-sheet-config input[type="checkbox"]:not(:checked)::before {
+  outline: 1px solid var(--d-ink-dim);
+  outline-offset: -1px;
+}
+.dcc.dcc-app.dcc-sheet-config input[type="checkbox"]:focus-visible::before {
+  outline: 2px solid var(--d-accent);
+  outline-offset: -2px;
+}
 
 /* ── Item sheet (templates/item/*.hbs): identity header, one DCC box per field group, the
    description, then the modifiers list. The whole window scrolls (window-content is an
@@ -1821,6 +2027,10 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 .dcc.sheet.item .dcc-item-grid .form-group { flex-direction: column; align-items: stretch; gap: 3px; }
 .dcc.sheet.item .dcc-item-grid .form-group > label { flex: none; line-height: 1.2; }
 .dcc.sheet.item .dcc-item-grid .form-fields { width: 100%; }
+.dcc.sheet.item .dcc-item-grid .dcc-mob-tohit-label { display: flex; flex-direction: column; gap: 3px; }
+.dcc.sheet.item .dcc-mob-tohit-label .form-fields { display: flex; align-items: center; flex-wrap: nowrap; gap: 6px; }
+.dcc.sheet.item .dcc-mob-tohit-label .form-fields > input { flex: 1 1 0; width: 0; min-width: 0; }
+.dcc.sheet.item .dcc-mob-tohit-label .form-fields > span { flex: none; }
 .dcc.sheet.item .dcc-item-wide { grid-column: 1 / -1; }
 /* Checkbox flags: [box] label, hint under the label. */
 .dcc.sheet.item .dcc-item-flags {

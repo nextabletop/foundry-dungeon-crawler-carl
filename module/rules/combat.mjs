@@ -23,7 +23,9 @@ export const damageLabel = (die, flat, type) => {
 // only mob damage.
 export const mobToHit = (statModifier, floor) => 10 + (+statModifier || 0) + (+floor || 0);
 
-export const mobEvade = (dexterityModifier, floor) => 10 + (+dexterityModifier || 0) + (+floor || 0);
+export const mobAttackBase = (statModifier, rank) => 10 + attackToHit(statModifier, rank, 0);
+
+export const mobEvade = (base, floor) => (+base || 0) + (+floor || 0);
 
 // Current mana after spending `cost`, never below 0.
 export const manaAfterCast = (current, cost) => Math.max(0, (+current || 0) - (+cost || 0));

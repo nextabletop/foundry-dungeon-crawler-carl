@@ -76,30 +76,30 @@ describe('postCard', () => {
     expect(evaluated.at(-1)).toEqual({ allowInteractive: true });
   });
 
-  it('a hidden mob upgrades public/ic to gm but keeps self/blind/gm', async () => {
+  it('a Mob with whispering enabled upgrades public/ic to gm but keeps self/blind/gm', async () => {
     for (const [chosen, expected] of [['public', 'gm'], ['ic', 'gm'], ['self', 'self'], ['blind', 'blind'], ['gm', 'gm']]) {
       mode = chosen;
-      await postCard(actor('mob'), {}, { damage: '2' });
+      await postCard(actor('mob', { mobWhisper: true }), {}, { damage: '2' });
       expect(opts().messageMode, chosen).toBe(expected);
     }
     mode = 'public';
-    await postCard(actor('mob', { mobPublic: true }), {}, { damage: '2' });
+    await postCard(actor('mob'), {}, { damage: '2' });
     expect(opts().messageMode).toBe('public');
   });
 
-  it('options.privacyOf: a vehicle card rolled by a hidden mob crew member whispers, keeping the vehicle portrait', async () => {
+  it('options.privacyOf: a vehicle card follows the Mob crew whisper setting, keeping the vehicle portrait', async () => {
     const truck = { ...actor('vehicle'), name: 'Truck', img: 'truck.webp' };
-    const out = await postCard(truck, {}, { damage: '2' }, { privacyOf: actor('mob') });
+    const out = await postCard(truck, {}, { damage: '2' }, { privacyOf: actor('mob', { mobWhisper: true }) });
     expect(opts().messageMode).toBe('gm');
     expect(out.ctx).toMatchObject({ characterName: 'Truck', img: 'truck.webp' });
-    await postCard(truck, {}, { damage: '2' }, { privacyOf: actor('mob', { mobPublic: true }) });
+    await postCard(truck, {}, { damage: '2' }, { privacyOf: actor('mob') });
     expect(opts().messageMode).toBe('public');
     await postCard(truck, {}, { damage: '2' }, { privacyOf: actor('pc') });
     expect(opts().messageMode).toBe('public');
   });
 
   it('with no formulas it still posts (empty rolls) and renders the target', async () => {
-    const out = await postCard(actor('mob', { mobPublic: true }), { name: 'Club', target: 14 });
+    const out = await postCard(actor('mob'), { name: 'Club', target: 14 });
     expect(data().rolls).toEqual([]);
     expect(out.check).toBeNull();
     expect(out.damage).toBeNull();

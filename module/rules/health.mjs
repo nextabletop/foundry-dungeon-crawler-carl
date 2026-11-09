@@ -4,8 +4,8 @@
 
 import { HEALTH_BAR_MAX_SLOTS } from '../config.mjs';
 
-// `healthBar` (0-10 slots) is the source of truth. healthPoints = healthBar x
-// Con Mod, max healthPoints = 10 x Con Mod. Damage divides by Con Mod with the
+// `healthBar` is the source of truth. healthPoints = healthBar x
+// Con Mod, max healthPoints = slot count x Con Mod. Damage divides by Con Mod with the
 // remainder shrugged (DCC rules); the token-linked healthPoints mirror is
 // refunded back to a clean multiple.
 
@@ -82,7 +82,7 @@ export const healSlots = (healthBar, slots, max) => clampSlots((+healthBar || 0)
 
 export const isDying = (healthBar) => (+healthBar || 0) <= 0;
 
-// ── Sheet health bar (Foundry-only; R20 has no equivalent click rule) ──
+// ── Sheet health bar ──
 
 /**
  * The healthBar a slot click writes: clicking slot i (1-based) fills up to it,
@@ -98,18 +98,16 @@ export const slotClickTarget = (clicked, current) => {
 };
 
 /**
- * View model for the HEALTH_BAR_MAX_SLOTS-slot bar: slot i is filled when
- * i <= healthBar and disabled (blacked out) when i > slots. `percent` is the
- * static i x 10% label.
+ * View model for the actor's slot count, with percentage labels and rainbow tiers.
  * @param {number} healthBar - displayed (clamped) healthBar
  * @param {number} slots - the actor's slot count (healthBarSlots)
- * @returns {{i:number, filled:boolean, disabled:boolean, percent:number}[]}
+ * @returns {{i:number, filled:boolean, percent:number, tier:number}[]}
  */
 export const slotView = (healthBar, slots) => {
   const h = +healthBar || 0;
   const max = slotMax(slots);
-  return Array.from({ length: HEALTH_BAR_MAX_SLOTS }, (_, n) => {
+  return Array.from({ length: max }, (_, n) => {
     const i = n + 1;
-    return { i, filled: i <= h && i <= max, disabled: i > max, percent: i * 10 };
+    return { i, filled: i <= h, percent: Math.floor(i * 100 / max), tier: Math.ceil(i * 10 / max) };
   });
 };

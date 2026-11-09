@@ -13,6 +13,7 @@ export const CREW_ROLES = ['driver', 'gunner1', 'gunner2', 'gunner3', 'gunner4',
 /** Classes for DCC windows that aren't sheets (dialogs, Configure Sheet): picks up the sheet tokens + style. */
 export const APP_CLASSES = Object.freeze(['dcc', 'dcc-app']);
 export const HEALTH_BAR_MAX_SLOTS = 10;
+export const HEALTH_BAR_SLOT_GUARD = 100;
 export const VEHICLE_SIZE_MAX = 8;
 export const VEHICLE_CONSTITUTION_MODIFIER_DEFAULT = 5;
 export const UNDO_MAX = 20;

@@ -3,8 +3,7 @@
 // plain data. No Foundry globals — see foundry/module/rules/ conventions.
 //
 // Not ported here (Foundry handles them elsewhere): the bonus_aggregate
-// persistence, the move/step back-calc on edit (the caller uses
-// `moveBonus`/`stepBonus` with engine.backCalcBase), the whisper prefix
+// persistence, the whisper prefix
 // (engine.whisperToGM), the display labels (the view layer formats
 // toHit/skillBonus), and the crew push/refresh (rules/crew.mjs).
 
@@ -35,20 +34,24 @@ const itemById = items => new Map(items.map(item => [idOf(item), item]));
 // the modifier aspect vocabulary (`to_hit`, `damage`); the output is camelCase.
 const attackRow = ({
   statModifier, rank, itemBonus, itemPercent, damageModifierDice, die, damageBonus, damageType, floor,
+  mob = false, mobToHitBase, mobToHitNone = false,
 }) => {
-  const toHit = applyModifiers(attackToHit(statModifier, rank, 0), itemBonus.to_hit || 0, itemPercent.to_hit || 0);
+  const base = mob && mobToHitBase != null ? mobToHitBase - 10 : attackToHit(statModifier, rank, 0);
+  const toHit = mob && mobToHitNone ? 0 : applyModifiers(base, itemBonus.to_hit || 0, itemPercent.to_hit || 0);
   const damageBase = (+damageBonus || 0) + (itemBonus.damage || 0); // damage stays flat
   const damageDice = `${die || ''}${damageModifierDice || ''}`;
   return {
     rank, toHit, damageBase, damageModifierDice, damageDice,
-    damageLabel: damageLabel(damageDice, damageBase, damageType), mobToHit: mobToHit(toHit, floor),
+    damageLabel: damageLabel(damageDice, damageBase, damageType),
+    mobToHit: mob && mobToHitNone ? null : mobToHit(toHit, floor),
+    mobToHitNone: mob && mobToHitNone,
   };
 };
 
 // Per-item derived values for a creature (_engine.js:369-417). Returns null for
 // item types with nothing to derive (e.g. gear).
 const deriveItemRow = (item, context) => {
-  const { modifierFor, itemBonuses, itemPercents, itemDice, items, floor } = context;
+  const { modifierFor, itemBonuses, itemPercents, itemDice, items, floor, type } = context;
   const id = idOf(item);
   const sys = item.system || {};
   const itemBonus = itemBonuses[id] || {};
@@ -73,6 +76,7 @@ const deriveItemRow = (item, context) => {
       statModifier: modifierFor(sys.stat), rank, itemBonus, itemPercent,
       damageModifierDice: itemDice[id]?.damage || '',
       die: sys.die, damageBonus: sys.damageBonus, damageType: sys.damageType, floor,
+      mob: type === 'mob', mobToHitBase: sys.mobToHitBase, mobToHitNone: sys.mobToHitNone,
     }));
     const byId = itemById(items);
     row.primarySkillId = primaryId || sys.primarySkillId || '';
@@ -90,6 +94,7 @@ const deriveItemRow = (item, context) => {
         statModifier: modifierFor(useStat), rank: useRank, itemBonus, itemPercent,
         damageModifierDice: itemDice[id]?.damage || '',
         die: sys.die, damageBonus: sys.damageBonus, damageType: sys.damageType, floor,
+        mob: type === 'mob', mobToHitBase: sys.mobToHitBase, mobToHitNone: sys.mobToHitNone,
       });
       return {
         index,
@@ -116,9 +121,12 @@ const deriveItemRow = (item, context) => {
  * @param {number} input.level
  * @param {number} input.floor
  * @param {number} input.healthBar - stored health, in slots
+ * @param {number|null} [input.healthBarSlotsCustom] - optional PC/Mob slot count
  * @param {number} input.armor - DR base
  * @param {number} input.moveBase
  * @param {number} input.stepBase
+ * @param {number|null} [input.surpriseBase] - Mob Surprise base; blank defaults to 10
+ * @param {number|null} [input.mobEvadeBase] - Mob Evade base; blank defaults to 10
  * @param {Record<string,{base:number}>} input.stats
  * @param {string} [input.manaStat] - defaults to 'intelligence'
  * @param {Iterable<{target:string, value:string}>} input.modifiers - collected from active effects
@@ -129,7 +137,7 @@ const deriveItemRow = (item, context) => {
  *   manaMax: number, evade: number, damageResistance: number, move: number, step: number,
  *   moveBonus: number, stepBonus: number, evadeBonus: number, evadeDice: string,
  *   evadeBuffLabel: string, evadeRollLabel: string, damageResistanceBonus: number,
- *   mobToHit: number, mobEvade: number,
+ *   mobEvade: number, mobSurprise: number, mobMove: number,
  *   items: Record<string, {rank?:number, toHit?:number, damageBase?:number, damageLabel?:string, mobToHit?:number,
  *                          skillBonus?:number, rankEffective?:number, manaCostEffective?:number}>,
  *   unresolved: Array<{target:string, reason:string, modifier:object}>
@@ -162,7 +170,7 @@ export const deriveCreature = (input = {}) => {
 
   // Health Bar: slot count by type, healthBar clamped, healthPoints mirrors
   // healthBar x Con Mod.
-  const healthBarSlots = healthBarSlotsFor(input.type, input.level);
+  const healthBarSlots = healthBarSlotsFor(input.type, input.level, undefined, input.healthBarSlotsCustom);
   const healthBar = clampSlots(+input.healthBar || 0, healthBarSlots);
   const constitutionModifier = modifierByStat.constitution;
   const healthPoints = {
@@ -182,10 +190,12 @@ export const deriveCreature = (input = {}) => {
   const damageResistance = applyModifiers(+input.armor || 0, bonus.damage_resistance || 0, percent.damage_resistance || 0);
   const move = applyModifiers(+input.moveBase || 0, bonus.move || 0, percent.move || 0);
   const step = applyModifiers(+input.stepBase || 0, bonus.step || 0, percent.step || 0);
+  const mobBase = value => value == null || String(value).trim() === '' || !Number.isFinite(Number(value)) ? 10 : Number(value);
+  const mobEvadeBase = mobBase(input.mobEvadeBase);
 
   // Per-item values: skills/spells, then canonical Attacks.
   const context = {
-    modifierFor, itemBonuses: itemBonus, itemPercents: itemPercent, itemDice, items, floor,
+    modifierFor, itemBonuses: itemBonus, itemPercents: itemPercent, itemDice, items, floor, type: input.type,
   };
   const itemsOut = {};
   for (const item of items) {
@@ -195,14 +205,14 @@ export const deriveCreature = (input = {}) => {
 
   return {
     stats, healthBarSlots, healthBar, healthPoints, manaMax, evade, damageResistance, move, step,
-    // Move/step flat bonuses support backCalcBase; Evade includes percentage effects.
-    moveBonus: bonus.move || 0,
-    stepBonus: bonus.step || 0,
+    moveBonus: move - (+input.moveBase || 0),
+    stepBonus: step - (+input.stepBase || 0),
     evadeBonus, evadeDice, evadeBuffLabel, evadeRollLabel,
     damageResistanceBonus: bonus.damage_resistance || 0,
     // Mob static targets.
-    mobToHit: mobToHit(modifierByStat.strength, floor),
-    mobEvade: mobEvade(modifierByStat.dexterity, floor),
+    mobEvade: mobEvade(applyModifiers(mobEvadeBase, bonus.evade || 0, percent.evade || 0), floor),
+    mobSurprise: mobBase(input.surpriseBase) + floor,
+    mobMove: move + step,
     items: itemsOut,
     unresolved,
   };

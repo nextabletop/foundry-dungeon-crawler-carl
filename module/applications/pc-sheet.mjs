@@ -40,9 +40,7 @@ const TAB_PARTS = {
 export default class PcSheet extends DCCCreatureSheet {
   static DEFAULT_OPTIONS = {
     classes: ['pc'],
-    // Sized so the Abilities strip fits without scrolling, with an 8px gap below the last card
-    // matching the 8px gap under its header bar (measured live).
-    position: { width: 720, height: 822 },
+    position: { width: 720, height: 900 },
     actions: {
       useHotlist: PcSheet.#onUseHotlist,
       advancementEndSession: PcSheet.#onAdvancementEndSession,

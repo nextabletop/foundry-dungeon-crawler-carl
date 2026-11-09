@@ -3,6 +3,7 @@
     <div class="dcc-bar">
       <span>{{localize "DCC.Health.Bar"}}</span>
       {{#if health.dying}}<span class="dcc-dying">{{localize "DCC.Health.Dying"}}</span>{{/if}}
+      <button type="button" class="dcc-addbtn" data-action="healSlot">{{localize "DCC.Health.HealSlot"}}</button>
     </div>
     {{> "systems/dungeon-crawler-carl/templates/actor/partials/health-bar.hbs"}}
   </div>

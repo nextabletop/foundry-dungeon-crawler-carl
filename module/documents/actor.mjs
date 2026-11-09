@@ -162,6 +162,7 @@ export default class DCCActor extends foundry.documents.Actor {
     const hasSkillUse = Number.isInteger(skillUseIndex);
     const use = hasSkillUse ? item.system?.derived?.skillUses?.[skillUseIndex] : null;
     if (hasSkillUse && !use) return null;
+    if (this.type === 'mob' && which !== 'damage' && (use ?? item.system?.derived)?.mobToHitNone) return null;
     if ((this.type === 'vehicle') && this.system.rollsWithGunner(which)) {
       return this.#vehicleGuard(() => rollVehicleWeapon(this, item, cardOptions));
     }
@@ -232,7 +233,7 @@ export default class DCCActor extends foundry.documents.Actor {
     this.#casting = true;
     try {
       const manaValue = this.system.mana?.value;
-      // No mana pool (a mob): nothing to spend, and the card carries no cost / insufficient flag.
+      // Actors without a mana pool do not spend mana or report a cost.
       const hasMana = Number.isFinite(manaValue);
       const plan = castPlan({
         manaValue, costEffective: d.manaCostEffective, enabled: item.system.enabled, autoEnable: this.system.autoEnableCast,

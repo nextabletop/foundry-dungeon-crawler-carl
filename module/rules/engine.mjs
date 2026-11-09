@@ -2,7 +2,7 @@
 // Ported from character-sheet/source/javascript/_engine.js (ADR-0004/ADR-0008).
 // No Foundry globals — see foundry/module/rules/ conventions.
 
-import { HEALTH_BAR_MAX_SLOTS, VEHICLE_SIZE_MAX } from '../config.mjs';
+import { HEALTH_BAR_MAX_SLOTS, HEALTH_BAR_SLOT_GUARD, VEHICLE_SIZE_MAX } from '../config.mjs';
 
 // Stat value -> Stat Mod (sourced step chart). Min +1, max +10.
 // Ported verbatim from _engine.js:66.
@@ -42,80 +42,28 @@ export const parseModifierValue = (raw) => {
 // × (1 + Σpercent)). Ported verbatim from _engine.js:125.
 export const applyModifiers = (base, flat, percent) => Math.floor(((+base || 0) + (+flat || 0)) * (1 + (+percent || 0) / 100));
 
-// base = entered - current aggregated bonus, with a stale/unset guard: if the
-// bonus is missing/NaN, treat the entered value as the base rather than
-// back-calculating against a stale aggregate. Ported verbatim from _engine.js:143.
-export const backCalcBase = (entered, bonus) => {
-  const e = +entered || 0;
-  if (bonus === undefined || bonus === null || Number.isNaN(+bonus)) return e;
-  return e - (+bonus);
-};
-
-// Health Bar slot count by mode: a PC has all 10; a mob has min(level, 10);
-// a vehicle/mount has slots = size 1-8. Never < 1.
-// Ported verbatim from _engine.js:53.
-export const healthBarSlotsFor = (mode, level, size) => {
-  if (mode === 'mob') return Math.max(1, Math.min(HEALTH_BAR_MAX_SLOTS, +level || 0));
+// A custom count overrides PC and Mob defaults; vehicles always use their size.
+export const healthBarSlotsFor = (mode, level, size, custom) => {
   if (mode === 'vehicle') return Math.max(1, Math.min(VEHICLE_SIZE_MAX, +size || 0));
+  const count = Math.floor(+custom || 0);
+  if (count > 0) return Math.min(HEALTH_BAR_SLOT_GUARD, count);
+  if (mode === 'mob') return Math.max(1, Math.min(HEALTH_BAR_MAX_SLOTS, +level || 0));
   return HEALTH_BAR_MAX_SLOTS;
 };
 
-// Replaces R20's whisperPrefix (which returned a chat-command prefix string).
-// Mob rolls whisper to the GM by default; Settings mobPublic makes them public.
-// PCs and vehicles always roll publicly.
-export const whisperToGM = (type, mobPublic) => type === 'mob' && !mobPublic;
+// Mob rolls follow the selected message mode unless whispering is enabled.
+export const whisperToGM = (type, mobWhisper) => type === 'mob' && mobWhisper === true;
 
 /** Message modes everyone sees; 'self' / 'blind' / 'gm' are private. */
 export const PUBLIC_MODES = ['public', 'ic'];
 
 /**
  * A roll card's message mode: the player's chosen `core.messageMode`, except
- * that a hidden mob (whisperToGM) upgrades a public one ('public' / 'ic') to
+ * that a Mob with whispering enabled upgrades a public one ('public' / 'ic') to
  * 'gm'. The one whisper decision: postCard and the crew-name rule both use it.
- * @param {{type:string, system?:{mobPublic?:boolean}}} privacyActor - whose visibility applies
+ * @param {{type:string, system?:{mobWhisper?:boolean}}} privacyActor - whose visibility applies
  * @param {string} chosen
  * @returns {string}
  */
 export const cardMessageMode = (privacyActor, chosen) => (
-  (whisperToGM(privacyActor?.type, privacyActor?.system?.mobPublic) && PUBLIC_MODES.includes(chosen)) ? 'gm' : chosen);
-
-/**
- * The new stored base for a sheet edit of a derived move/step value, or
- * undefined when nothing should be written. The sheet submits the whole form
- * on every change, so an unchanged (or blank/non-numeric) value must not
- * back-calc: with a percent modifier, entered - bonus != base and the base
- * would drift on every unrelated edit.
- * @param {unknown} entered - the submitted display value
- * @param {number} current - the current derived value (system.move / step)
- * @param {number} bonus - the current flat bonus (system.moveBonus / stepBonus)
- * @returns {number|undefined}
- */
-export const editedBase = (entered, current, bonus) => {
-  if (entered === null || entered === undefined || entered === '') return undefined;
-  const e = +entered;
-  if (!Number.isFinite(e) || e === +current) return undefined;
-  return backCalcBase(e, bonus);
-};
-
-/**
- * Translate the sheet's display-only move/step inputs (`dcc.move`,
- * `dcc.step`) in expanded form data into stored bases (`system.moveBase`,
- * `system.stepBase`) via editedBase. Always removes `data.dcc`. Mutates and
- * returns `data`.
- * @param {object} data - expanded form data
- * @param {{move:number, step:number, moveBonus:number, stepBonus:number}} system - the prepared actor system
- * @returns {object}
- */
-export const translateDefenseEdits = (data, system) => {
-  const edits = data?.dcc;
-  if (!edits) return data;
-  delete data.dcc;
-  for (const key of ['move', 'step']) {
-    if (!(key in edits)) continue;
-    const base = editedBase(edits[key], system[key], system[`${key}Bonus`]);
-    if (base === undefined) continue;
-    data.system ??= {};
-    data.system[`${key}Base`] = base;
-  }
-  return data;
-};
+  (whisperToGM(privacyActor?.type, privacyActor?.system?.mobWhisper) && PUBLIC_MODES.includes(chosen)) ? 'gm' : chosen);

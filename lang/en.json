@@ -54,6 +54,14 @@
         "rank": {
           "label": "Rank"
         },
+        "mobToHitBase": {
+          "label": "Mob To-Hit Base",
+          "hint": "Floor and attack modifiers are added to this base. Leave blank to seed it from ability and rank."
+        },
+        "mobToHitNone": {
+          "label": "No Mob To-Hit",
+          "hint": "This attack has no To-Hit target."
+        },
         "skill": {
           "label": "Skill",
           "hint": "Name of a skill whose base rank replaces this rank.",
@@ -209,6 +217,8 @@
       "ManaStatHint": "The enhanced ability score that sets Max Mana.",
       "AutoEnableCast": "Auto-enable skill modifiers on cast",
       "AutoEnableCastHint": "Casting a spell turns its skill modifiers on.",
+      "HealthBarOverride": "Health Bar Override",
+      "HealthBarOverrideHint": "Leave blank for the default: 10 for Crawlers, or the Mob's level (maximum 10). Custom bars can have 1–100 slots.",
       "ChatExtras": "Attack and Spell Chat Cards",
       "ShowRangeInChat": "Show Range in chat",
       "ShowRangeInChatHint": "Show Range on Attack rolls and Spell casts.",
@@ -324,7 +334,9 @@
     },
     "Ability": {
       "Unenhanced": "Unenh",
-      "Enhanced": "Enh"
+      "Enhanced": "Enh",
+      "Modifier": "Stat Mod",
+      "Edit": "Edit ability scores"
     },
     "Roll": {
       "Ability": "Ability",
@@ -338,6 +350,7 @@
     "Health": {
       "Bar": "Health Bar",
       "Dying": "Dying",
+      "Dead": "Dead",
       "Slot": "Slot {n}",
       "HealthPointsShort": "HP",
       "HealSlot": "Heal slot"
@@ -353,8 +366,14 @@
       "Buffs": "Buffs",
       "EvadeTotal": "Evade Total",
       "EvadeRollTooltip": "Roll Evade: 1d20 + Dex Mod + Evade modifiers",
+      "Edit": "Edit",
+      "EditCombat": "Edit Combat fields",
       "Move": "Move",
+      "MoveBase": "Move Base",
+      "MoveTotal": "Move Total",
       "Step": "Step",
+      "StepBase": "Step Base",
+      "StepTotal": "Step Total",
       "Size": "Size",
       "DamageResistance": "Damage Resistance",
       "Armor": "Armor",
@@ -415,17 +434,34 @@
       "None": "No buffs or debuffs."
     },
     "Mob": {
+      "StatAbbr": {
+        "strength": "Str",
+        "intelligence": "Int",
+        "constitution": "Con",
+        "dexterity": "Dex",
+        "charisma": "Cha"
+      },
       "LevelTooltip": "Level sets the Health Bar slot count (1–10)",
       "Surprise": "Surprise",
-      "SurpriseTooltip": "The DC to surprise this mob",
+      "SurpriseTooltip": "Surprise target: base + Floor",
+      "SurpriseBase": "Surprise base",
+      "EvadeBase": "Evade base",
+      "Base": "Base",
+      "PlusFloor": "+F",
+      "EditCombat": "Edit Mob combat values",
+      "EditAbilities": "Edit Mob abilities",
+      "AbilityBase": "{stat} base",
+      "MoveTooltip": "Effective Move + effective Step",
       "Descriptors": "Descriptors",
       "DescriptorsPlaceholder": "e.g. undead, flying, boss",
-      "Public": "Rolls are public",
-      "PublicHint": "When on, this mob's rolls post publicly instead of whispering to the GM",
-      "ToHit": "To-Hit",
-      "ToHitTooltip": "Static To-Hit target: 10 + Str Mod + Floor",
-      "EvadeTooltip": "Static Evade target: 10 + Dex Mod + Floor",
-      "StaticToHitTooltip": "Static To-Hit target: 10 + to-hit + Floor (crawlers roll against it)"
+      "Whisper": "Whisper Mob rolls to the GM",
+      "WhisperHint": "When on, public Mob rolls whisper to the GM. Your selected private roll mode still applies.",
+      "ShowInventory": "Show Inventory & Gear",
+      "ShowSkills": "Show Skills & Spells",
+      "ShowBuffs": "Show Buffs & Debuffs",
+      "ShowSectionsHint": "Hidden sections keep their items and active effects.",
+      "EvadeTooltip": "Static Evade target: base + modifiers + Floor",
+      "StaticToHitTooltip": "Static To-Hit target: attack base + modifiers + Floor"
     },
     "Vehicle": {
       "StatBlock": "Vehicle / Mount",

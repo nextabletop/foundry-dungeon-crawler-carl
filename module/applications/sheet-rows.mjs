@@ -60,6 +60,17 @@ export const richTextFieldNames = (parts = {}) => Object.values(parts).flat().ma
 
 // ── Actor-sheet list rows ──
 
+/** Creature ability rows, with the net effect of all modifiers on the stored base. */
+export const abilityRows = (system, source) => STATS.map(key => ({
+  key,
+  label: `DCC.Stat.${key}`,
+  abbr: `DCC.StatAbbr.${key}`,
+  base: source.stats[key].base,
+  enhancement: system.stats[key].enhancement,
+  modifier: system.stats[key].modifier,
+  buff: system.stats[key].enhancement - source.stats[key].base,
+}));
+
 /** Sheet list order: the manual sort, then name. */
 export const bySort = (a, b) => ((a.sort ?? 0) - (b.sort ?? 0)) || String(a.name ?? '').localeCompare(String(b.name ?? ''));
 
@@ -85,7 +96,9 @@ const attackRow = (item, items) => {
     rank: d.rank,
     toHit: d.toHit,
     mobToHit: d.mobToHit,
+    mobToHitNone: d.mobToHitNone,
     damageLabel: String(d.damageLabel ?? '').trim(),
+    notes: htmlToText((item.system._source ?? item.system).description),
     skillUses: (d.skillUses ?? []).map(use => ({
       ...use,
       attackId: item.id,

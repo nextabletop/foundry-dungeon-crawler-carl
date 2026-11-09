@@ -20,16 +20,16 @@ const withPrivacy = (actor, options) => (actor ? { privacyOf: actor, ...options 
 
 /**
  * The name a vehicle card may print for crew member `actor` (crewCardName).
- * `whispered` comes from cardMessageMode, the same decision postCard makes
- * (the card is posted with `privacyOf: actor`); `rollerCanSee` because the
+ * `whispered` comes from cardMessageMode, the same decision postCard makes;
+ * `rollerCanSee` because the
  * whisper's author (this user) sees it too.
  *
  * `allPlayersCanSee` checks EVERY non-GM user, offline ones included. That
  * is deliberately conservative: the card stays in the chat log, so a player
  * who logs in later reads it too.
  */
-const cardCrewName = (actor) => {
-  const mode = cardMessageMode(actor, game.settings.get('core', 'messageMode'));
+const cardCrewName = (actor, privacyActor = actor) => {
+  const mode = cardMessageMode(privacyActor, game.settings.get('core', 'messageMode'));
   return crewCardName({
     name: actor.name,
     whispered: !PUBLIC_MODES.includes(mode),
@@ -48,7 +48,7 @@ const postVehicleCard = async (vehicle, build, options) => {
   const { fields, roll, damage } = build({
     mode: s.drivingMode, target: s.drivingTarget, speed: s.speed, floor: s.floor, size: s.size,
     kind: s.kind, driveSkill: s.driveSkill, advantage: s.rollAdvantage, targetEvade: s.ramTargetEvade, ahead: s.raceAhead,
-    driverBonus: bonus, driver: driver ? { ...driver, name: cardCrewName(actor) } : null,
+    driverBonus: bonus, driver: driver ? { ...driver, name: cardCrewName(actor, options?.privacyOf ?? actor) } : null,
   }, t);
   return postCard(vehicle, fields, { roll, damage }, withPrivacy(actor, options));
 };
@@ -76,7 +76,7 @@ export const rollVehicleWeapon = async (vehicle, item, options) => {
   const { actor, gunner } = s.resolveGunner(item.system.gunnerSlot);
   const { fields, roll } = vehicleWeaponCard({
     weapon: { name: item.name, toHit: d.toHit, skillName: item.system.skillName, stat: item.system.stat },
-    gunner: gunner && { ...gunner, name: cardCrewName(actor) }, floor: s.floor,
+    gunner: gunner && { ...gunner, name: cardCrewName(actor, options?.privacyOf ?? actor) }, floor: s.floor,
   }, t);
   return postCard(vehicle, { ...fields, ...attackCardExtras(s, item.system) }, { roll }, withPrivacy(actor, options));
 };

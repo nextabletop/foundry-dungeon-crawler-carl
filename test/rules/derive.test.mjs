@@ -8,7 +8,7 @@ const stats = (over = {}) => Object.fromEntries(
 );
 
 const pc = (over = {}) => ({
-  type: 'pc', level: 1, floor: 1, healthBar: 10, armor: 0, moveBase: 0, stepBase: 5,
+  type: 'pc', level: 1, floor: 1, healthBar: 10, armor: 0, moveBase: 20, stepBase: 10,
   stats: stats(), manaStat: 'intelligence', modifiers: [], items: [], ...over,
 });
 
@@ -28,7 +28,7 @@ const spell = (id, name, system = {}) => ({
 });
 
 describe('deriveCreature — stats, health, defenses', () => {
-  it('fresh PC: all stat mods 1, healthPoints 10/10, evade 1, damageResistance 0, step 5, manaMax 1', () => {
+  it('fresh PC: all stat mods 1, healthPoints 10/10, evade 1, move 20, step 10, manaMax 1', () => {
     const d = deriveCreature(pc());
     for (const s of Object.values(d.stats)) expect(s).toEqual({ base: 1, enhancement: 1, modifier: 1 });
     expect(d.healthBarSlots).toBe(10);
@@ -36,8 +36,8 @@ describe('deriveCreature — stats, health, defenses', () => {
     expect(d.healthPoints).toEqual({ value: 10, max: 10 });
     expect(d.evade).toBe(1);
     expect(d.damageResistance).toBe(0);
-    expect(d.move).toBe(0);
-    expect(d.step).toBe(5);
+    expect(d.move).toBe(20);
+    expect(d.step).toBe(10);
     expect(d.manaMax).toBe(1);
     expect(d.unresolved).toEqual([]);
   });
@@ -79,7 +79,7 @@ describe('deriveCreature — stats, health, defenses', () => {
     expect(d.evade).toBe(5);
     expect(d.damageResistance).toBe(3);
     expect(d.move).toBe(35);
-    expect(d.step).toBe(7);
+    expect(d.step).toBe(12);
     expect(d.moveBonus).toBe(5);
     expect(d.stepBonus).toBe(2);
   });
@@ -90,10 +90,49 @@ describe('deriveCreature — stats, health, defenses', () => {
     expect(d.stepBonus).toBe(0);
   });
 
-  it('mob strip: mobToHit = 10+strengthModifier+floor, mobEvade = 10+dexterityModifier+floor', () => {
+  it('movement bonuses reflect flat and percentage effects on the editable bases', () => {
+    const d = deriveCreature(pc({
+      moveBase: 20, stepBase: 10,
+      modifiers: [
+        { target: 'move', value: '5' }, { target: 'move', value: '50%' },
+        { target: 'step', value: '-3' }, { target: 'step', value: '-50%' },
+      ],
+    }));
+    expect(d).toMatchObject({ move: 37, moveBonus: 17, step: 3, stepBonus: -7 });
+  });
+
+  it('mob strip uses editable bases plus Floor and combines effective Move and Step', () => {
     const d = deriveCreature(pc({ type: 'mob', level: 5, floor: 3, stats: stats({ strength: 20, dexterity: 6 }) }));
-    expect(d.mobToHit).toBe(18);
-    expect(d.mobEvade).toBe(16);
+    expect(d).toMatchObject({ mobEvade: 13, mobSurprise: 13, mobMove: 30 });
+    const modified = deriveCreature(pc({
+      type: 'mob', floor: 3, mobEvadeBase: 8, surpriseBase: 0,
+      moveBase: 20, stepBase: 10,
+      modifiers: [{ target: 'evade', value: '2' }, { target: 'evade', value: '50%' },
+        { target: 'move', value: '50%' }, { target: 'step', value: '-3' }],
+    }));
+    expect(modified).toMatchObject({ mobEvade: 18, mobSurprise: 3, mobMove: 37 });
+    expect(deriveCreature(pc({ type: 'mob', floor: 3, mobEvadeBase: 0, surpriseBase: null })))
+      .toMatchObject({ mobEvade: 3, mobSurprise: 13 });
+  });
+
+  it('derives each Mob Attack from its own base, attack modifiers and Floor', () => {
+    const items = [
+      attack('a', 'Claw', { mobToHitBase: 13 }),
+      attack('b', 'Bite', { mobToHitBase: 0 }),
+      attack('c', 'Aura', { mobToHitBase: 12, mobToHitNone: true }),
+      attack('d', 'Automatic', { stat: 'strength', rank: 2, mobToHitBase: null }),
+    ];
+    const d = deriveCreature(pc({
+      type: 'mob', floor: 3, stats: stats({ strength: 20 }), items,
+      modifiers: [{ target: 'item:Claw:to_hit', value: '2' }, { target: 'item:Claw:to_hit', value: '50%' },
+        { target: 'item:Aura:to_hit', value: '100' }],
+    }));
+    expect(d.items.a).toMatchObject({ toHit: 7, mobToHit: 20, mobToHitNone: false });
+    expect(d.items.b).toMatchObject({ toHit: -10, mobToHit: 3 });
+    expect(d.items.c).toMatchObject({ toHit: 0, mobToHit: null, mobToHitNone: true });
+    expect(d.items.d).toMatchObject({ toHit: 7, mobToHit: 20 });
+    const changed = deriveCreature(pc({ type: 'mob', floor: 5, stats: stats({ strength: 1 }), items }));
+    expect(changed.items.a.mobToHit).toBe(18);
   });
 
   it('passes unresolved modifiers through as-is', () => {
@@ -359,7 +398,7 @@ const allFinite = (v) => {
 const CREATURE_KEYS = [
   'stats', 'healthBarSlots', 'healthBar', 'healthPoints', 'manaMax', 'evade', 'damageResistance', 'move', 'step',
   'moveBonus', 'stepBonus', 'evadeBonus', 'evadeDice', 'evadeBuffLabel', 'evadeRollLabel',
-  'damageResistanceBonus', 'mobToHit', 'mobEvade', 'items', 'unresolved',
+  'damageResistanceBonus', 'mobEvade', 'mobSurprise', 'mobMove', 'items', 'unresolved',
 ];
 const VEHICLE_KEYS = ['size', 'constitutionModifierEffective', 'healthBarSlots', 'healthBar', 'healthPoints', 'damageResistance', 'damageResistanceBonus', 'move', 'cruise', 'penalty', 'items', 'unresolved'];
 
@@ -411,9 +450,9 @@ describe('deriveCreature — review hardening', () => {
     expect(result).toMatchObject({ evade: 4, evadeBonus: 0, evadeBuffLabel: buffLabel, evadeRollLabel: rollLabel });
   });
 
-  it('keeps the existing Mob static Evade calculation separate', () => {
-    const result = deriveCreature(pc({ type: 'mob', floor: 2, stats: stats({ dexterity: 10 }) }));
-    expect(result.mobEvade).toBe(16);
+  it('keeps Mob static Evade independent of Dexterity', () => {
+    const result = deriveCreature(pc({ type: 'mob', floor: 2, mobEvadeBase: 4, stats: stats({ dexterity: 10 }) }));
+    expect(result.mobEvade).toBe(6);
   });
 
   it("a prototype-key stat ('constructor') reads stat mod 0, not a function", () => {

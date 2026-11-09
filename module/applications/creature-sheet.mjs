@@ -1,6 +1,6 @@
 import DCCActorSheetBase from './actor-sheet-base.mjs';
 import { STATS, ROLL_ABBR, CHECK_TYPES, APP_CLASSES } from '../config.mjs';
-import { sheetItemLists, buffRows } from './sheet-rows.mjs';
+import { abilityRows, sheetItemLists, buffRows } from './sheet-rows.mjs';
 import { postCard } from '../rolls/card.mjs';
 import { DCC_CHANGE_TYPE } from '../effects/dcc-change.mjs';
 import { crewingOf } from '../rules/crew.mjs';
@@ -39,14 +39,7 @@ export default class DCCCreatureSheet extends DCCActorSheetBase {
     const system = this.document.system;
     const source = system._source;
     return Object.assign(context, {
-      stats: STATS.map(key => ({
-        key,
-        label: `DCC.Stat.${key}`,
-        abbr: `DCC.StatAbbr.${key}`,
-        base: source.stats?.[key]?.base,
-        enhancement: system.stats?.[key]?.enhancement,
-        modifier: system.stats?.[key]?.modifier,
-      })),
+      stats: abilityRows(system, source),
       ...this._healthContext(),
       ...this._prepareItemLists(),
       crewing: this.#crewing(),

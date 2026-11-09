@@ -12,7 +12,7 @@ const stats = (over = {}) => Object.fromEntries(STATS.map((s) => [s, { base: ove
 
 const creatureSource = (over = {}) => ({
   level: 1, floor: 1, stats: stats(), healthBar: 10, healthPoints: { value: 0, max: 0 },
-  armor: 0, moveBase: 0, stepBase: 5, size: 'M', notes: '', ...over,
+  armor: 0, moveBase: 20, stepBase: 10, size: 'M', notes: '', ...over,
 });
 const pcSource = (over = {}) => creatureSource({ mana: { value: 0, max: 0 }, manaStat: 'intelligence', ...over });
 
@@ -44,7 +44,7 @@ describe('PcModel derive wiring', () => {
     expect(model._modifiers).toEqual([]);
   });
 
-  it('fresh PC: all mods 1, healthPoints 10/10, evade 1, damageResistance 0, step 5, mana.max 1', () => {
+  it('fresh PC: all mods 1, healthPoints 10/10, evade 1, move 20, step 10, mana.max 1', () => {
     const m = prepare(PcModel, pcSource());
     for (const s of STATS) {
       expect(m.stats[s].base).toBe(1);
@@ -58,13 +58,12 @@ describe('PcModel derive wiring', () => {
     expect(m.mana.max).toBe(1);
     expect(m.evade).toBe(1);
     expect(m.damageResistance).toBe(0);
-    expect(m.move).toBe(0);
-    expect(m.step).toBe(5);
+    expect(m.move).toBe(20);
+    expect(m.step).toBe(10);
     expect(m.moveBonus).toBe(0);
     expect(m.stepBonus).toBe(0);
     expect(m.evadeBonus).toBe(0);
     expect(m.damageResistanceBonus).toBe(0);
-    expect(typeof m.mobToHit).toBe('number');
     expect(typeof m.mobEvade).toBe('number');
     expect(m.unresolvedModifiers).toEqual([]);
   });
@@ -85,6 +84,18 @@ describe('PcModel derive wiring', () => {
     expect(model.stats.strength.modifier).toBe(2);
     expect(model.damageResistance).toBe(3);
     expect(model.damageResistanceBonus).toBe(3);
+  });
+
+  it.each([PcModel, MobModel])('preserves authored movement bases while deriving modifiers for %s', (Model) => {
+    const model = new Model(creatureSource({ moveBase: 0, stepBase: 12, mana: { value: 0, max: 0 } }));
+    model.parent = { items: [] };
+    model.prepareBaseData();
+    model._modifiers.push(
+      { target: 'move', value: '5' },
+      { target: 'step', value: '50%' },
+    );
+    model.prepareDerivedData();
+    expect(model).toMatchObject({ moveBase: 0, stepBase: 12, move: 5, step: 18 });
   });
 
   it('exposes Evade flat, percentage and dice modifiers on the actor model', () => {
@@ -140,7 +151,79 @@ describe('MobModel derive wiring', () => {
     const m = prepare(MobModel, creatureSource({ level: 3, healthBar: 3 }));
     expect(m.healthBarSlots).toBe(3);
     expect(m.healthPoints).toEqual({ value: 3, max: 3 });
-    expect(m.mana).toBeUndefined();
+    expect(m.move).toBe(20);
+    expect(m.step).toBe(10);
+    expect(m.mobMove).toBe(30);
+  });
+
+  it('wires Mob combat bases and preserves manually entered mana', () => {
+    const model = new MobModel(creatureSource({
+      floor: 4, surprise: 0, mobEvadeBase: 6, mana: { value: 7, max: 12 },
+    }));
+    model.parent = { items: [item('s1', 'spell', 'Spell')] };
+    model.prepareBaseData();
+    model._modifiers.push({ target: 'evade', value: '3' }, { target: 'move', value: '50%' });
+    model.prepareDerivedData();
+    expect(model).toMatchObject({ mobSurprise: 4, mobEvade: 13, mobMove: 40, mana: { value: 7, max: 12 } });
+  });
+
+  it('hiding optional sections leaves owned items and active modifiers in effect', () => {
+    const items = [knives(), rope()];
+    const model = new MobModel(creatureSource({
+      mobShowInventory: false, mobShowSkills: false, mobShowBuffs: false,
+    }));
+    model.parent = { items };
+    const recalculate = () => {
+      model.prepareBaseData();
+      model._modifiers.push({ target: 'strength', value: '2' });
+      model.prepareDerivedData();
+    };
+    recalculate();
+    expect(model.stats.strength.enhancement).toBe(3);
+    expect(items[0].system.derived.skillBonus).toBe(3);
+    expect(model.parent.items).toEqual(items);
+    model.mobShowInventory = true;
+    model.mobShowSkills = true;
+    model.mobShowBuffs = true;
+    recalculate();
+    expect(model.stats.strength.enhancement).toBe(3);
+    expect(items[0].system.derived.skillBonus).toBe(3);
+    expect(model.parent.items).toEqual(items);
+  });
+});
+
+describe('custom creature Health Bars', () => {
+  it.each([PcModel, MobModel])('derives custom slot and HP totals for %s', (Model) => {
+    const m = prepare(Model, creatureSource({
+      healthBarSlotsCustom: 25, healthBar: 17, stats: stats({ constitution: 10 }),
+      mana: { value: 0, max: 0 },
+    }));
+    expect(m.healthBarSlots).toBe(25);
+    expect(m.healthBarDisplay).toBe(17);
+    expect(m.healthPoints).toEqual({ value: 68, max: 100 });
+  });
+
+  describe('creature movement base edits', () => {
+    it.each([PcModel, MobModel])('derives totals from edited bases with active modifiers for %s', (Model) => {
+      const model = new Model(creatureSource({ mana: { value: 0, max: 0 } }));
+      model.parent = { items: [] };
+      const recalculate = () => {
+        model.prepareBaseData();
+        model._modifiers.push(
+          { target: 'move', value: '5' }, { target: 'move', value: '50%' },
+          { target: 'step', value: '2' }, { target: 'step', value: '50%' },
+        );
+        model.prepareDerivedData();
+      };
+      recalculate();
+      expect(model).toMatchObject({ moveBase: 20, move: 37, moveBonus: 17, stepBase: 10, step: 18, stepBonus: 8 });
+      model.moveBase = 30;
+      model.stepBase = 0;
+      recalculate();
+      expect(model).toMatchObject({ moveBase: 30, move: 52, moveBonus: 22, stepBase: 0, step: 3, stepBonus: 3 });
+      recalculate();
+      expect(model).toMatchObject({ moveBase: 30, move: 52, stepBase: 0, step: 3 });
+    });
   });
 });
 

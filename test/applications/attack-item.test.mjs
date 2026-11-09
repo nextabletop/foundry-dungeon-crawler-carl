@@ -18,4 +18,15 @@ describe('Attack Item registration and sheet', () => {
     expect(actorList).toContain('data-type="attack"');
     expect(actorList).not.toContain('data-type="weapon"');
   });
+
+  it('shows a localized Floor suffix next to the Mob base input without changing its value or None behavior', () => {
+    const attack = read('../../templates/item/attack.hbs');
+    const css = read('../../styles/system.css');
+    expect(attack).toMatch(/{{#if showMobToHit}}[\s\S]*<label class="dcc-mob-tohit-label">[\s\S]*{{formInput systemFields\.mobToHitBase value=systemSource\.mobToHitBase disabled=systemSource\.mobToHitNone}}[\s\S]*{{localize "DCC\.Mob\.PlusFloor"}}[\s\S]*<\/label>/);
+    expect(attack).toContain('{{localize "DCC.Item.FIELDS.mobToHitBase.hint"}}');
+    expect(attack).toContain('systemFields.mobToHitNone value=systemSource.mobToHitNone');
+    expect(css).toMatch(/\.dcc-mob-tohit-label \.form-fields \{[^}]*display: flex;[^}]*flex-wrap: nowrap;/);
+    expect(css).toMatch(/\.dcc-mob-tohit-label \.form-fields > input \{[^}]*flex: 1 1 0;[^}]*width: 0;[^}]*min-width: 0;/);
+    expect(css).toMatch(/\.dcc-mob-tohit-label \.form-fields > span \{ flex: none; \}/);
+  });
 });

@@ -198,6 +198,19 @@ describe('rollAttack', () => {
     expect(postCard.mock.calls[0][2]).toEqual({ roll: '1d20 + 7' });
     expect(actor.update).not.toHaveBeenCalled();
   });
+  it('does not roll a Mob Attack with no To-Hit, but still rolls its damage', async () => {
+    const mob = new DCCActor({ type: 'mob', name: 'Goblin', system: {} });
+    const attack = own(mob, makeItem('attack', 'Aura', { damageType: 'fire' }, {
+      toHit: 0, mobToHitNone: true, damageBase: 2, damageDice: '1d6',
+      skillUses: [{ label: 'alternate', toHit: 0, mobToHitNone: true }],
+    }));
+    expect(await mob.rollAttack(attack, 'toHit')).toBeNull();
+    expect(await mob.rollAttack(attack, 'toHit', { skillUseIndex: 0 })).toBeNull();
+    expect(postCard).not.toHaveBeenCalled();
+    await mob.rollAttack(attack, 'damage');
+    expect(postCard).toHaveBeenCalledTimes(1);
+    expect(postCard.mock.calls[0][2]).toEqual({ damage: '1d6 + 2' });
+  });
   it.each([
     [true, true, { range: '20ft', notes: 'Reach. · Push.' }],
     [true, false, { range: '20ft' }],
@@ -450,15 +463,14 @@ describe('castSpell guard and order', () => {
     await actor.castSpell(spell);
     expect(postCard).toHaveBeenCalledTimes(2);
   });
-  it('an actor without mana (mob) casts a plain check: no mana update, no cost / insufficient flag', async () => {
-    const mob = new DCCActor({ type: 'mob', name: 'Goblin', system: {} });
+  it('a Mob spends its mana and reports the cost when casting', async () => {
+    const mob = new DCCActor({ type: 'mob', name: 'Goblin', system: { mana: { value: 5, max: 10 } } });
     mob.update = vi.fn();
     const spell = own(mob, makeItem('spell', 'Hex', { enabled: true, checkType: 'opposed' }, { skillBonus: 2, manaCostEffective: 3 }));
     await expect(mob.castSpell(spell)).resolves.toBeDefined();
-    expect(mob.update).not.toHaveBeenCalled();
-    // No mana pool: a plain check card (no cost, no insufficient-mana flag).
+    expect(mob.update).toHaveBeenCalledWith({ 'system.mana.value': 2 });
     const [, fields, formulas] = postCard.mock.calls[0];
-    expect(fields).toEqual({ name: 'Hex', tag: 'DCC.CheckType.opposed' });
+    expect(fields).toMatchObject({ name: 'Hex', tag: 'DCC.CheckType.opposed', cost: 3, insufficient: false });
     expect(formulas).toEqual({ roll: '1d20 + 2' });
   });
 });

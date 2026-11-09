@@ -171,10 +171,10 @@ const STAT_MODIFIERS = { strength: 0, intelligence: 0, constitution: 0, dexterit
 // Permission levels as core names them; `players` is every other non-GM
 // user's level on the actor, `roller` the rolling user's (game.user).
 const LEVELS = { NONE: 0, LIMITED: 1, OBSERVER: 2, OWNER: 3 };
-const crewActor = ({ uuid = 'Actor.carl', type = 'pc', name = 'Carl', modifiers = STAT_MODIFIERS, items = [], players = 3, roller = 3, mobPublic } = {}) => ({
+const crewActor = ({ uuid = 'Actor.carl', type = 'pc', name = 'Carl', modifiers = STAT_MODIFIERS, items = [], players = 3, roller = 3, mobWhisper } = {}) => ({
   uuid, type, name, items,
   testUserPermission: vi.fn((user, level) => (user.isGM ? 3 : (user === game.user ? roller : players)) >= LEVELS[level]),
-  system: { mobPublic, stats: Object.fromEntries(Object.entries(modifiers).map(([k, modifier]) => [k, { modifier }])) },
+  system: { mobWhisper, stats: Object.fromEntries(Object.entries(modifiers).map(([k, modifier]) => [k, { modifier }])) },
 });
 const skillItem = (id, name, bonus, stat = 'dexterity') => ({ id, type: 'skill', name, system: { stat, derived: { skillBonus: bonus } } });
 const weaponItem = (id, name, toHit, die = '1d8', damageBase = 2) => ({
@@ -206,14 +206,14 @@ describe('crew resolution (VehicleModel)', () => {
     });
     it('hidden from a player on a public card: the generic label', async () => {
       withNames();
-      world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', players: 0, mobPublic: true });
+      world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', players: 0 });
       const a = vehicle({ drivingMode: 'stop', crew: [{ uuid: 'Actor.gob', role: 'driver' }] });
       await a.rollDriving();
       expect(postCard.mock.calls[0][1].note).toBe('DCC.Vehicle.Card.DriverUntrained|DCC.Crew.Unknown');
     });
-    it('hidden, but the card whispers to the GM (a hidden mob): the real name', async () => {
+    it('hidden, but the Mob card whispers to the GM: the real name', async () => {
       withNames();
-      world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', players: 0 });
+      world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', players: 0, mobWhisper: true });
       const a = vehicle({ drivingMode: 'stop', crew: [{ uuid: 'Actor.gob', role: 'driver' }] });
       await a.rollDriving();
       expect(postCard.mock.calls[0][1].note).toBe('DCC.Vehicle.Card.DriverUntrained|Goblin');
@@ -221,7 +221,7 @@ describe('crew resolution (VehicleModel)', () => {
     it('whispered, but the rolling player cannot see the mob (the whisper author sees it): the generic label', async () => {
       withNames();
       game.user = PLAYERS[0];
-      world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', players: 0, roller: 0 });
+      world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', players: 0, roller: 0, mobWhisper: true });
       const a = vehicle({ drivingMode: 'stop', crew: [{ uuid: 'Actor.gob', role: 'driver' }] });
       await a.rollDriving();
       expect(postCard.mock.calls[0][1].note).toBe('DCC.Vehicle.Card.DriverUntrained|DCC.Crew.Unknown');
@@ -230,16 +230,25 @@ describe('crew resolution (VehicleModel)', () => {
     it('whispered, and the rolling player can see the mob: the real name', async () => {
       withNames();
       game.user = PLAYERS[0];
-      world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', players: 0, roller: 1 });
+      world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', players: 0, roller: 1, mobWhisper: true });
       const a = vehicle({ drivingMode: 'stop', crew: [{ uuid: 'Actor.gob', role: 'driver' }] });
       await a.rollDriving();
       expect(postCard.mock.calls[0][1].note).toBe('DCC.Vehicle.Card.DriverUntrained|Goblin');
     });
-    it('a hidden mob made public (mobPublic): masked even for a GM roller', async () => {
+    it('a hidden Mob with whispering disabled is masked even for a GM roller', async () => {
       withNames();
-      world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', players: 0, mobPublic: true });
+      world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', players: 0, mobWhisper: false });
       await vehicle({ drivingMode: 'stop', crew: [{ uuid: 'Actor.gob', role: 'driver' }] }).rollDriving();
       expect(postCard.mock.calls[0][1].note).toBe('DCC.Vehicle.Card.DriverUntrained|DCC.Crew.Unknown');
+    });
+    it('uses the actual privacy override when masking the crew name', async () => {
+      withNames();
+      world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', players: 0, mobWhisper: true });
+      const a = vehicle({ drivingMode: 'stop', crew: [{ uuid: 'Actor.gob', role: 'driver' }] });
+      const privacyOf = crewActor({ type: 'pc' });
+      await a.rollDriving({ privacyOf });
+      expect(postCard.mock.calls[0][1].note).toBe('DCC.Vehicle.Card.DriverUntrained|DCC.Crew.Unknown');
+      expect(postCard.mock.calls[0][3].privacyOf).toBe(privacyOf);
     });
     it('a hidden PC gunner on a weapon card: the generic label', async () => {
       withNames();
@@ -255,6 +264,13 @@ describe('crew resolution (VehicleModel)', () => {
       await a.rollCrewSkill(carl, 's1');
       expect(postCard.mock.calls[0][1].name).toBe('DCC.Crew.Card.SkillName|Carl');
     });
+  });
+
+  it.each(['rollDriving', 'rollRam', 'rollRace'])('%s uses the Mob driver as privacy actor', async (action) => {
+    world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', mobWhisper: true });
+    const a = vehicle({ crew: [{ uuid: 'Actor.gob', role: 'driver' }] });
+    await a[action]();
+    expect(postCard.mock.calls[0][3].privacyOf).toBe(world['Actor.gob']);
   });
 
   it('resolveDriver: the driver drive-skill bonus by name', () => {
@@ -318,6 +334,12 @@ describe('crew resolution (VehicleModel)', () => {
       expect(fields.note).toBe('DCC.Crew.Card.Gunner');
       expect(options.privacyOf).toBe(world['Actor.carl']);
     });
+    it.each([false, true])('uses the Mob gunner as privacy actor with whisper=%s', async (mobWhisper) => {
+      world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', mobWhisper });
+      const a = vehicle({ crew: [{ uuid: 'Actor.gob', role: 'gunner1' }] });
+      await a.rollAttack(turret(a));
+      expect(postCard.mock.calls[0][3].privacyOf).toBe(world['Actor.gob']);
+    });
     it('no gunner: 1d20 + weapon to-hit', async () => {
       const a = vehicle();
       await a.rollAttack(turret(a, { gunnerSlot: '' }));
@@ -363,6 +385,17 @@ describe('crew resolution (VehicleModel)', () => {
   });
 
   describe('crew skill / attack from the vehicle', () => {
+    it.each([false, true])('posts Mob crew skill and attack as the Mob with whisper=%s', async (mobWhisper) => {
+      const gob = crewActor({
+        uuid: 'Actor.gob', type: 'mob', mobWhisper,
+        items: [skillItem('s1', 'Sneak', 2), weaponItem('w1', 'Claw', 3)],
+      });
+      const a = vehicle({ crew: [{ uuid: 'Actor.gob', role: 'passenger' }] });
+      await a.rollCrewSkill(gob, 's1');
+      await a.rollCrewAttack(gob, 'w1');
+      expect(postCard.mock.calls.map(call => call[0])).toEqual([gob, gob]);
+      expect(gob.system.mobWhisper).toBe(mobWhisper);
+    });
     it('skill: posted as the crew actor with the aboard penalty', async () => {
       const carl = crewActor({ items: [skillItem('s1', 'Knives', 4)] });
       const a = vehicle({ speed: 3, crew: [{ uuid: 'Actor.carl', role: 'passenger' }] });
