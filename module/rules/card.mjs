@@ -71,6 +71,7 @@ export const cardContext = (fields = {}, results = {}) => {
   if (present(fields.result)) ctx.result = safe(fields.result);
   if (present(fields.penalty)) ctx.penalty = safe(fields.penalty);
   if (present(fields.note)) ctx.note = safe(fields.note);
+  if (present(fields.notes)) ctx.notes = safe(fields.notes);
   if (present(fields.range)) ctx.range = safe(fields.range);
   if (present(fields.duration)) ctx.duration = safe(fields.duration);
   if (present(fields.cooldown)) ctx.cooldown = safe(fields.cooldown);
@@ -145,4 +146,32 @@ export const htmlToText = (html) => {
     .map(line => line.replace(/[ \t\u00a0]+/g, ' ').trim())
     .filter(Boolean)
     .join('\n');
+};
+
+/** Match Roll20's compact, single-line card extras; Handlebars escapes the result. */
+const cardLine = value => String(value ?? '').trim().replace(/\s*[\r\n]+\s*/g, ' · ');
+
+/** Range and authored HTML notes on Attack cards, controlled by the rolling actor. */
+export const attackCardExtras = (settings = {}, attack = {}, range = attack.range) => {
+  const result = {};
+  const rangeText = cardLine(range);
+  const noteText = cardLine(htmlToText(attack.description));
+  if (settings.showRangeInChat !== false && rangeText) result.range = rangeText;
+  if (settings.showNotesInChat !== false && noteText) result.notes = noteText;
+  return result;
+};
+
+/** Spell-owned extras take precedence; blank fields fall back to its granted Attack. */
+export const spellCardExtras = (settings = {}, spell = {}, attack = {}) => {
+  const spellRange = cardLine(spell.range);
+  const spellNotes = cardLine(htmlToText(spell.description));
+  const result = attackCardExtras(settings, {
+    range: spellRange || attack.range,
+    description: spellNotes ? spell.description : attack.description,
+  });
+  for (const field of ['duration', 'cooldown']) {
+    const text = cardLine(spell[field]);
+    if (text) result[field] = text;
+  }
+  return result;
 };

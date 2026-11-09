@@ -15,12 +15,12 @@
     <span class="dcc-fop">+</span>
     <div class="dcc-fbox">
       <span class="lab">{{localize "DCC.Defense.Buffs"}}</span>
-      <span class="bx">{{system.evadeBonus}}</span>
+      <span class="bx">{{system.evadeBuffLabel}}</span>
     </div>
     <span class="dcc-fop">=</span>
     <div class="dcc-fbox">
       <span class="lab">{{localize "DCC.Defense.EvadeTotal"}}</span>
-      <button type="button" class="bx tot" data-action="rollEvade" data-tooltip="{{localize 'DCC.Defense.EvadeRollTooltip'}}" aria-label="{{localize 'DCC.Defense.EvadeRollTooltip'}}">{{system.evade}}</button>
+      <button type="button" class="bx tot" data-action="rollEvade" data-tooltip="{{localize 'DCC.Defense.EvadeRollTooltip'}}" aria-label="{{localize 'DCC.Defense.EvadeRollTooltip'}}">{{system.evadeRollLabel}}</button>
     </div>
   </div>
   {{/unless}}
@@ -58,7 +58,7 @@
 </div>
 <p class="dcc-buffline">
   <span class="dcc-flabel">{{localize "DCC.Defense.Buffs"}}</span>
-  {{#unless hideEvade}}{{localize "DCC.Defense.Evade"}} {{numberFormat system.evadeBonus sign=true}} ·{{/unless}}
+  {{#unless hideEvade}}{{localize "DCC.Defense.Evade"}} {{system.evadeBuffLabel}} ·{{/unless}}
   {{localize "DCC.Defense.DamageResistanceShort"}} {{numberFormat system.damageResistanceBonus sign=true}} ·
   {{localize "DCC.Defense.Move"}} {{numberFormat system.moveBonus sign=true}} ·
   {{localize "DCC.Defense.Step"}} {{numberFormat system.stepBonus sign=true}}

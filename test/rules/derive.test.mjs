@@ -28,13 +28,13 @@ const spell = (id, name, system = {}) => ({
 });
 
 describe('deriveCreature — stats, health, defenses', () => {
-  it('fresh PC: all stat mods 1, healthPoints 10/10, evade 11, damageResistance 0, step 5, manaMax 1', () => {
+  it('fresh PC: all stat mods 1, healthPoints 10/10, evade 1, damageResistance 0, step 5, manaMax 1', () => {
     const d = deriveCreature(pc());
     for (const s of Object.values(d.stats)) expect(s).toEqual({ base: 1, enhancement: 1, modifier: 1 });
     expect(d.healthBarSlots).toBe(10);
     expect(d.healthBar).toBe(10);
     expect(d.healthPoints).toEqual({ value: 10, max: 10 });
-    expect(d.evade).toBe(11);
+    expect(d.evade).toBe(1);
     expect(d.damageResistance).toBe(0);
     expect(d.move).toBe(0);
     expect(d.step).toBe(5);
@@ -76,7 +76,7 @@ describe('deriveCreature — stats, health, defenses', () => {
       stats: stats({ dexterity: 10 }), armor: 2, moveBase: 30,
       modifiers: [{ target: 'evade', value: '1' }, { target: 'damage_resistance', value: '50%' }, { target: 'move', value: '5' }, { target: 'step', value: '2' }],
     }));
-    expect(d.evade).toBe(15);
+    expect(d.evade).toBe(5);
     expect(d.damageResistance).toBe(3);
     expect(d.move).toBe(35);
     expect(d.step).toBe(7);
@@ -358,16 +358,62 @@ const allFinite = (v) => {
 };
 const CREATURE_KEYS = [
   'stats', 'healthBarSlots', 'healthBar', 'healthPoints', 'manaMax', 'evade', 'damageResistance', 'move', 'step',
-  'moveBonus', 'stepBonus', 'evadeBonus', 'damageResistanceBonus', 'mobToHit', 'mobEvade', 'items', 'unresolved',
+  'moveBonus', 'stepBonus', 'evadeBonus', 'evadeDice', 'evadeBuffLabel', 'evadeRollLabel',
+  'damageResistanceBonus', 'mobToHit', 'mobEvade', 'items', 'unresolved',
 ];
 const VEHICLE_KEYS = ['size', 'constitutionModifierEffective', 'healthBarSlots', 'healthBar', 'healthPoints', 'damageResistance', 'damageResistanceBonus', 'move', 'cruise', 'penalty', 'items', 'unresolved'];
 
 describe('deriveCreature — review hardening', () => {
-  it('returns evadeBonus and damageResistanceBonus (flat only), default 0', () => {
+  it('returns evadeBonus and flat damageResistanceBonus, default 0', () => {
     expect(deriveCreature(pc())).toMatchObject({ evadeBonus: 0, damageResistanceBonus: 0 });
     const d = deriveCreature(pc({ modifiers: [{ target: 'evade', value: '2' }, { target: 'damage_resistance', value: '3' }, { target: 'damage_resistance', value: '50%' }] }));
     expect(d.evadeBonus).toBe(2);
     expect(d.damageResistanceBonus).toBe(3);
+  });
+
+  it('uses only Dexterity for Crawler Evade, independently of Intelligence', () => {
+    const lowInt = deriveCreature(pc({ stats: stats({ dexterity: 5, intelligence: 1 }) }));
+    const highInt = deriveCreature(pc({ stats: stats({ dexterity: 5, intelligence: 150 }) }));
+    for (const result of [lowInt, highInt]) {
+      expect(result).toMatchObject({
+        evade: 2, evadeBonus: 0, evadeDice: '', evadeBuffLabel: '0', evadeRollLabel: '+2',
+      });
+    }
+  });
+
+  it('includes percentage effects in the displayed Evade buff contribution', () => {
+    const result = deriveCreature(pc({
+      stats: stats({ dexterity: 10 }),
+      modifiers: [{ target: 'evade', value: '25%' }],
+    }));
+    expect(result).toMatchObject({ evade: 5, evadeBonus: 1, evadeBuffLabel: '1', evadeRollLabel: '+5' });
+  });
+
+  it('keeps stacked signed dice as roll-time terms and displays them alongside flat buffs', () => {
+    const result = deriveCreature(pc({
+      stats: stats({ dexterity: 10 }),
+      modifiers: [
+        { target: 'evade', value: '2' },
+        { target: 'evade', value: '+1d4' },
+        { target: 'evade', value: '- 2D6' },
+      ],
+    }));
+    expect(result).toMatchObject({
+      evade: 6, evadeBonus: 2, evadeDice: '+1d4-2d6', evadeBuffLabel: '2+1d4-2d6', evadeRollLabel: '+6+1d4-2d6',
+    });
+  });
+
+  it.each([
+    ['+1d4', '1d4', '+4+1d4'],
+    ['-1d4', '-1d4', '+4-1d4'],
+  ])('displays a dice-only Evade buff %s', (value, buffLabel, rollLabel) => {
+    const result = deriveCreature(pc({ stats: stats({ dexterity: 10 }), modifiers: [{ target: 'evade', value }] }));
+    expect(result).toMatchObject({ evade: 4, evadeBonus: 0, evadeBuffLabel: buffLabel, evadeRollLabel: rollLabel });
+  });
+
+  it('keeps the existing Mob static Evade calculation separate', () => {
+    const result = deriveCreature(pc({ type: 'mob', floor: 2, stats: stats({ dexterity: 10 }) }));
+    expect(result.mobEvade).toBe(16);
   });
 
   it("a prototype-key stat ('constructor') reads stat mod 0, not a function", () => {

@@ -35,4 +35,25 @@
     </div>
   </fieldset>
   {{/if}}
+  {{#unless (eq dccType "gmscreen")}}
+  <fieldset>
+    <legend>{{localize "DCC.Settings.ChatExtras"}}</legend>
+    <div class="form-group">
+      <label for="{{rootId}}-showRangeInChat">{{localize "DCC.Settings.ShowRangeInChat"}}</label>
+      <div class="form-fields">
+        <input type="checkbox" id="{{rootId}}-showRangeInChat" name="system.showRangeInChat"
+               {{checked systemSource.showRangeInChat}} {{disabled (not canEdit)}}>
+      </div>
+      <p class="hint">{{localize "DCC.Settings.ShowRangeInChatHint"}}</p>
+    </div>
+    <div class="form-group">
+      <label for="{{rootId}}-showNotesInChat">{{localize "DCC.Settings.ShowNotesInChat"}}</label>
+      <div class="form-fields">
+        <input type="checkbox" id="{{rootId}}-showNotesInChat" name="system.showNotesInChat"
+               {{checked systemSource.showNotesInChat}} {{disabled (not canEdit)}}>
+      </div>
+      <p class="hint">{{localize "DCC.Settings.ShowNotesInChatHint"}}</p>
+    </div>
+  </fieldset>
+  {{/unless}}
 </section>

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { cardContext, naturalD20, htmlToText, joinNotes } from '../../module/rules/card.mjs';
+import { attackCardExtras, cardContext, naturalD20, htmlToText, joinNotes, spellCardExtras } from '../../module/rules/card.mjs';
 
 const d = (faces, ...results) => ({ faces, results: results.map(([result, active = true]) => ({ result, active })) });
 
@@ -116,14 +116,14 @@ describe('cardContext', () => {
     const fields = {
       name: 'Fireball', characterName: 'Carl', img: 'carl.webp', tag: 'Spell',
       target: 14, dc: 12, penalty: 'Aboard: -2', note: 'Driver: Donut',
-      range: '30 feet', duration: '2 rounds', cooldown: 'Once per scene',
+      range: '30 feet', notes: 'Reach', duration: '2 rounds', cooldown: 'Once per scene',
       cost: 3, insufficient: true, advantage: 'Advantage',
     };
     const ctx = cardContext(fields, { roll: { total: 11, d20: 9 } });
     expect(ctx).toMatchObject({
       name: 'Fireball', characterName: 'Carl', img: 'carl.webp', tag: 'Spell',
       target: { value: 14 }, dc: { value: 12 }, penalty: 'Aboard: -2', note: 'Driver: Donut',
-      range: '30 feet', duration: '2 rounds', cooldown: 'Once per scene',
+      range: '30 feet', notes: 'Reach', duration: '2 rounds', cooldown: 'Once per scene',
       cost: { value: 3 }, insufficient: true, advantage: 'Advantage',
     });
   });
@@ -172,13 +172,13 @@ describe('cardContext', () => {
       const evil = 'x [[1d20]] y [[[/r 1d6]]]';
       const ctx = cardContext(
         {
-          name: evil, characterName: evil, tag: evil, type: evil, advantage: evil, penalty: evil, note: evil,
+          name: evil, characterName: evil, tag: evil, type: evil, advantage: evil, penalty: evil, note: evil, notes: evil,
           result: evil, range: evil, duration: evil, cooldown: evil, target: evil, dc: evil, cost: evil,
         },
         { damage: { total: 1 } },
       );
       const texts = [
-        ctx.name, ctx.characterName, ctx.tag, ctx.damage.type, ctx.advantage, ctx.penalty, ctx.note,
+        ctx.name, ctx.characterName, ctx.tag, ctx.damage.type, ctx.advantage, ctx.penalty, ctx.note, ctx.notes,
         ctx.result, ctx.range, ctx.duration, ctx.cooldown, ctx.target.value, ctx.dc.value, ctx.cost.value,
       ];
       for (const t of texts) {
@@ -205,6 +205,49 @@ describe('cardContext', () => {
     const ctx = cardContext();
     expect(ctx.crit).toBe(false);
     expect(ctx.damageOnly).toBe(false);
+  });
+});
+
+describe('Attack and Spell chat extras', () => {
+  it('omits empty fields, defaults settings on, and keeps toggles independent', () => {
+    const attack = { range: ' 30ft\r\n cone ', description: '<p>First</p><p>Second</p>' };
+    expect(attackCardExtras({}, attack)).toEqual({ range: '30ft · cone', notes: 'First · Second' });
+    expect(attackCardExtras({ showRangeInChat: false }, attack)).toEqual({ notes: 'First · Second' });
+    expect(attackCardExtras({ showNotesInChat: false }, attack)).toEqual({ range: '30ft · cone' });
+    expect(attackCardExtras({}, { range: ' ', description: '<p> </p>' })).toEqual({});
+  });
+
+  it('prefers Spell text independently and falls back only to a populated linked Attack field', () => {
+    const attack = { range: '60ft', description: '<p>Attack note</p>' };
+    expect(spellCardExtras({}, { range: '30ft', description: '<p> </p>', duration: '2\r\n rounds', cooldown: ' ' }, attack))
+      .toEqual({ range: '30ft', notes: 'Attack note', duration: '2 · rounds' });
+    expect(spellCardExtras({}, { range: ' ', description: '<p>Spell note</p>' }, attack))
+      .toEqual({ range: '60ft', notes: 'Spell note' });
+    expect(spellCardExtras({ showRangeInChat: false, showNotesInChat: false },
+      { duration: '2 rounds', cooldown: 'Once' }, attack))
+      .toEqual({ duration: '2 rounds', cooldown: 'Once' });
+  });
+
+  it('removes unsafe description HTML, keeps input text line-safe, and neutralizes inline rolls', () => {
+    const extras = spellCardExtras({}, {
+      range: ' <img src=x onerror=alert(1)> [[1d6]]\nnext ',
+      description: '<p>Before [[1d20]]</p><script>bad()</script><p>&lt;img src=x&gt;</p>',
+      duration: 'one\n[[2d6]]',
+      cooldown: 'two\r\nlines',
+    });
+    const ctx = cardContext(extras);
+    expect(ctx.notes).not.toContain('bad()');
+    expect(ctx.notes).toContain('<img src=x>');
+    for (const field of ['range', 'notes', 'duration', 'cooldown']) {
+      expect(ctx[field]).not.toMatch(/[\r\n]/);
+      expect(ctx[field]).not.toContain('[[');
+      expect(ctx[field]).not.toContain(']]');
+    }
+    const template = readFileSync(new URL('../../templates/chat/card.hbs', import.meta.url), 'utf8');
+    for (const field of ['range', 'notes', 'duration', 'cooldown']) {
+      expect(template).toContain(`{{${field}}}`);
+      expect(template).not.toContain(`{{{${field}}}}`);
+    }
   });
 });
 

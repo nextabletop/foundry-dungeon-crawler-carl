@@ -4,6 +4,7 @@ import { sheetItemLists, buffRows } from './sheet-rows.mjs';
 import { postCard } from '../rolls/card.mjs';
 import { DCC_CHANGE_TYPE } from '../effects/dcc-change.mjs';
 import { crewingOf } from '../rules/crew.mjs';
+import { checkFormula } from '../rules/combat.mjs';
 
 /** Check-type <select> choices: value -> label key. */
 const CHECK_TYPE_OPTIONS = Object.freeze(Object.fromEntries(CHECK_TYPES.map(t => [t, `DCC.CheckType.${t}`])));
@@ -119,18 +120,17 @@ export default class DCCCreatureSheet extends DCCActorSheetBase {
   }
 
   /**
-   * Reactive Evade roll: 1d20 + Dex mod + Int mod (the displayed Evade is the
-   * static target, 10 + Dex mod + buffs).
+   * Reactive Evade roll: 1d20 plus the derived Evade bonus and modifier dice.
    * @this {DCCCreatureSheet}
    */
   static async #onRollEvade() {
     if (!(await this._flushForm())) return;
-    const stats = this.document.system.stats;
-    if (!Number.isFinite(stats?.dexterity?.modifier) || !Number.isFinite(stats?.intelligence?.modifier)) return;
+    const { evade, evadeDice } = this.document.system;
+    if (!Number.isFinite(evade)) return;
     await postCard(this.document, {
       name: game.i18n.localize('DCC.Defense.Evade'),
       tag: game.i18n.localize('DCC.Roll.Defense'),
-    }, { roll: `1d20 + @${ROLL_ABBR.dexterity} + @${ROLL_ABBR.intelligence}` });
+    }, { roll: `${checkFormula(evade)}${evadeDice ?? ''}` });
   }
 
   /** Skill check (a spell casts). @this {DCCCreatureSheet} */

@@ -39,6 +39,17 @@ describe('inlineFieldValue', () => {
   });
 });
 
+describe('chat settings UI', () => {
+  it('exposes independent chat settings for creatures and vehicles, not the GM Screen', () => {
+    const template = readFileSync(new URL('../../templates/actor/sheet-config.hbs', import.meta.url), 'utf8');
+    expect(template).toContain('{{#unless (eq dccType "gmscreen")}}');
+    expect(template).toContain('name="system.showRangeInChat"');
+    expect(template).toContain('name="system.showNotesInChat"');
+    expect(template).toContain('{{checked systemSource.showRangeInChat}}');
+    expect(template).toContain('{{checked systemSource.showNotesInChat}}');
+  });
+});
+
 describe('inlineEditTarget', () => {
   const control = (field, rowId) => ({
     dataset: field ? { field } : {},

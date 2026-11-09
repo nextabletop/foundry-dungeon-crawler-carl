@@ -44,7 +44,7 @@ describe('PcModel derive wiring', () => {
     expect(model._modifiers).toEqual([]);
   });
 
-  it('fresh PC: all mods 1, healthPoints 10/10, evade 11, damageResistance 0, step 5, mana.max 1', () => {
+  it('fresh PC: all mods 1, healthPoints 10/10, evade 1, damageResistance 0, step 5, mana.max 1', () => {
     const m = prepare(PcModel, pcSource());
     for (const s of STATS) {
       expect(m.stats[s].base).toBe(1);
@@ -56,7 +56,7 @@ describe('PcModel derive wiring', () => {
     expect(m.healthBarDisplay).toBe(10);
     expect(m.healthPoints).toEqual({ value: 10, max: 10 });
     expect(m.mana.max).toBe(1);
-    expect(m.evade).toBe(11);
+    expect(m.evade).toBe(1);
     expect(m.damageResistance).toBe(0);
     expect(m.move).toBe(0);
     expect(m.step).toBe(5);
@@ -85,6 +85,20 @@ describe('PcModel derive wiring', () => {
     expect(model.stats.strength.modifier).toBe(2);
     expect(model.damageResistance).toBe(3);
     expect(model.damageResistanceBonus).toBe(3);
+  });
+
+  it('exposes Evade flat, percentage and dice modifiers on the actor model', () => {
+    const model = new PcModel(pcSource({ stats: stats({ dexterity: 10, intelligence: 50 }) }));
+    model.parent = { items: [] };
+    model.prepareBaseData();
+    model._modifiers.push(
+      { target: 'evade', value: '25%' },
+      { target: 'evade', value: '+1d4' },
+    );
+    model.prepareDerivedData();
+    expect(model).toMatchObject({
+      evade: 5, evadeBonus: 1, evadeDice: '+1d4', evadeBuffLabel: '1+1d4', evadeRollLabel: '+5+1d4',
+    });
   });
 
   it('writes item.system.derived for Attacks and skills, {} for gear', () => {

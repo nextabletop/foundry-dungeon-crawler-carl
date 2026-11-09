@@ -330,8 +330,8 @@ describe('crewCacheFrom (roll-time cache from a live crew actor)', () => {
   });
   it('attacks are canonical Attack Items with derived damage dice', () => {
     expect(crewCacheFrom({ items }).attacks).toEqual([
-      { id: 'a1', name: 'Spear', toHit: 9, die: '1d8', damageBase: 4, damageType: 'piercing' },
-      { id: 'a2', name: 'Magic Missile Attack', toHit: 5, die: '1d10', damageBase: 2, damageType: 'force' },
+      { id: 'a1', name: 'Spear', toHit: 9, die: '1d8', damageBase: 4, damageType: 'piercing', range: '', description: '' },
+      { id: 'a2', name: 'Magic Missile Attack', toHit: 5, die: '1d10', damageBase: 2, damageType: 'force', range: '', description: '' },
     ]);
   });
   it('tolerates no input', () => {

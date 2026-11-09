@@ -93,7 +93,7 @@ Because there are no existing Foundry characters, schema corrections may be made
 | --- | --- | --- | --- | --- | --- | --- |
 | CORE-01 | Five stats store Unenhanced values and derive Enhanced values and Stat Mods from the current threshold table. | [`CONTEXT.md`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/CONTEXT.md), [`engine.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/engine.test.js) | [`data/actor/creature.mjs`](../module/data/actor/creature.mjs), [`rules/engine.mjs`](../module/rules/engine.mjs) | Aligned | - | Preserve tests while changing dependent rules. |
 | CORE-02 | Modifier materialization is `floor((base + flat) * (1 + percent / 100))`. | [`_engine.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/javascript/_engine.js), [`engine.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/engine.test.js) | [`rules/engine.mjs`](../module/rules/engine.mjs) | Aligned | - | No change. |
-| CORE-03 | Crawler Evade roll bonus is Dex Mod + Int Mod + Evade modifiers, with no hidden +10. | [`CONTEXT.md`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/CONTEXT.md), [`_combat.pug`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/sections/_combat.pug) | [`rules/derive.mjs`](../module/rules/derive.mjs) derives `10 + Dex Mod`. | Divergent | P0 | B2: correct the rule, labels, roll, and tests. |
+| CORE-03 | Crawler Evade is `1d20 + Dex Mod + Evade modifiers`, with no Intelligence or hidden +10; dice modifiers roll separately. | [`_engine.js`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/source/javascript/_engine.js), [`engine.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/__tests__/engine.test.js) | [`rules/derive.mjs`](../module/rules/derive.mjs) applies flat and percentage modifiers to Dex Mod and preserves dice; the PC defense strip and roll use the resulting values. | Partial | P0 | B2: implemented and tested; live Foundry roll and display need a smoke test. |
 | CORE-04 | DR is editable Armor plus active DR modifiers. | [`CONTEXT.md`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/CONTEXT.md), [`_combat.pug`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/sections/_combat.pug) | [`rules/derive.mjs`](../module/rules/derive.mjs), [`templates/actor/partials/defenses.hbs`](../templates/actor/partials/defenses.hbs) | Aligned | - | No change. |
 | CORE-05 | Move and Step are editable bases with independently derived effective values; defaults are 20 and 10. | [`CONTEXT.md`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/CONTEXT.md), [`_combat.pug`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/sections/_combat.pug) | [`data/actor/creature.mjs`](../module/data/actor/creature.mjs) defaults to 0 and 5; derivation is otherwise present. | Divergent | P0 | B1/B2: change defaults and retain base/effective separation. |
 | CORE-06 | Crawler Size is a free-text display/edit value. | [`_combat.pug`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/sections/_combat.pug) | [`data/actor/creature.mjs`](../module/data/actor/creature.mjs) | Aligned | - | No change. |
@@ -144,7 +144,7 @@ Because there are no existing Foundry characters, schema corrections may be made
 | SKL-10 | Rank caps at 15 on Floors 1-5 and 20 on Floor 6+. | [`skills.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/skills.test.js) | [`rules/advancement.mjs`](../module/rules/advancement.mjs) | Aligned | - | Preserve. |
 | SKL-11 | Manual advancement succeeds when d20 is greater than or equal to Rank. | [`skills.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/__tests__/skills.test.js), [`spells.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/__tests__/spells.test.js) | [`rules/advancement.mjs`](../module/rules/advancement.mjs) shares the `d20 >= Rank` comparison between manual Skill Checks and bulk advancement. | Aligned | - | Completed 2026-11-09. |
 | SKL-12 | Skill cards expose the current manual Skill Check action against Rank; Passive skills cannot use it. | [`skills.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/__tests__/skills.test.js), [`spells.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/__tests__/spells.test.js) | Non-Passive Skill/Spell actor rows and owned-item sheets roll a utility d20 against stored base Rank, post Success/Failure, and never change Rank. | Aligned | - | Completed 2026-11-09. |
-| SKL-13 | Current Roll20 bulk End Session/End Floor/Level Up controls remain deferred in the rendered sheet. | [`skills.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/__tests__/skills.test.js) | The Foundry advancement and GM-screen implementation remains available, but its PC-header controls and indicators are commented out. | Aligned | - | Keep the underlying extension available without rendering its controls. |
+| SKL-13 | Current Roll20 bulk End Session/End Floor/Level Up controls remain deferred in the rendered sheet. | [`skills.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/__tests__/skills.test.js) | The Foundry advancement and GM-screen implementation remains available, but its PC-header controls and indicators are commented out and GM Screen is excluded from the Create Actor type list. | Aligned | - | Keep the underlying extension available without rendering its controls. |
 | SKL-14 | Undo snapshots ranks, marks, pending levels, floor, and current floor-end cursor/epoch semantics. | [`gm-advancement.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/gm-advancement.test.js) | [`rules/advancement.mjs`](../module/rules/advancement.mjs), [`documents/actor.mjs`](../module/documents/actor.mjs) | Aligned | - | Update passive detection only. |
 
 ## 6. Attacks, rolls, and chat cards
@@ -160,8 +160,8 @@ Because there are no existing Foundry characters, schema corrections may be made
 | ATK-07 | Damage supports die + flat modifier + roll-time modifier dice + free-text damage type. | [`_spells.js`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/source/javascript/_spells.js), [`attackfields.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/__tests__/attackfields.test.js) | Canonical Attacks store die/flat/free-text type; [`modifiers.mjs`](../module/rules/modifiers.mjs) preserves signed dice modifiers for derivation, labels, crew caches, and damage rolls. | Aligned | - | Completed 2026-11-09. |
 | ATK-08 | Zero flat damage is omitted from the label; a blank die and zero flat label as No Damage. | [`attacks.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/attacks.test.js) | [`rules/combat.mjs`](../module/rules/combat.mjs) matches the current Roll20 label contract, including compact signed modifiers and the No Damage fallback. | Aligned | - | Completed 2026-11-09. |
 | ATK-09 | Attacks have free-text Range and Notes & Effects. | [`_combat.pug`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/sections/_combat.pug), [`spells.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/spells.test.js) | [`AttackModel`](../module/data/item/attack.mjs) stores Range and the shared HTML description is labeled Notes & Effects on its item sheet. | Aligned | - | Completed 2026-11-09. |
-| ATK-10 | Settings control whether attack/spell Range and Notes appear in chat; Duration/Cooldown appear when set. | [`_settings.pug`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/views/_settings.pug), [`_spells.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/javascript/_spells.js) | No corresponding actor settings or card fields exist. | Missing | P1 | B2/B4: add settings and card context. |
-| ATK-11 | Chat text from editable descriptions/range/notes is sanitized and line-safe. | [`_spells.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/javascript/_spells.js), [`spells.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/spells.test.js) | [`rules/card.mjs`](../module/rules/card.mjs) strips HTML for notes. | Partial | P1 | B4: test all new card fields and Foundry HTML/text handling. |
+| ATK-10 | Settings control whether attack/spell Range and Notes appear in chat; Duration/Cooldown appear when set. | [`_settings.pug`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/views/_settings.pug), [`_spells.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/javascript/_spells.js) | PC, Mob and Vehicle sheet settings default both options on; Attack, alternate use, Spell, hotlist and crew paths apply them. Spell text falls back to its linked Attack, and Duration/Cooldown are independent. | Partial | P1 | B2/B4: implemented and tested; live Foundry settings and cards need a smoke test. |
+| ATK-11 | Chat text from editable descriptions/range/notes is sanitized and line-safe. | [`_spells.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/javascript/_spells.js), [`spells.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/spells.test.js) | [`rules/card.mjs`](../module/rules/card.mjs) converts authored HTML notes to plain text, flattens extra-field line breaks and neutralizes inline rolls; the chat template escapes all fields. | Partial | P1 | B4: automated tests cover the new card fields; live Foundry rendering needs a smoke test. |
 | ATK-12 | Crit/fumble presentation and natural-d20 extraction work for normal rolls; utility rolls suppress badges. | [`spells.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/__tests__/spells.test.js), [`rolltemplate/_index.pug`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/source/rolltemplate/_index.pug) | Foundry cards match the current Roll20 visual contract; utility-marked rolls such as manual Skill Checks retain the black header and suppress crit/fumble badges. | Aligned | - | Completed 2026-11-09. |
 | ATK-13 | Rank bonus-damage die remains unsourced and is not invented. | [`attacks.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/attacks.test.js) | [`rules/combat.mjs`](../module/rules/combat.mjs) deliberately omits it. | Aligned | - | Keep out of scope until sourced. |
 
@@ -246,38 +246,38 @@ Because there are no existing Foundry characters, schema corrections may be made
 ## Recommended execution order
 
 1. **B1 - Schema and vocabulary**
-   - Check types and opposed stat
-   - Skill/spell metadata
-   - Attack/link fields and free-text damage type
+   - ~~Check types and opposed stat~~
+   - ~~Skill/spell metadata~~
+   - ~~Attack/link fields and free-text damage type~~
    - Mob bases, optional states, mana, visibility, and privacy setting
    - Custom Health Bar count
    - Vehicle Con Mod zero
 
 2. **B2 - Core calculations and resources**
-   - Crawler Evade
+   - ~~Crawler Evade implementation~~ — live Foundry smoke test pending
    - Move/Step defaults
    - Variable Health Bar derivation and view
    - Mob privacy plumbing
-   - Chat-extra settings
+   - ~~Chat-extra settings implementation~~ — live Foundry smoke test pending
 
-3. **B3 - Skills, spells, and advancement**
-   - Four check types and opposed labels
-   - Passive skill/spell behavior
-   - New authored fields
-   - Advancement `>= Rank`
-   - Manual Skill Check action
+3. **~~B3 - Skills, spells, and advancement~~**
+   - ~~Four check types and opposed labels~~
+   - ~~Passive skill/spell behavior~~
+   - ~~New authored fields~~
+   - ~~Advancement `>= Rank`~~
+   - ~~Manual Skill Check action~~
 
 4. **B4 - Attacks and chat**
-   - Stable linked Attack architecture
-   - Skill/alternate-skill resolution
-   - Dice modifiers and free-text damage type
-   - Range/notes/duration/cooldown cards
-   - Passive and insufficient-mana cards
+   - ~~Stable linked Attack architecture~~
+   - ~~Skill/alternate-skill resolution~~
+   - ~~Dice modifiers and free-text damage type~~
+   - ~~Range/notes/duration/cooldown card implementation~~ — live Foundry smoke test pending
+   - ~~Passive and insufficient-mana cards~~
 
 5. **B5 - Inventory, modifiers, buffs, and hotlist**
    - Stable ID modifier targets
    - Group-target edge cases
-   - Hotlist behavior after Attack changes
+   - ~~Hotlist dispatch after Attack changes~~ — stable slot placement remains
    - Status-only effects and collapsed summaries
 
 6. **B6 - Mob**
@@ -299,7 +299,7 @@ Because there are no existing Foundry characters, schema corrections may be made
    - Visual alignment
    - Accessibility
    - Localization completeness
-   - Full Vitest suite
+   - ~~Full Vitest suite for current changes~~ — rerun for final regression
    - Live Foundry multi-user smoke pass
 
 ## Definition of parity for a row

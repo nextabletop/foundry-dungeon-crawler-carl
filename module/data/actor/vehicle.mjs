@@ -40,6 +40,8 @@ export default class VehicleModel extends foundry.abstract.TypeDataModel {
       ramTargetLarger: bool(false),
       ramDamageDealt: int(0),
       raceAhead: int(0),
+      showRangeInChat: bool(true),
+      showNotesInChat: bool(true),
       // Crew: world PC / Mob actors (never unlinked token actors), one role each.
       // Linked by dropping an actor on the sheet; role rules in rules/crew.mjs.
       crew: new fields.ArrayField(new fields.SchemaField({

@@ -127,7 +127,8 @@ const deriveItemRow = (item, context) => {
  *   stats: Record<string,{base:number, enhancement:number, modifier:number}>,
  *   healthBarSlots: number, healthBar: number, healthPoints: {value:number, max:number},
  *   manaMax: number, evade: number, damageResistance: number, move: number, step: number,
- *   moveBonus: number, stepBonus: number, evadeBonus: number, damageResistanceBonus: number,
+ *   moveBonus: number, stepBonus: number, evadeBonus: number, evadeDice: string,
+ *   evadeBuffLabel: string, evadeRollLabel: string, damageResistanceBonus: number,
  *   mobToHit: number, mobEvade: number,
  *   items: Record<string, {rank?:number, toHit?:number, damageBase?:number, damageLabel?:string, mobToHit?:number,
  *                          skillBonus?:number, rankEffective?:number, manaCostEffective?:number}>,
@@ -145,7 +146,7 @@ export const deriveCreature = (input = {}) => {
 
   // Resolve modifiers into field and per-item flat/percent buckets.
   const {
-    bonus, percent, itemBonus, itemPercent, itemDice, unresolved,
+    bonus, percent, dice, itemBonus, itemPercent, itemDice, unresolved,
   } = resolveModifiers(cleanModifiers(input.modifiers), items);
 
   // Stats: base -> enhanced -> stat modifier.
@@ -172,7 +173,12 @@ export const deriveCreature = (input = {}) => {
   // Mana and defenses.
   const manaStat = STATS.includes(input.manaStat) ? input.manaStat : 'intelligence';
   const manaMax = applyModifiers(stats[manaStat].enhancement, bonus.mana || 0, percent.mana || 0);
-  const evade = applyModifiers(10 + modifierByStat.dexterity, bonus.evade || 0, percent.evade || 0);
+  const evadeBase = modifierByStat.dexterity;
+  const evade = applyModifiers(evadeBase, bonus.evade || 0, percent.evade || 0);
+  const evadeBonus = evade - evadeBase;
+  const evadeDice = dice.evade || '';
+  const evadeBuffLabel = evadeBonus ? `${evadeBonus}${evadeDice}` : (evadeDice.replace(/^\+/, '') || '0');
+  const evadeRollLabel = `${evade >= 0 ? '+' : ''}${evade}${evadeDice}`;
   const damageResistance = applyModifiers(+input.armor || 0, bonus.damage_resistance || 0, percent.damage_resistance || 0);
   const move = applyModifiers(+input.moveBase || 0, bonus.move || 0, percent.move || 0);
   const step = applyModifiers(+input.stepBase || 0, bonus.step || 0, percent.step || 0);
@@ -189,10 +195,10 @@ export const deriveCreature = (input = {}) => {
 
   return {
     stats, healthBarSlots, healthBar, healthPoints, manaMax, evade, damageResistance, move, step,
-    // Flat bonuses: backCalcBase on move/step edits, formula-box breakdowns.
+    // Move/step flat bonuses support backCalcBase; Evade includes percentage effects.
     moveBonus: bonus.move || 0,
     stepBonus: bonus.step || 0,
-    evadeBonus: bonus.evade || 0,
+    evadeBonus, evadeDice, evadeBuffLabel, evadeRollLabel,
     damageResistanceBonus: bonus.damage_resistance || 0,
     // Mob static targets.
     mobToHit: mobToHit(modifierByStat.strength, floor),

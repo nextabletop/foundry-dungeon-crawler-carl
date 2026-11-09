@@ -333,10 +333,32 @@ describe('crew resolution (VehicleModel)', () => {
       expect(postCard.mock.calls[0][2].roll).toBe('1d20 + 1');
       expect(foundry.utils.fromUuidSync).not.toHaveBeenCalled();
     });
+    it('mount Attack rolls use the mount chat settings', async () => {
+      const a = vehicle({ kind: 'mount', showRangeInChat: false, showNotesInChat: true });
+      await a.rollAttack(turret(a, { range: '5ft', description: '<p>Bite.</p>' }));
+      expect(postCard.mock.calls[0][1]).not.toHaveProperty('range');
+      expect(postCard.mock.calls[0][1]).toMatchObject({ notes: 'Bite.' });
+    });
     it('damage is the plain weapon damage', async () => {
       const a = vehicle();
       await a.rollAttack(turret(a), 'damage');
       expect(postCard.mock.calls[0][2].damage).toBe('2d6');
+    });
+    it('vehicle gunner and damage cards include extras without overwriting the gunner note', async () => {
+      const a = vehicle();
+      const attack = turret(a, { range: '100ft', description: '<p>Explodes.</p>' });
+      await a.rollAttack(attack, 'toHit');
+      await a.rollAttack(attack, 'damage');
+      expect(postCard.mock.calls[0][1]).toMatchObject({
+        note: 'DCC.Crew.Card.NoGunner', range: '100ft', notes: 'Explodes.',
+      });
+      expect(postCard.mock.calls[1][1]).toMatchObject({ range: '100ft', notes: 'Explodes.' });
+      a.system.showRangeInChat = false;
+      a.system.showNotesInChat = false;
+      await a.rollAttack(attack);
+      expect(postCard.mock.calls[2][1]).toMatchObject({ note: 'DCC.Crew.Card.NoGunner' });
+      expect(postCard.mock.calls[2][1]).not.toHaveProperty('range');
+      expect(postCard.mock.calls[2][1]).not.toHaveProperty('notes');
     });
   });
 
@@ -376,6 +398,22 @@ describe('crew resolution (VehicleModel)', () => {
       const a = vehicle({ speed: 2, crew: [{ uuid: 'Actor.carl', role: 'passenger' }] });
       await a.rollCrewAttack(carl, 'w1');
       expect(postCard.mock.calls[0][2].roll).toBe('1d20 + 3 - 2');
+    });
+    it('crew Attack extras follow vehicle settings and preserve the aboard/speed note', async () => {
+      const weapon = weaponItem('w1', 'Dagger', 3);
+      weapon.system.range = '5ft';
+      weapon.system.description = '<p>Sharp.</p>';
+      const carl = crewActor({ items: [weapon] });
+      const a = vehicle({ crew: [{ uuid: 'Actor.carl', role: 'passenger' }] });
+      await a.rollCrewAttack(carl, 'w1');
+      expect(postCard.mock.calls[0][1]).toMatchObject({ range: '5ft', notes: 'Sharp.' });
+      expect(postCard.mock.calls[0][1].note).toContain('Speed');
+      a.system.showRangeInChat = false;
+      a.system.showNotesInChat = false;
+      await a.rollCrewAttack(carl, 'w1');
+      expect(postCard.mock.calls[1][1].note).toContain('Speed');
+      expect(postCard.mock.calls[1][1]).not.toHaveProperty('range');
+      expect(postCard.mock.calls[1][1]).not.toHaveProperty('notes');
     });
     it('refused below Observer on the crew member (also covers macros)', async () => {
       game.user = PLAYERS[0];

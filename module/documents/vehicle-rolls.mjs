@@ -10,7 +10,7 @@ import { drivingCheck, ram, race, ramAftermath } from '../rules/vehicle.mjs';
 import { crewPenalty, crewSkillCard, crewAttackCard, vehicleWeaponCard, crewCardName } from '../rules/crew.mjs';
 import { cardMessageMode, PUBLIC_MODES } from '../rules/engine.mjs';
 import { crewCache } from '../data/actor/vehicle.mjs';
-import { htmlToText } from '../rules/card.mjs';
+import { attackCardExtras, htmlToText } from '../rules/card.mjs';
 
 /** The card-text formatter the pure rules builders take. */
 const t = (key, data) => game.i18n.format(key, data);
@@ -78,7 +78,7 @@ export const rollVehicleWeapon = async (vehicle, item, options) => {
     weapon: { name: item.name, toHit: d.toHit, skillName: item.system.skillName, stat: item.system.stat },
     gunner: gunner && { ...gunner, name: cardCrewName(actor) }, floor: s.floor,
   }, t);
-  return postCard(vehicle, fields, { roll }, withPrivacy(actor, options));
+  return postCard(vehicle, { ...fields, ...attackCardExtras(s, item.system) }, { roll }, withPrivacy(actor, options));
 };
 
 /**
@@ -133,7 +133,7 @@ export const crewAttackPost = (vehicle, crew, itemId, options) => {
       crewName: crew.name, attack, mob: crew.type === 'mob', vehicleName: vehicle.name,
       penalty: crewPenalty(s.penaltyInputs, ''), floor: s.floor, driver: entry.role === 'driver', speed: s.speed,
     }, t);
-    return postCard(crew, fields, { roll, damage }, options);
+    return postCard(crew, { ...fields, ...attackCardExtras(s, attack) }, { roll, damage }, options);
   };
 };
 

@@ -208,7 +208,12 @@
       "ManaStat": "Mana Ability",
       "ManaStatHint": "The enhanced ability score that sets Max Mana.",
       "AutoEnableCast": "Auto-enable skill modifiers on cast",
-      "AutoEnableCastHint": "Casting a spell turns its skill modifiers on."
+      "AutoEnableCastHint": "Casting a spell turns its skill modifiers on.",
+      "ChatExtras": "Attack and Spell Chat Cards",
+      "ShowRangeInChat": "Show Range in chat",
+      "ShowRangeInChatHint": "Show Range on Attack rolls and Spell casts.",
+      "ShowNotesInChat": "Show Notes in chat",
+      "ShowNotesInChatHint": "Show Attack Notes & Effects and Spell Notes & Upgrades on their cards."
     },
     "Setting": {
       "GmScreen": {
@@ -347,7 +352,7 @@
       "DexterityModifier": "Dex Mod",
       "Buffs": "Buffs",
       "EvadeTotal": "Evade Total",
-      "EvadeRollTooltip": "Roll Evade: 1d20 + Dex Mod + Int Mod",
+      "EvadeRollTooltip": "Roll Evade: 1d20 + Dex Mod + Evade modifiers",
       "Move": "Move",
       "Step": "Step",
       "Size": "Size",

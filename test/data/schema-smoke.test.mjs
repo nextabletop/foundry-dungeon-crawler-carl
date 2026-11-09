@@ -11,7 +11,8 @@ const keys = Model => Object.keys(Model.defineSchema());
 describe('actor schemas', () => {
   it('CreatureModel has the shared creature fields', () => {
     expect(keys(CreatureModel)).toEqual(expect.arrayContaining(
-      ['level', 'floor', 'stats', 'healthBar', 'healthPoints', 'armor', 'moveBase', 'stepBase', 'size', 'notes']));
+      ['level', 'floor', 'stats', 'healthBar', 'healthPoints', 'armor', 'moveBase', 'stepBase', 'size',
+        'showRangeInChat', 'showNotesInChat', 'notes']));
   });
 
   it('CreatureModel stores move/step bases only, never derived move/step', () => {
@@ -67,6 +68,13 @@ describe('actor schemas', () => {
     expect(Object.keys(schema.crew.element.fields)).toEqual(['uuid', 'role']);
     expect(schema.constitutionModifier.options.nullable).toBe(true);
     expect(schema.constitutionModifier.options.min).toBe(1);
+  });
+
+  it('chat extra settings default on for PCs, Mobs, and Vehicles', () => {
+    for (const model of [PcModel, MobModel, VehicleModel]) {
+      expect(model.defineSchema().showRangeInChat.initial).toBe(true);
+      expect(model.defineSchema().showNotesInChat.initial).toBe(true);
+    }
   });
 
   it('GmScreenModel has exactly safehouse, floorEndSeq and a UUID roster', () => {

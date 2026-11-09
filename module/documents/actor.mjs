@@ -1,7 +1,7 @@
 import { directDamage, healSlots, clampSlots } from '../rules/health.mjs';
 import { checkFormula, damageFormula, castPlan } from '../rules/combat.mjs';
 import { postCard } from '../rolls/card.mjs';
-import { htmlToText } from '../rules/card.mjs';
+import { attackCardExtras, htmlToText, spellCardExtras } from '../rules/card.mjs';
 import {
   postDriving, postRam, postRace, rollVehicleWeapon, crewSkillPost, crewAttackPost, applyRamAftermath,
 } from './vehicle-rolls.mjs';
@@ -12,18 +12,17 @@ import { ADVANCING_TYPES, UNDO_MAX, LEVEL_UP_STAT_POINTS } from '../config.mjs';
 import { gmLinkFor } from '../gm-link.mjs';
 import { floorEndBlocked } from '../rules/gm-screen.mjs';
 import { checkTypeLabel, isPassiveCheck } from '../rules/items.mjs';
-import { attackSource } from '../rules/item-links.mjs';
+import { attackSource, grantedAttack } from '../rules/item-links.mjs';
 
 const checkTypeTag = system => checkTypeLabel(system?.checkType, system?.opposedStat, key => game.i18n.localize(key));
 
-/** Spell metadata that always rides on a cast card when populated. */
-const spellCardMetadata = (system = {}) => Object.fromEntries(
-  ['duration', 'cooldown']
-    .filter(field => String(system[field] ?? '').trim())
-    .map(field => [field, system[field]]),
-);
-
 export default class DCCActor extends foundry.documents.Actor {
+  /** Keep the deferred GM Screen type out of Foundry's Create Actor dialog. */
+  static async createDialog(data = {}, createOptions = {}, options = {}, renderOptions = {}) {
+    const types = (options.types ?? this.TYPES).filter(type => type !== 'gmscreen');
+    return super.createDialog(data, createOptions, { ...options, types }, renderOptions);
+  }
+
   /**
    * Core Actor#getRollData returns only `this.system`. Merge (not replace) the
    * model's short keys on top, so both `@stats.dexterity.modifier` and `@dex` resolve.
@@ -171,17 +170,18 @@ export default class DCCActor extends foundry.documents.Actor {
     const d = item.system?.derived ?? {};
     const rollData = use ?? d;
     const name = use?.label ? `${item.name} (${use.label})` : item.name;
+    const extras = attackCardExtras(this.system, item.system, use ? use.range : item.system.range);
     if (which === 'damage') {
       if (!Number.isFinite(d.damageBase)) return null;
       return postCard(this, {
-        name, tag: game.i18n.localize('DCC.Roll.Damage'), type: item.system.damageType ?? '',
+        name, tag: game.i18n.localize('DCC.Roll.Damage'), type: item.system.damageType ?? '', ...extras,
       }, { damage: damageFormula(d.damageDice, d.damageBase) }, cardOptions);
     }
     if (!Number.isFinite(rollData.toHit)) return null;
     return postCard(this, {
       name,
       tag: game.i18n.localize('DCC.Roll.ToHit'),
-      ...(use?.range ? { range: use.range } : {}),
+      ...extras,
     }, { roll: checkFormula(rollData.toHit) }, cardOptions);
   }
 
@@ -245,7 +245,7 @@ export default class DCCActor extends foundry.documents.Actor {
       return await postCard(this, {
         name: item.name,
         tag: checkTypeTag(item.system),
-        ...spellCardMetadata(item.system),
+        ...spellCardExtras(this.system, item.system, grantedAttack(item, this.items)?.system),
         ...manaFields,
       }, isPassiveCheck(item.system) ? {} : { roll: checkFormula(d.skillBonus) }, options);
     } finally {

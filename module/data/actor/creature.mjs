@@ -1,6 +1,6 @@
 import { STATS, ROLL_ABBR } from '../../config.mjs';
 import { deriveCreature } from '../../rules/derive.mjs';
-import { int, str, html, pool } from '../_fields.mjs';
+import { int, str, bool, html, pool } from '../_fields.mjs';
 import { resetModifiers, ownedItems, engineItems, assignItemDerived, assignHealth, rewriteHealthPointsEdit } from './_derive-wiring.mjs';
 
 const DERIVED_ITEM_TYPES = new Set(['attack', 'skill', 'spell']);
@@ -16,8 +16,8 @@ const DERIVED_ITEM_TYPES = new Set(['attack', 'skill', 'spell']);
  * - `healthPoints.value`, `healthPoints.max` — healthBar x Con Mod
  * - `healthConstitutionModifier` — the Con Mod the health bar uses (hit
  *   points per slot): the constitution stat modifier
- * - `evade`, `damageResistance`, `move`, `step` and their flat bonuses `evadeBonus`,
- *   `damageResistanceBonus`, `moveBonus`, `stepBonus` (the stored bases are `armor`,
+ * - `evade`, `evadeBonus`, `evadeDice`, `evadeBuffLabel`, `evadeRollLabel`, and
+ *   `damageResistance`, `move`, `step` with their flat bonuses (the stored bases are `armor`,
  *   `moveBase`, `stepBase`)
  * - `mobToHit`, `mobEvade` — mob static targets
  * - `unresolvedModifiers` — modifiers the engine could not apply
@@ -45,6 +45,8 @@ export default class CreatureModel extends foundry.abstract.TypeDataModel {
       moveBase: int(0),
       stepBase: int(5),
       size: str('M'),
+      showRangeInChat: bool(true),
+      showNotesInChat: bool(true),
       notes: html(),
     };
   }
@@ -86,6 +88,9 @@ export default class CreatureModel extends foundry.abstract.TypeDataModel {
     this.moveBonus = d.moveBonus;
     this.stepBonus = d.stepBonus;
     this.evadeBonus = d.evadeBonus;
+    this.evadeDice = d.evadeDice;
+    this.evadeBuffLabel = d.evadeBuffLabel;
+    this.evadeRollLabel = d.evadeRollLabel;
     this.damageResistanceBonus = d.damageResistanceBonus;
     this.mobToHit = d.mobToHit;
     this.mobEvade = d.mobEvade;

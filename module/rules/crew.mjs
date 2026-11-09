@@ -86,6 +86,8 @@ export const crewCacheFrom = ({ statModifiers = {}, items = [] } = {}) => {
       die: d.damageDice ?? src.die ?? '',
       damageBase: num(d.damageBase),
       damageType: src.damageType ?? '',
+      range: src.range ?? '',
+      description: src.description ?? '',
     };
   });
   return { statModifiers: { ...statModifiers }, skills, attacks };

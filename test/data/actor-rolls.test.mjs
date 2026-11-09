@@ -180,6 +180,7 @@ describe('rollAttack', () => {
       name: 'Dagger (thrown)',
       tag: 'DCC.Roll.Damage',
       type: 'piercing',
+      range: '20ft',
     });
     expect(postCard.mock.calls[0][2]).toEqual({ damage: '1d4 + 2' });
   });
@@ -196,6 +197,40 @@ describe('rollAttack', () => {
     await actor.rollAttack(attack, 'toHit', { skillUseIndex: 0 });
     expect(postCard.mock.calls[0][2]).toEqual({ roll: '1d20 + 7' });
     expect(actor.update).not.toHaveBeenCalled();
+  });
+  it.each([
+    [true, true, { range: '20ft', notes: 'Reach. · Push.' }],
+    [true, false, { range: '20ft' }],
+    [false, true, { notes: 'Reach. · Push.' }],
+    [false, false, {}],
+  ])('applies independent chat settings to both Attack rolls (%s, %s)', async (showRangeInChat, showNotesInChat, extras) => {
+    const actor = makeActor({ showRangeInChat, showNotesInChat });
+    const attack = own(actor, makeItem('attack', 'Spear', {
+      range: ' 20ft ', description: '<p>Reach.</p><p>Push.</p>',
+    }, { toHit: 4, damageBase: 1, damageDice: '1d6' }));
+    await actor.rollAttack(attack, 'toHit');
+    await actor.rollAttack(attack, 'damage');
+    const fields = postCard.mock.calls.map(call => call[1]);
+    for (const card of fields) {
+      expect(card.range).toBe(extras.range);
+      expect(card.notes).toBe(extras.notes);
+    }
+  });
+  it('alternate To-Hit and Damage use the selected range and parent notes under the same settings', async () => {
+    const actor = makeActor();
+    const attack = own(actor, makeItem('attack', 'Dagger', {
+      range: '5ft', description: '<p>Sharp.</p>',
+    }, {
+      toHit: 4, damageBase: 1, damageDice: '1d4',
+      skillUses: [{ label: 'thrown', toHit: 6, range: '20ft' }],
+    }));
+    for (const which of ['toHit', 'damage']) await actor.rollAttack(attack, which, { skillUseIndex: 0 });
+    for (const call of postCard.mock.calls) expect(call[1]).toMatchObject({ range: '20ft', notes: 'Sharp.' });
+    actor.system.showRangeInChat = false;
+    actor.system.showNotesInChat = false;
+    await actor.rollAttack(attack, 'toHit', { skillUseIndex: 0 });
+    expect(postCard.mock.calls[2][1]).not.toHaveProperty('range');
+    expect(postCard.mock.calls[2][1]).not.toHaveProperty('notes');
   });
 });
 
@@ -260,6 +295,67 @@ describe('castSpell', () => {
     await actor.castSpell(own(actor, spell));
     expect(postCard.mock.calls[0][1]).not.toHaveProperty('duration');
     expect(postCard.mock.calls[0][1]).not.toHaveProperty('cooldown');
+  });
+  it('Spell, linked Attack, and hotlist cast paths share own extras and spend mana once per cast', async () => {
+    const actor = makeActor();
+    const spell = own(actor, makeItem('spell', 'Zap', {
+      enabled: true, range: '30ft', description: '<p>Own note.</p>', duration: '2 rounds', cooldown: 'Once',
+    }, { skillBonus: 3, manaCostEffective: 1 }));
+    const attack = own(actor, makeItem('attack', 'Zap Attack', {
+      linkedItemIds: [spell.id], range: '60ft', description: '<p>Attack note.</p>',
+    }, { toHit: 3 }));
+    spell.system.linkedItemIds = [attack.id];
+    await actor.castSpell(spell);
+    await actor.rollAttack(attack, 'toHit');
+    await actor.useHotlistItem(spell);
+    await actor.useHotlistItem(attack);
+    for (const call of postCard.mock.calls) expect(call[1]).toMatchObject({
+      range: '30ft', notes: 'Own note.', duration: '2 rounds', cooldown: 'Once',
+    });
+    expect(actor.update).toHaveBeenCalledTimes(4);
+  });
+  it('a Passive Spell falls back to its linked Attack for blank text, while duration and cooldown ignore toggles', async () => {
+    const actor = makeActor();
+    const spell = own(actor, makeItem('spell', 'Aura', {
+      enabled: true, checkType: 'passive', range: ' ', description: '<p></p>',
+      duration: '2 rounds', cooldown: 'After rest',
+    }, { skillBonus: 2, manaCostEffective: 1 }));
+    const attack = own(actor, makeItem('attack', 'Aura Attack', {
+      linkedItemIds: [spell.id], range: '5ft', description: '<p>Fallback.</p>',
+    }, { toHit: 2 }));
+    spell.system.linkedItemIds = [attack.id];
+    await actor.castSpell(spell);
+    expect(postCard.mock.calls[0][1]).toMatchObject({
+      range: '5ft', notes: 'Fallback.', duration: '2 rounds', cooldown: 'After rest',
+    });
+    expect(postCard.mock.calls[0][2]).toEqual({});
+    actor.system.showRangeInChat = false;
+    actor.system.showNotesInChat = false;
+    await actor.castSpell(spell);
+    expect(postCard.mock.calls[1][1]).not.toHaveProperty('range');
+    expect(postCard.mock.calls[1][1]).not.toHaveProperty('notes');
+    expect(postCard.mock.calls[1][1]).toMatchObject({ duration: '2 rounds', cooldown: 'After rest' });
+  });
+  it('an unaffordable cast still includes chat extras and does not spend mana', async () => {
+    const actor = makeActor({ mana: { value: 0, max: 0 }, autoEnableCast: false });
+    const spell = own(actor, makeItem('spell', 'Zap', {
+      range: '10ft', description: '<p>Shock.</p>', duration: '1 round',
+    }, { skillBonus: 1, manaCostEffective: 2 }));
+    await actor.castSpell(spell);
+    expect(postCard.mock.calls[0][1]).toMatchObject({
+      range: '10ft', notes: 'Shock.', duration: '1 round', insufficient: true,
+    });
+    expect(actor.update).not.toHaveBeenCalled();
+  });
+  it('Mob Spell casts use the same chat extras without inventing mana costs', async () => {
+    const actor = makeActor({ mana: undefined });
+    actor.type = 'mob';
+    const spell = own(actor, makeItem('spell', 'Zap', {
+      enabled: true, range: '10ft', description: '<p>Shock.</p>',
+    }, { skillBonus: 1, manaCostEffective: 2 }));
+    await actor.castSpell(spell);
+    expect(postCard.mock.calls[0][1]).toMatchObject({ range: '10ft', notes: 'Shock.' });
+    expect(postCard.mock.calls[0][1]).not.toHaveProperty('cost');
   });
   it('not a spell -> nothing', async () => {
     const actor = makeActor();
