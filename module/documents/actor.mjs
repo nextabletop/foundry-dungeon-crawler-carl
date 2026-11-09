@@ -159,20 +159,30 @@ export default class DCCActor extends foundry.documents.Actor {
    */
   async rollAttack(item, which = 'toHit', options = {}) {
     if (!this.#owns(item) || item.type !== 'attack') return null;
+    const { skillUseIndex, ...cardOptions } = options;
+    const hasSkillUse = Number.isInteger(skillUseIndex);
+    const use = hasSkillUse ? item.system?.derived?.skillUses?.[skillUseIndex] : null;
+    if (hasSkillUse && !use) return null;
     if ((this.type === 'vehicle') && this.system.rollsWithGunner(which)) {
-      return this.#vehicleGuard(() => rollVehicleWeapon(this, item, options));
+      return this.#vehicleGuard(() => rollVehicleWeapon(this, item, cardOptions));
     }
     const source = attackSource(item, this.items);
-    if ((source?.type === 'spell') && (which !== 'damage')) return this.castSpell(source, options);
+    if (!use && (source?.type === 'spell') && (which !== 'damage')) return this.castSpell(source, cardOptions);
     const d = item.system?.derived ?? {};
+    const rollData = use ?? d;
+    const name = use?.label ? `${item.name} (${use.label})` : item.name;
     if (which === 'damage') {
       if (!Number.isFinite(d.damageBase)) return null;
       return postCard(this, {
-        name: item.name, tag: game.i18n.localize('DCC.Roll.Damage'), type: item.system.damageType ?? '',
-      }, { damage: damageFormula(d.damageDice, d.damageBase) }, options);
+        name, tag: game.i18n.localize('DCC.Roll.Damage'), type: item.system.damageType ?? '',
+      }, { damage: damageFormula(d.damageDice, d.damageBase) }, cardOptions);
     }
-    if (!Number.isFinite(d.toHit)) return null;
-    return postCard(this, { name: item.name, tag: game.i18n.localize('DCC.Roll.ToHit') }, { roll: checkFormula(d.toHit) }, options);
+    if (!Number.isFinite(rollData.toHit)) return null;
+    return postCard(this, {
+      name,
+      tag: game.i18n.localize('DCC.Roll.ToHit'),
+      ...(use?.range ? { range: use.range } : {}),
+    }, { roll: checkFormula(rollData.toHit) }, cardOptions);
   }
 
   /**

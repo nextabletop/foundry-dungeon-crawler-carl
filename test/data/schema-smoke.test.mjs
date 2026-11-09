@@ -114,9 +114,16 @@ describe('item schemas', () => {
 
   it('attack is the canonical offensive-action record', () => {
     expect(keys(AttackModel)).toEqual([
-      ...base, 'stat', 'rank', 'die', 'damageBonus', 'damageType', 'range', 'gunnerSlot', 'skillName',
+      ...base, 'stat', 'rank', 'primarySkillId', 'skillUses',
+      'die', 'damageBonus', 'damageType', 'range', 'gunnerSlot', 'skillName',
     ]);
-    expect(AttackModel.defineSchema().linkedItemIds.initial).toEqual([]);
+    const schema = AttackModel.defineSchema();
+    expect(schema.linkedItemIds.initial).toEqual([]);
+    expect(schema.primarySkillId.initial).toBe('');
+    expect(schema.skillUses.initial).toEqual([]);
+    expect(schema.skillUses.element.fields).toHaveProperty('skillId');
+    expect(schema.skillUses.element.fields.stat.options.choices)
+      .toEqual(Object.fromEntries(['', ...STATS].map(stat => [stat, stat])));
   });
 
   it('itemModels maps all five item types', () => {

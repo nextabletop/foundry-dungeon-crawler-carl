@@ -154,6 +154,49 @@ describe('rollAttack', () => {
     expect(postCard.mock.calls[0][2]).toEqual({ roll: '1d20 + 2' });
     expect(actor.update).toHaveBeenCalledWith({ 'system.mana.value': 4 });
   });
+  it('an alternate Skill Use rolls its own To-Hit, name, and range', async () => {
+    const actor = makeActor();
+    const attack = own(actor, makeItem('attack', 'Dagger', {}, {
+      toHit: 5,
+      skillUses: [{ label: 'thrown', toHit: 9, range: '20ft', damageBase: 2, damageDice: '1d4' }],
+    }));
+    await actor.rollAttack(attack, 'toHit', { skillUseIndex: 0 });
+    expect(postCard.mock.calls[0][1]).toEqual({
+      name: 'Dagger (thrown)',
+      tag: 'DCC.Roll.ToHit',
+      range: '20ft',
+    });
+    expect(postCard.mock.calls[0][2]).toEqual({ roll: '1d20 + 9' });
+  });
+  it('an alternate Skill Use reuses the parent Attack damage', async () => {
+    const actor = makeActor();
+    const attack = own(actor, makeItem('attack', 'Dagger', { damageType: 'piercing' }, {
+      damageBase: 2,
+      damageDice: '1d4',
+      skillUses: [{ label: 'thrown', toHit: 9, range: '20ft' }],
+    }));
+    await actor.rollAttack(attack, 'damage', { skillUseIndex: 0 });
+    expect(postCard.mock.calls[0][1]).toEqual({
+      name: 'Dagger (thrown)',
+      tag: 'DCC.Roll.Damage',
+      type: 'piercing',
+    });
+    expect(postCard.mock.calls[0][2]).toEqual({ damage: '1d4 + 2' });
+  });
+  it('an alternate use of a Spell-granted Attack rolls normally without casting the source Spell', async () => {
+    const actor = makeActor();
+    const spell = own(actor, makeItem('spell', 'Magic Missile', { linkedItemIds: [] }, {
+      skillBonus: 3, manaCostEffective: 2,
+    }));
+    const attack = own(actor, makeItem('attack', 'Magic Missile', { linkedItemIds: [spell.id] }, {
+      toHit: 3,
+      skillUses: [{ label: 'aimed', toHit: 7, range: '' }],
+    }));
+    spell.system.linkedItemIds = [attack.id];
+    await actor.rollAttack(attack, 'toHit', { skillUseIndex: 0 });
+    expect(postCard.mock.calls[0][2]).toEqual({ roll: '1d20 + 7' });
+    expect(actor.update).not.toHaveBeenCalled();
+  });
 });
 
 describe('castSpell', () => {

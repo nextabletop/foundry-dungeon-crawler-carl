@@ -15,7 +15,7 @@ import { clampSlots, healthPointsFromHealthBar, maxHealthPointsFromConstitution 
 import { attackToHit, damageLabel, mobToHit, mobEvade } from './combat.mjs';
 import { vehicleMove, cruiseMph } from './vehicle.mjs';
 import { idOf, isPassiveCheck } from './items.mjs';
-import { attackSource } from './item-links.mjs';
+import { attackPrimarySkill } from './item-links.mjs';
 
 // Entry sanitation. Accept any iterable (arrays, Sets, and Foundry's
 // EmbeddedCollection, which extends Map — for a Map, take its values, since
@@ -27,6 +27,7 @@ export const toList = (v) => {
 // Drop non-object modifiers (null, or the chars of a string) and items with no id.
 const cleanModifiers = (modifiers) => toList(modifiers).filter((m) => m && typeof m === 'object');
 const cleanItems = (items) => toList(items).filter((it) => it && idOf(it) != null);
+const itemById = items => new Map(items.map(item => [idOf(item), item]));
 
 // One attack row's materialized values (_engine.js:379-395).
 // `rank` is the rank the attack used (a linked skill's base rank, else its own).
@@ -63,17 +64,44 @@ const deriveItemRow = (item, context) => {
   }
 
   if (item.type === 'attack') {
-    const source = attackSource(item, items);
-    const sourceId = idOf(source ?? {});
-    const sourceSystem = source?.system ?? {};
-    const rank = ['skill', 'spell'].includes(source?.type)
-      ? applyModifiers(+sourceSystem.rank || 0, itemBonuses[sourceId]?.rank || 0, itemPercents[sourceId]?.rank || 0)
-      : (+sys.rank || 0);
+    const primarySkill = attackPrimarySkill(item, items);
+    const primaryId = idOf(primarySkill ?? {});
+    const rank = primarySkill
+      ? applyModifiers(+primarySkill.system?.rank || 0, itemBonuses[primaryId]?.rank || 0, itemPercents[primaryId]?.rank || 0)
+      : (sys.primarySkillId ? 0 : (+sys.rank || 0));
     Object.assign(row, attackRow({
       statModifier: modifierFor(sys.stat), rank, itemBonus, itemPercent,
       damageModifierDice: itemDice[id]?.damage || '',
       die: sys.die, damageBonus: sys.damageBonus, damageType: sys.damageType, floor,
     }));
+    const byId = itemById(items);
+    row.primarySkillId = primaryId || sys.primarySkillId || '';
+    row.primarySkillName = primarySkill?.name ?? '';
+    row.primarySkillMissing = Boolean(sys.primarySkillId && !primarySkill);
+    row.skillUses = (Array.isArray(sys.skillUses) ? sys.skillUses : []).map((use, index) => {
+      const candidate = byId.get(use.skillId);
+      const skill = ['skill', 'spell'].includes(candidate?.type) ? candidate : null;
+      const skillId = idOf(skill ?? {});
+      const useRank = skill
+        ? applyModifiers(+skill.system?.rank || 0, itemBonuses[skillId]?.rank || 0, itemPercents[skillId]?.rank || 0)
+        : 0;
+      const useStat = STATS.includes(use.stat) ? use.stat : sys.stat;
+      const derived = attackRow({
+        statModifier: modifierFor(useStat), rank: useRank, itemBonus, itemPercent,
+        damageModifierDice: itemDice[id]?.damage || '',
+        die: sys.die, damageBonus: sys.damageBonus, damageType: sys.damageType, floor,
+      });
+      return {
+        index,
+        label: String(use.label ?? '').trim(),
+        skillId: String(use.skillId ?? ''),
+        skillName: skill?.name ?? '',
+        missing: Boolean(use.skillId && !skill),
+        stat: useStat,
+        range: String(use.range ?? '').trim() || String(sys.range ?? '').trim(),
+        ...derived,
+      };
+    });
   }
 
   return Object.keys(row).length ? row : null;

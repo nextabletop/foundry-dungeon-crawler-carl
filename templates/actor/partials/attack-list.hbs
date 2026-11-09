@@ -33,7 +33,7 @@
       <span class="dcc-icell">{{rank}}</span>
       <span class="dcc-icell">
         <button type="button" class="dcc-rollbtn" id="{{@root.rootId}}-{{id}}-rollAttack-toHit" data-action="rollAttack" data-roll="toHit"
-                data-tooltip="{{#if isSpell}}{{localize 'DCC.Items.CastTooltip'}}{{else}}{{localize 'DCC.Roll.ToHit'}}{{/if}}">{{numberFormat toHit sign=true}}</button>
+                data-tooltip="{{#if skillMissing}}{{localize 'DCC.ItemSheet.MissingPrimarySkill'}}{{else}}{{#if isSpell}}{{localize 'DCC.Items.CastTooltip'}}{{else}}{{skillName}}{{/if}}{{/if}}">{{numberFormat toHit sign=true}}</button>
       </span>
       {{/if}}
       <span class="dcc-icell dcc-c-dmg">
@@ -41,6 +41,24 @@
                 data-tooltip="{{localize 'DCC.Roll.Damage'}}">{{damageLabel}}</button>
       </span>
     {{/"systems/dungeon-crawler-carl/templates/actor/partials/item-row.hbs"}}
+    {{#each skillUses}}
+    <li class="dcc-irow dcc-attack-use" data-item-id="{{attackId}}">
+      <button type="button" class="dcc-iname" id="{{@root.rootId}}-{{attackId}}-use-{{index}}-name" data-action="editItem" data-view-only>
+        <span>{{name}}</span>
+      </button>
+      <span class="dcc-icell">{{#if stat}}{{localize stat}}{{/if}}</span>
+      <span class="dcc-icell">{{rank}}</span>
+      <span class="dcc-icell">
+        <button type="button" class="dcc-rollbtn" id="{{@root.rootId}}-{{attackId}}-use-{{index}}-toHit" data-action="rollAttack" data-roll="toHit"
+                data-skill-use-index="{{index}}" data-tooltip="{{#if missing}}{{localize 'DCC.ItemSheet.MissingSkill'}}{{else}}{{skillName}}{{/if}}">{{numberFormat toHit sign=true}}</button>
+      </span>
+      <span class="dcc-icell dcc-c-dmg">
+        <button type="button" class="dcc-rollbtn dcc-rollbtn--wide" id="{{@root.rootId}}-{{attackId}}-use-{{index}}-damage" data-action="rollAttack" data-roll="damage"
+                data-skill-use-index="{{index}}" data-tooltip="{{localize 'DCC.Roll.Damage'}}">{{damageLabel}}</button>
+      </span>
+      <span></span>
+    </li>
+    {{/each}}
     {{else}}
     <li class="dcc-iempty">{{localize "DCC.Items.NoAttacks"}}</li>
     {{/each}}

@@ -40,6 +40,19 @@ export function attackSource(attack, items) {
   return itemLinkState(attack, items).resolved.find(item => item.type !== 'attack') ?? null;
 }
 
+/** The stable-ID Skill/Spell used by an Attack, falling back to its granting source. */
+export function attackPrimarySkill(attack, items) {
+  if (attack?.type !== 'attack') return null;
+  const source = attackSource(attack, items);
+  if (source?.type === 'spell') return source;
+  const primaryId = String(attack.system?.primarySkillId ?? '');
+  if (primaryId) {
+    const primary = itemMap(items).get(primaryId);
+    return RANK_SOURCE_TYPES.has(primary?.type) ? primary : null;
+  }
+  return RANK_SOURCE_TYPES.has(source?.type) ? source : null;
+}
+
 /** The mutually linked Attack granted by a Skill/Spell source, if one exists. */
 export function grantedAttack(source, items) {
   if (!RANK_SOURCE_TYPES.has(source?.type)) return null;
@@ -48,10 +61,10 @@ export function grantedAttack(source, items) {
 
 /** A linked Skill/Spell supplies Rank one-way; otherwise the Attack keeps its own stored Rank. */
 export function effectiveAttackRank(attack, items) {
-  const source = attackSource(attack, items);
-  if (!RANK_SOURCE_TYPES.has(source?.type)) return Number(attack?.system?.rank) || 0;
-  const effective = source.system?.derived?.rankEffective;
-  return Number.isFinite(effective) ? effective : (Number(source.system?.rank) || 0);
+  const skill = attackPrimarySkill(attack, items);
+  if (!skill) return attack?.system?.primarySkillId ? 0 : (Number(attack?.system?.rank) || 0);
+  const effective = skill.system?.derived?.rankEffective;
+  return Number.isFinite(effective) ? effective : (Number(skill.system?.rank) || 0);
 }
 
 /**
@@ -118,6 +131,7 @@ export async function createGrantedAttack(source) {
     system: {
       stat: source.system?.stat ?? 'strength',
       rank: Number(source.system?.rank) || 0,
+      primarySkillId: source.id,
     },
   }]);
   if (!attack) throw new Error(`Could not create the Attack granted by "${source.name}".`);

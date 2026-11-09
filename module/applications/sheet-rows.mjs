@@ -9,7 +9,7 @@ import { levelUpBlocker } from '../rules/advancement.mjs';
 import { UNLINKED, floorEndBlocked, floorEndsAvailable, isRosterPc, undoFloorEndBlockers } from '../rules/gm-screen.mjs';
 import { crewRoleChoices, crewRoleKey } from '../rules/crew.mjs';
 import { htmlToText } from '../rules/card.mjs';
-import { attackSource } from '../rules/item-links.mjs';
+import { attackPrimarySkill, attackSource } from '../rules/item-links.mjs';
 
 /**
  * The value an inline item control on the actor sheet writes: a checkbox's
@@ -73,16 +73,26 @@ const statAbbr = key => (STATS.includes(key) ? `DCC.StatAbbr.${key}` : '');
 const attackRow = (item, items) => {
   const d = item.system.derived ?? {};
   const source = attackSource(item, items);
+  const primarySkill = attackPrimarySkill(item, items);
   return {
     id: item.id,
     name: item.name,
     img: item.img,
     isSpell: source?.type === 'spell',
+    skillName: primarySkill?.name ?? '',
+    skillMissing: Boolean(d.primarySkillMissing),
     stat: statAbbr(item.system.stat),
     rank: d.rank,
     toHit: d.toHit,
     mobToHit: d.mobToHit,
     damageLabel: String(d.damageLabel ?? '').trim(),
+    skillUses: (d.skillUses ?? []).map(use => ({
+      ...use,
+      attackId: item.id,
+      name: use.label ? `${item.name} (${use.label})` : item.name,
+      stat: statAbbr(use.stat),
+      damageLabel: String(use.damageLabel ?? '').trim(),
+    })),
   };
 };
 

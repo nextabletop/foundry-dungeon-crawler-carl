@@ -846,6 +846,8 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 .dcc.sheet.actor .dcc-irow--off { opacity: 0.55; }
 .dcc.sheet.actor .dcc-ilist--attacks > li { grid-template-columns: minmax(0, 1fr) 44px 40px 56px minmax(96px, auto) 44px; }
 .dcc.sheet.actor .dcc-ilist--attacks .dcc-ihead > span:nth-child(2) { text-align: center; }
+.dcc.sheet.actor .dcc-attack-use { background: color-mix(in srgb, var(--d-panel) 75%, transparent); }
+.dcc.sheet.actor .dcc-attack-use .dcc-iname { padding-left: 18px; font-style: italic; }
 /* Skills / Spells: the self-labelling flags cell (check type, mana, passive / on / hot chips) sits
    after the roll button, or wraps under the name on a narrow list (see "Narrow item lists"). Its
    column is a fixed width, not max-content: every row (and the header, which has no flags cell) is
@@ -1797,6 +1799,18 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 }
 .dcc.sheet.item .dcc-item-grid + .dcc-item-grid { margin-top: 8px; }
 .dcc.sheet.item .dcc-item-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
+.dcc.sheet.item .dcc-skill-use-list { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; }
+.dcc.sheet.item .dcc-skill-use-row {
+  display: grid;
+  grid-template-columns: minmax(90px, 0.8fr) minmax(150px, 1.4fr) minmax(110px, 1fr) minmax(90px, 1fr) 28px;
+  align-items: start;
+  gap: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--d-line-soft);
+}
+.dcc.sheet.item .dcc-skill-use-row .form-group { flex-direction: column; align-items: stretch; gap: 3px; }
+.dcc.sheet.item .dcc-skill-use-row .form-group > label { flex: none; font-size: 10px; }
+.dcc.sheet.item .dcc-skill-use-row .notification { margin: 2px 0 0; padding: 2px 4px; font-size: 10px; }
 .dcc.sheet.item .dcc-item-damage-grid {
   display: grid;
   grid-template-columns: minmax(72px, 0.7fr) minmax(72px, 0.7fr) minmax(180px, 2fr);

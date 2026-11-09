@@ -178,6 +178,73 @@ describe('deriveCreature — Attacks', () => {
     expect(d.items.w1.toHit).toBe(3);
   });
 
+  it('derives primary and alternate Skill uses by stable ID with inherited Attack modifiers and damage', () => {
+    const items = [
+      attack('a1', 'Dagger', {
+        stat: 'strength',
+        primarySkillId: 's1',
+        skillUses: [
+          { label: 'thrown', skillId: 's2', stat: 'dexterity', range: '20ft' },
+          { label: 'improvised', skillId: 'missing', stat: '', range: '' },
+        ],
+        range: '5ft',
+        die: '1d4',
+        damageBonus: 1,
+        damageType: 'piercing',
+      }),
+      skill('s1', 'Dagger', { rank: 2 }),
+      skill('s2', 'Throwing', { rank: 4 }),
+    ];
+    const d = deriveCreature(pc({
+      stats: stats({ strength: 10, dexterity: 20 }),
+      items,
+      modifiers: [
+        { target: 'group:skills:rank', value: '1' },
+        { target: 'item:Dagger:to_hit', value: '2' },
+      ],
+    }));
+    expect(d.items.a1).toMatchObject({
+      primarySkillId: 's1',
+      primarySkillName: 'Dagger',
+      primarySkillMissing: false,
+      rank: 3,
+      toHit: 9,
+    });
+    expect(d.items.a1.skillUses[0]).toMatchObject({
+      label: 'thrown',
+      skillId: 's2',
+      skillName: 'Throwing',
+      missing: false,
+      stat: 'dexterity',
+      rank: 5,
+      toHit: 12,
+      range: '20ft',
+      damageLabel: '1d4+1 piercing',
+    });
+    expect(d.items.a1.skillUses[1]).toMatchObject({
+      label: 'improvised',
+      missing: true,
+      stat: 'strength',
+      rank: 0,
+      toHit: 6,
+      range: '5ft',
+      damageLabel: '1d4+1 piercing',
+    });
+  });
+
+  it('an explicit missing primary Skill rolls at Rank 0 instead of the stored Attack Rank', () => {
+    const d = deriveCreature(pc({
+      stats: stats({ strength: 10 }),
+      items: [attack('a1', 'Club', { rank: 4, primarySkillId: 'missing' })],
+    }));
+    expect(d.items.a1).toMatchObject({
+      rank: 0,
+      toHit: 4,
+      primarySkillId: 'missing',
+      primarySkillMissing: true,
+    });
+  });
+
   it('a Spell-linked Attack gets group:attacks:to_hit and linked effective Rank', () => {
     const items = [
       spell('sp1', 'Fireball', { rank: 2, linkedItemIds: ['a1'] }),

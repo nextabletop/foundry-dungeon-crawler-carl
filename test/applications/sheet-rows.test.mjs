@@ -61,7 +61,12 @@ describe('sheetItemLists', () => {
   const lists = sheetItemLists({
     attack: [
       it_('a2', 'attack', 'Zap Attack', 200, { stat: 'intelligence', linkedItemIds: ['p2'] }, { rank: 2, toHit: 3, damageLabel: '1d6+2 fire' }),
-      it_('a1', 'attack', 'Axe', 100, { stat: 'strength' }, { rank: 1, toHit: 2, damageLabel: '1d6+1 slashing' }),
+      it_('a1', 'attack', 'Axe', 100, { stat: 'strength', primarySkillId: 's1' }, {
+        rank: 1,
+        toHit: 2,
+        damageLabel: '1d6+1 slashing',
+        skillUses: [{ index: 0, label: 'thrown', skillId: 's2', skillName: 'Brawl', stat: 'dexterity', rank: 2, toHit: 4, damageLabel: '1d6+1 slashing' }],
+      }),
     ],
     skill: [it_('s2', 'skill', 'Brawl', 0, { stat: 'strength', rank: 1 }), it_('s1', 'skill', 'Axes', 0, { stat: 'dexterity', rank: 2 }, { rankEffective: 3, skillBonus: 4 })],
     spell: [it_('p2', 'spell', 'Zap', 5, { stat: 'intelligence', linkedItemIds: ['a2'] }, { manaCostEffective: 3 }),
@@ -74,9 +79,27 @@ describe('sheetItemLists', () => {
   });
   it('attack rows: derived values, spell flag, trimmed label', () => {
     expect(lists.attacks[0]).toMatchObject({
-      stat: 'DCC.StatAbbr.strength', rank: 1, toHit: 2, damageLabel: '1d6+1 slashing', isSpell: false,
+      stat: 'DCC.StatAbbr.strength', rank: 1, toHit: 2, damageLabel: '1d6+1 slashing',
+      isSpell: false, skillName: 'Axes', skillMissing: false,
+    });
+    expect(lists.attacks[0].skillUses[0]).toMatchObject({
+      attackId: 'a1',
+      name: 'Axe (thrown)',
+      stat: 'DCC.StatAbbr.dexterity',
+      skillName: 'Brawl',
+      toHit: 4,
     });
     expect(lists.attacks[1].isSpell).toBe(true);
+  });
+
+  it('Attack templates author and roll alternate stable-ID Skill Uses', () => {
+    const attack = readFileSync(new URL('../../templates/item/attack.hbs', import.meta.url), 'utf8');
+    const list = readFileSync(new URL('../../templates/actor/partials/attack-list.hbs', import.meta.url), 'utf8');
+    expect(attack).toContain('name="system.primarySkillId"');
+    expect(attack).toContain('name="system.skillUses.{{index}}.skillId"');
+    expect(attack).toContain('data-action="addSkillUse"');
+    expect(attack).toContain('data-action="deleteSkillUse"');
+    expect(list).toContain('data-skill-use-index="{{index}}"');
   });
   it('attack rows carry the mob static To-Hit target (derived.mobToHit)', () => {
     const { attacks } = sheetItemLists({

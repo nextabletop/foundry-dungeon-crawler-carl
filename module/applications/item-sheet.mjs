@@ -38,6 +38,8 @@ export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.app
       deleteEffect: DCCItemSheet.#onDeleteEffect,
       skillCheck: DCCItemSheet.#onSkillCheck,
       linkAttack: DCCItemSheet.#onLinkAttack,
+      addSkillUse: DCCItemSheet.#onAddSkillUse,
+      deleteSkillUse: DCCItemSheet.#onDeleteSkillUse,
     },
   };
 
@@ -81,6 +83,13 @@ export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.app
     const ownedItems = this.document.parent?.items?.contents ?? [];
     const source = this.document.type === 'attack' ? attackSource(this.document, ownedItems) : null;
     const linkState = this.document.type === 'attack' ? itemLinkState(this.document, ownedItems) : null;
+    const skillItems = ownedItems.filter(item => ['skill', 'spell'].includes(item.type));
+    const skillOptions = Object.fromEntries([
+      ['', game.i18n.localize('DCC.None')],
+      ...skillItems.map(item => [item.id, `${item.name} (${game.i18n.localize(CONFIG.Item.typeLabels[item.type] ?? item.type)})`]),
+    ]);
+    const storedPrimarySkillId = systemSource.primarySkillId ?? '';
+    const primarySkillMissing = Boolean(storedPrimarySkillId && !skillItems.some(item => item.id === storedPrimarySkillId));
     const attackLink = this.document.type === 'attack' ? {
       owned: Boolean(this.document.parent),
       sourceId: source?.id ?? '',
@@ -91,9 +100,30 @@ export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.app
           .map(item => [item.id, `${item.name} (${game.i18n.localize(CONFIG.Item.typeLabels[item.type] ?? item.type)})`]),
       ]),
       rank: effectiveAttackRank(this.document, ownedItems),
-      rankLinked: ['skill', 'spell'].includes(source?.type),
+      rankLinked: Boolean(storedPrimarySkillId || ['skill', 'spell'].includes(source?.type)),
       staleIds: linkState.staleIds,
       asymmetricNames: linkState.asymmetric.map(item => item.name),
+      primarySkillId: source?.type === 'spell'
+        ? source.id
+        : (storedPrimarySkillId || (source?.type === 'skill' ? source.id : '')),
+      primarySkillMissing: source?.type === 'spell' ? false : primarySkillMissing,
+      primarySkillLocked: source?.type === 'spell',
+      skillOptions: {
+        ...skillOptions,
+        ...(primarySkillMissing ? { [storedPrimarySkillId]: game.i18n.format('DCC.ItemSheet.MissingSkillOption', { id: storedPrimarySkillId }) } : {}),
+      },
+      skillUses: (systemSource.skillUses ?? []).map((use, index) => {
+        const missing = Boolean(use.skillId && !skillItems.some(item => item.id === use.skillId));
+        return {
+          ...use,
+          index,
+          missing,
+          skillOptions: {
+            ...skillOptions,
+            ...(missing ? { [use.skillId]: game.i18n.format('DCC.ItemSheet.MissingSkillOption', { id: use.skillId }) } : {}),
+          },
+        };
+      }),
     } : null;
     return Object.assign(context, {
       system,
@@ -221,5 +251,21 @@ export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.app
     } catch (err) {
       ui.notifications.error(err, { console: true });
     }
+  }
+
+  /** Add one alternate Skill Use to this Attack. @this {DCCItemSheet} */
+  static async #onAddSkillUse() {
+    if (this.document.type !== 'attack' || !(await this._flushItemForm())) return;
+    const uses = Array.from(this.document.system?._source?.skillUses ?? this.document.system?.skillUses ?? []);
+    await this.document.update({ 'system.skillUses': [...uses, { label: '', skillId: '', stat: '', range: '' }] });
+  }
+
+  /** Remove one alternate Skill Use from this Attack. @this {DCCItemSheet} */
+  static async #onDeleteSkillUse(_event, target) {
+    if (this.document.type !== 'attack' || !(await this._flushItemForm())) return;
+    const index = Number(target.dataset.skillUseIndex);
+    const uses = Array.from(this.document.system?._source?.skillUses ?? this.document.system?.skillUses ?? []);
+    if (!Number.isInteger(index) || index < 0 || index >= uses.length) return;
+    await this.document.update({ 'system.skillUses': uses.filter((_use, useIndex) => useIndex !== index) });
   }
 }

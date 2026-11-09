@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import DCCItem from '../../module/documents/item.mjs';
 import {
+  attackPrimarySkill,
   attackSource,
   createGrantedAttack,
   effectiveAttackRank,
@@ -131,6 +132,29 @@ describe('Attack source links', () => {
     const attack = item('attack', 'attack', ['gear'], { rank: 2 });
     expect(effectiveAttackRank(attack, [source, attack])).toBe(2);
   });
+
+  it('uses an explicit stable-ID primary Skill independently of the granting source', () => {
+    const gear = item('gear', 'gear', ['attack']);
+    const skill = item('skill', 'skill', [], { rank: 5, derived: { rankEffective: 7 } });
+    const attack = item('attack', 'attack', ['gear'], { rank: 2, primarySkillId: 'skill' });
+    expect(attackSource(attack, [gear, skill, attack])).toBe(gear);
+    expect(attackPrimarySkill(attack, [gear, skill, attack])).toBe(skill);
+    expect(effectiveAttackRank(attack, [gear, skill, attack])).toBe(7);
+  });
+
+  it('keeps a missing primary Skill visible by using Rank 0', () => {
+    const attack = item('attack', 'attack', [], { rank: 4, primarySkillId: 'missing' });
+    expect(attackPrimarySkill(attack, [attack])).toBeNull();
+    expect(effectiveAttackRank(attack, [attack])).toBe(0);
+  });
+
+  it('a granting Spell remains the primary cast Skill over a stored override', () => {
+    const spell = item('spell', 'spell', ['attack'], { rank: 3 });
+    const other = item('other', 'skill', [], { rank: 8 });
+    const attack = item('attack', 'attack', ['spell'], { primarySkillId: 'other' });
+    expect(attackPrimarySkill(attack, [spell, other, attack])).toBe(spell);
+    expect(effectiveAttackRank(attack, [spell, other, attack])).toBe(3);
+  });
 });
 
 describe('granted Attacks', () => {
@@ -145,7 +169,7 @@ describe('granted Attacks', () => {
       type: 'attack',
       name: 'Magic Missile',
       img: 'missile.svg',
-      system: { stat: 'intelligence', rank: 3 },
+      system: { stat: 'intelligence', rank: 3, primarySkillId: 'spell' },
     }]);
     expect(grantedAttack(source, actor.items.contents)).toBe(attack);
     expect(attack.system.linkedItemIds).toEqual([source.id]);

@@ -402,8 +402,11 @@ export default class DCCActorSheetBase extends HandlebarsApplicationMixin(foundr
     const item = this._itemFromTarget(target);
     if (!item) return;
     const which = target.dataset.roll === 'damage' ? 'damage' : 'toHit';
+    const useIndex = target.dataset.skillUseIndex;
     if (!(await this._flushForm())) return;
-    await this.document.rollAttack(item, which);
+    await this.document.rollAttack(item, which, {
+      ...(useIndex === undefined ? {} : { skillUseIndex: Number(useIndex) }),
+    });
   }
 
   /** Open an owned item's sheet. @this {DCCActorSheetBase} */
