@@ -28,6 +28,17 @@
     },
     "Effect": {
       "ChangeType": "DCC Modifier",
+      "ItemTargetLabel": "Target an owned item and aspect",
+      "ItemTargetChoose": "Choose an owned item target",
+      "ItemTargetEmpty": "No eligible owned items",
+      "ItemTargetUnowned": "Owned item targets can be selected when this effect belongs to an actor.",
+      "ItemTargetOption": "{name} — {aspect} ({type}, {id})",
+      "Aspect": {
+        "to_hit": "To-Hit",
+        "damage": "Damage",
+        "rank": "Rank",
+        "mana_cost": "Mana Cost"
+      },
       "Header": "Effects",
       "Create": "Modifier",
       "NewName": "Modifier",
@@ -61,6 +72,10 @@
         "mobToHitNone": {
           "label": "No Mob To-Hit",
           "hint": "This attack has no To-Hit target."
+        },
+        "mobNoDamage": {
+          "label": "No Damage",
+          "hint": "This Mob attack deals no damage, even when it has damage dice or modifiers."
         },
         "skill": {
           "label": "Skill",
@@ -344,6 +359,8 @@
       "AbilityLabel": "Roll {stat} check",
       "ToHit": "To Hit",
       "Damage": "Damage",
+      "NoDamage": "No Damage",
+      "NoDamageWarning": "{name} has no damage to roll.",
       "Cast": "Cast",
       "Post": "Post"
     },
@@ -400,6 +417,10 @@
       "ManaCost": "Mana cost",
       "ManaChip": "{cost} MP",
       "CheckType": "Check",
+      "Type": "Type",
+      "Roll": "Roll",
+      "Used": "Used",
+      "Modifiers": "Mods",
       "OpposedStat": "Opposed by",
       "Enabled": "On",
       "EnabledTooltip": "Enabled: this item's modifiers apply",
@@ -485,7 +506,7 @@
       "Speed": "Speed",
       "SpeedMax": "Max",
       "ConstitutionModifier": "Con Mod",
-      "ConstitutionModifierTooltip": "Hit points per Health Bar slot. Blank = 5 (the rulebook vehicle default); a mount uses its own Con Mod",
+      "ConstitutionModifierTooltip": "Hit points per Health Bar slot. Blank = 5 (the rulebook vehicle default); a mount uses its own Con Mod. At 0, HP stays 0 and damage cannot remove slots; adjust slots manually.",
       "Passengers": "Passengers",
       "DriveSkill": "Drive skill",
       "DriveSkillTooltip": "The skill the Driver / Rider rolls, e.g. Driving, Riding, Chopper Pilot",

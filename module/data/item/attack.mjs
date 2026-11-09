@@ -23,6 +23,7 @@ export default class AttackModel extends BaseItemModel {
       rank: int(0),
       mobToHitBase: int(null, { nullable: true }),
       mobToHitNone: bool(false),
+      mobNoDamage: bool(false),
       primarySkillId: str(),
       skillUses: new ArrayField(new SchemaField({
         label: str(),

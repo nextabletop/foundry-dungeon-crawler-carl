@@ -21,6 +21,10 @@ describe('parseTarget', () => {
     expect(parseTarget('item:Longsword:to_hit')).toEqual({ kind: 'item', name: 'Longsword', aspect: 'to_hit' });
   });
 
+  it('parses stable IDs without changing their case', () => {
+    expect(parseTarget(' ITEM-ID:Ab12_xy:TO_HIT ')).toEqual({ kind: 'itemId', id: 'Ab12_xy', aspect: 'to_hit' });
+  });
+
   it('item aspect is case-insensitive and maps back to canonical casing', () => {
     expect(parseTarget('item:Firebolt:MANA_COST')).toEqual({ kind: 'item', name: 'Firebolt', aspect: 'mana_cost' });
   });
@@ -93,6 +97,9 @@ describe('parseTarget', () => {
     ['an unrecognized bare field name', 'armor'],
     ['item: with no aspect segment', 'item:Longsword'],
     ['item: with an empty aspect', 'item:Longsword:'],
+    ['item-id without an ID', 'item-id::rank'],
+    ['item-id with a delimiter in the ID', 'item-id:a:b:rank'],
+    ['item-id with whitespace in the ID', 'item-id:a b:rank'],
     ['group: with too few segments (no aspect)', 'group:attacks'],
     ['group: with too many segments', 'group:attacks:stat=a:extra:to_hit'],
     ['group: predicate with no operator', 'group:attacks:stat:to_hit'],
@@ -209,6 +216,46 @@ describe('resolveModifiers — item targets', () => {
     const colonItems = [{ id: 'w3', type: 'attack', name: 'Sword: of Legends', system: {} }];
     const result = resolveModifiers([{ target: 'item:Sword: of Legends:to_hit', value: '1' }], colonItems);
     expect(result.itemBonus).toEqual({ w3: { to_hit: 1 } });
+  });
+});
+
+describe('resolveModifiers — stable item targets', () => {
+  const items = [
+    { id: 'A1', type: 'attack', name: 'Dagger', system: {} },
+    { id: 'A2', type: 'attack', name: 'Dagger', system: {} },
+    { id: 'S1', type: 'skill', name: 'Knives', system: {} },
+    { _id: 'P1', type: 'spell', name: 'Firebolt', system: {} },
+  ];
+
+  it('targets exactly one item regardless of duplicate names or renames', () => {
+    const modifier = { target: 'item-id:A1:to_hit', value: '2' };
+    expect(resolveModifiers([modifier], items).itemBonus).toEqual({ A1: { to_hit: 2 } });
+    expect(resolveModifiers([modifier], [{ ...items[0], name: 'Renamed' }, ...items.slice(1)]).itemBonus)
+      .toEqual({ A1: { to_hit: 2 } });
+  });
+
+  it('handles attack, skill and spell aspects and flat, percent and dice values', () => {
+    const result = resolveModifiers([
+      { target: 'item-id:A1:damage', value: '+1d4' },
+      { target: 'item-id:S1:rank', value: '2' },
+      { target: 'item-id:P1:mana_cost', value: '25%' },
+    ], items);
+    expect(result.itemDice).toEqual({ A1: { damage: '+1d4' } });
+    expect(result.itemBonus).toEqual({ S1: { rank: 2 } });
+    expect(result.itemPercent).toEqual({ P1: { mana_cost: 25 } });
+    expect(result.unresolved).toEqual([]);
+  });
+
+  it.each([
+    ['item-id:missing:rank', 'noItem'],
+    ['item-id:a1:to_hit', 'noItem'],
+    ['item-id:A1:rank', 'illegalAspect'],
+    ['item-id:P1:damage', 'illegalAspect'],
+    ['item-id:A1:damage', 'percentDamage'],
+    ['item-id:bad id:rank', 'parse'],
+  ])('reports %s as unresolved (%s)', (target, reason) => {
+    const modifier = { target, value: reason === 'percentDamage' ? '10%' : '1' };
+    expect(resolveModifiers([modifier], items).unresolved).toEqual([{ target, reason, modifier }]);
   });
 });
 

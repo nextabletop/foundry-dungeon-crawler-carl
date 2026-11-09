@@ -14,7 +14,7 @@
   --rt-ink: #161616;
   --rt-ink-dim: #555555;
   --rt-line: #b3b1ab;
-  --rt-bar: #101010;
+  --rt-bar: #000000;
   --rt-bar-text: #ffffff;
   --rt-pill-bg: #ffffff;
   --rt-gold: #c98a06;
@@ -38,7 +38,6 @@ body.theme-dark .dcc-card {
   --rt-ink: #e7e7e7;
   --rt-ink-dim: #9aa0aa;
   --rt-line: #3a3f48;
-  --rt-bar: #2c323c;
   --rt-bar-text: #f0f0f0;
   --rt-pill-bg: #0d0f13;
   --rt-gold: #d9a52a;
@@ -111,12 +110,6 @@ body.theme-dark .dcc-card {
   color: #ffffff;
 }
 .dcc-card .dcc-card-head.gold-red .dcc-card-char { color: #ffe0a3; }
-.dcc-card .dcc-card-head.fail {
-  background: #3a3f48;
-  color: #e7e7e7;
-}
-.dcc-card .dcc-card-head.fail .dcc-card-char { color: #c98a06; }
-
 /* Body */
 .dcc-card .dcc-card-pad { padding: 6px 11px; }
 .dcc-card .dcc-card-opt { padding-top: 0; }
@@ -967,23 +960,18 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 .dcc.sheet.actor .dcc-ilist--attacks .dcc-ihead > span:nth-child(2) { text-align: center; }
 .dcc.sheet.actor .dcc-attack-use { background: color-mix(in srgb, var(--d-panel) 75%, transparent); }
 .dcc.sheet.actor .dcc-attack-use .dcc-iname { padding-left: 18px; font-style: italic; }
-/* Skills / Spells: the self-labelling flags cell (check type, mana, passive / on / hot chips) sits
-   after the roll button, or wraps under the name on a narrow list (see "Narrow item lists"). Its
-   column is a fixed width, not max-content: every row (and the header, which has no flags cell) is
-   its own grid, so a content-sized column would differ per row and misalign the header. */
-.dcc.sheet.actor .dcc-ilist--skills > li {
-  grid-template-columns: 18px minmax(0, 1fr) 36px 56px 56px 292px 44px;
-  grid-template-areas: "mark name stat rank roll flags ctl";
-}
-.dcc.sheet.actor .dcc-ilist--spells > li {
-  grid-template-columns: 18px minmax(0, 1fr) 36px 56px 68px 348px 44px;
-  grid-template-areas: "mark name stat rank roll flags ctl";
+/* Skills and Spells use matching tracks for headers and compact summary rows. */
+.dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells) { overflow-x: auto; }
+.dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells) > li {
+  min-width: 358px;
+  grid-template-columns: minmax(70px, 1fr) 38px 90px 42px 38px 38px 44px;
+  grid-template-areas: "name rank type roll used mods ctl";
 }
 .dcc.sheet.actor .dcc-ilist--skills > .dcc-irow:has(.dcc-skill-summary),
 .dcc.sheet.actor .dcc-ilist--spells > .dcc-irow:has(.dcc-skill-summary) {
   grid-template-areas:
-    "mark name    stat    rank    roll    flags   ctl"
-    ".    summary summary summary summary summary ctl";
+    "name    rank    type    roll    used    mods    ctl"
+    "summary summary summary summary summary summary ctl";
 }
 .dcc.sheet.actor .dcc-skill-summary {
   grid-area: summary;
@@ -1061,6 +1049,21 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 }
 .dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-icell .dcc-rollbtn { padding: 3px 7px; font-size: 12px; text-transform: none; }
 .dcc.sheet.actor .dcc-rollbtn--wide { white-space: nowrap; }
+.dcc.sheet.actor .dcc-rollbtn[data-action="rollAttack"],
+.dcc.sheet.actor .dcc-rollbtn.dcc-skill-roll {
+  border-color: var(--d-bar);
+  background: var(--d-bar);
+  color: var(--d-bar-text);
+}
+.dcc.sheet.actor .dcc-rollbtn[data-action="rollAttack"][data-roll="damage"] {
+  background: var(--d-hot);
+  color: #fff;
+}
+.dcc.sheet.actor .dcc-icell .dcc-skill-roll { min-width: 32px; }
+.dcc.sheet.actor .dcc-no-damage { color: var(--d-ink-dim); }
+.dcc.sheet.actor .dcc-c-type { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.dcc.sheet.actor .dcc-c-used input { accent-color: #249d29; }
+.dcc.sheet.actor .dcc-c-mods input { accent-color: var(--d-hot); }
 /* A damage label ("3d10 +12 bludgeoning") wraps inside its column rather than spilling over the
    To Hit button and the row's edit control. */
 .dcc.sheet.actor .dcc-icell.dcc-c-dmg { min-width: 0; }
@@ -1487,8 +1490,7 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 /* Mob abilities: enhanced score and modifier, with editable bases. */
 .dcc.sheet.actor .dcc-mob-abilities { position: relative; padding: 6px 8px; }
 .dcc.sheet.actor .dcc-mob .dcc-stat { container-type: inline-size; align-items: center; gap: 8px; padding: 4px 0; border: none; }
-.dcc.sheet.actor .dcc-mob .dcc-stats { grid-template-columns: repeat(5, minmax(80px, 1fr)); gap: 2px; overflow-x: auto; padding: 0 24px 4px 0; }
-.dcc.sheet.actor .dcc-mob-abilities--with-mana .dcc-stats { grid-template-columns: repeat(6, minmax(80px, 1fr)); }
+.dcc.sheet.actor .dcc-mob .dcc-stats { grid-template-columns: repeat(5, minmax(80px, 1fr)); gap: 8px; overflow-x: auto; padding: 0 16px 4px; }
 .dcc.sheet.actor .dcc-mob .dcc-statmod { min-width: 42px; height: 26px; min-height: 0; align-items: center; justify-content: center; padding: 0 6px; font-size: 13px; font-variant: small-caps; letter-spacing: 0.06em; text-transform: none; }
 .dcc.sheet.actor .dcc-mob-ability-value { display: flex; align-items: baseline; justify-content: center; gap: 3px; color: var(--d-ink); white-space: nowrap; }
 .dcc.sheet.actor .dcc-mob .dcc-statenh { width: auto; height: auto; color: inherit; font-size: 26px; font-weight: 800; line-height: 1; }
@@ -1517,18 +1519,15 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
   white-space: pre-line;
 }
 .dcc.sheet.actor .dcc-ilist--inventory.dcc-ilist--lean > li { grid-template-columns: minmax(0, 1fr) 48px 44px 44px; }
-.dcc.sheet.actor .dcc-ilist--skills.dcc-ilist--lean > li {
-  grid-template-columns: minmax(0, 1fr) 36px 56px 56px 66px 44px;
-  grid-template-areas: "name stat rank roll flags ctl";
-}
-.dcc.sheet.actor .dcc-ilist--spells.dcc-ilist--lean > li {
-  grid-template-columns: minmax(0, 1fr) 36px 56px 68px 66px 44px;
-  grid-template-areas: "name stat rank roll flags ctl";
+.dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells).dcc-ilist--lean > li {
+  min-width: 352px;
+  grid-template-columns: minmax(70px, 1fr) 38px 90px 42px 38px 44px;
+  grid-template-areas: "name rank type roll mods ctl";
 }
 .dcc.sheet.actor .dcc-ilist--skills.dcc-ilist--lean > .dcc-irow:has(.dcc-skill-summary),
 .dcc.sheet.actor .dcc-ilist--spells.dcc-ilist--lean > .dcc-irow:has(.dcc-skill-summary) {
   grid-template-areas:
-    "name    stat    rank    roll    flags   ctl"
+    "name    rank    type    roll    mods    ctl"
     "summary summary summary summary summary ctl";
 }
 .dcc.sheet.actor .dcc-ilist--lean .dcc-ihead > span:nth-child(2) { text-align: center; }
@@ -1614,125 +1613,28 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 }
 .dcc.sheet.actor input.dcc-iinput--text { width: 100%; text-align: left; font-weight: 400; }
 
-/* ── Narrow item lists: two lines per row ──
-   Skills, Spells and Vehicle Weapons place every cell by grid area (dcc-c-* classes; the name button,
-   mark box and edit/delete controls by their own classes), so a container query only swaps the
-   template. Each threshold is the list's one-line fixed columns + gaps + a ~100px name: below it the
-   row splits into the roll line (name · rolls · edit/delete) and a settings line under it. Scrolling
-   tabs reserve their scrollbar gutter so a taller two-line list can't flip itself back. */
-.dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells, .dcc-ilist--vehicle) > li > :is(.dcc-imark, .dcc-c-mark) { grid-area: mark; }
+/* Named grid areas keep headers and rows aligned. Vehicle weapon rows wrap at
+   narrow widths; compact Skill and Spell rows scroll horizontally instead. */
 .dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells, .dcc-ilist--vehicle) > li > :is(.dcc-iname, .dcc-c-name) { grid-area: name; }
 .dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells, .dcc-ilist--vehicle) > li > :is(.dcc-icontrols, .dcc-c-ctl) { grid-area: ctl; }
 .dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells, .dcc-ilist--vehicle) > li > .dcc-c-stat { grid-area: stat; }
 .dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells, .dcc-ilist--vehicle) > li > .dcc-c-rank { grid-area: rank; }
 .dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells, .dcc-ilist--vehicle) > li > .dcc-c-roll { grid-area: roll; }
-.dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells, .dcc-ilist--vehicle) > li > .dcc-c-flags { grid-area: flags; }
+.dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells) > li > .dcc-c-type { grid-area: type; }
+.dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells) > li > .dcc-c-used { grid-area: used; }
+.dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells) > li > .dcc-c-mods { grid-area: mods; }
 .dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells, .dcc-ilist--vehicle) > li > .dcc-c-gun { grid-area: gun; }
 .dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells, .dcc-ilist--vehicle) > li > .dcc-c-skill { grid-area: skill; }
 .dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells, .dcc-ilist--vehicle) > li > .dcc-c-tohit { grid-area: tohit; }
 .dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells, .dcc-ilist--vehicle) > li > .dcc-c-dmg { grid-area: dmg; }
 /* Header labels follow their cells: text inputs / selects that fill a cell read left-aligned. */
-.dcc.sheet.actor .dcc-ihead > span:is(.dcc-c-stat, .dcc-c-rank, .dcc-c-roll, .dcc-c-tohit, .dcc-c-dmg) { text-align: center; }
+.dcc.sheet.actor .dcc-ihead > span:is(.dcc-c-stat, .dcc-c-rank, .dcc-c-type, .dcc-c-roll, .dcc-c-used, .dcc-c-mods, .dcc-c-tohit, .dcc-c-dmg) { text-align: center; }
 
-/* Flags cell: check-type select, mana chip and toggle chips, wrapping as one group. */
-.dcc.sheet.actor .dcc-icell.dcc-c-flags { flex-wrap: wrap; justify-content: flex-start; gap: 4px; min-width: 0; }
-.dcc.sheet.actor .dcc-c-flags select.dcc-iselect { width: auto; max-width: 110px; }
-.dcc.sheet.actor .dcc-c-flags .dcc-vchip { padding: 1px 7px; line-height: 16px; }
-.dcc.sheet.actor .dcc-c-flags .dcc-skill-check { padding: 1px 7px; font-size: 10px; line-height: 16px; }
-/* Toggle chip: a label wrapping a visually hidden checkbox (data-field still drives the update, and
-   the checkbox keeps focus + screen-reader state). Filled = on; outlined = off. */
-.dcc.sheet.actor .dcc-tchip {
-  position: relative;
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  gap: 3px;
-  padding: 1px 7px;
-  border: 1px solid var(--d-line);
-  border-radius: 10px;
-  background: transparent;
-  font-family: var(--d-cond);
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 16px;
-  color: var(--d-ink-dim);
-  cursor: pointer;
-  user-select: none;
-}
-.dcc.sheet.actor .dcc-tchip input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }
-/* Explicit text for each state: "✓ On hotlist" when set, "+ Hotlist" (the action) when not. */
-.dcc.sheet.actor .dcc-tchip i { font-size: 9px; }
-.dcc.sheet.actor .dcc-tchip-on { display: none; }
-.dcc.sheet.actor .dcc-tchip:has(input:checked) { border-color: var(--d-hot); background: var(--d-hot); color: #fff; }
-.dcc.sheet.actor .dcc-tchip:has(input:checked) .dcc-tchip-on { display: inline; }
-.dcc.sheet.actor .dcc-tchip:has(input:checked) .dcc-tchip-off { display: none; }
-.dcc.sheet.actor .dcc-tchip:not(:has(input:checked)):hover { border-color: var(--d-accent); color: var(--d-accent); }
-.dcc.sheet.actor .dcc-tchip:has(input:focus-visible) { outline: 2px solid var(--d-accent); outline-offset: 1px; }
-.dcc.sheet.actor .dcc-tchip:has(input:disabled) { cursor: default; }
-.dcc.sheet.actor .dcc-tchip:not(:has(input:checked)):has(input:disabled):hover { border-color: var(--d-line); color: var(--d-ink-dim); }
 .dcc.sheet.actor .dcc-ilist > .dcc-ihead > span:is(.dcc-c-name, .dcc-c-gun, .dcc-c-skill) { text-align: left; }
 
 /* In every two-line layout the edit / delete controls span both lines in a column of their own, so no
    settings-line cell (and no header label) ever sits in the controls column. The line-1 roll button
    spans the columns above the settings-line checkboxes instead. */
-/* Skills / Spells keep one header line (Name · Stat · Rank · Bonus/Cast): only the self-labelling
-   flags cell drops to line 2, under the name. */
-@container ilist (max-width: 719px) {
-  .dcc.sheet.actor .dcc-ilist--spells:not(.dcc-ilist--lean) > li {
-    grid-template-columns: 18px minmax(0, 1fr) 36px 56px 68px 44px;
-    grid-template-areas:
-      "mark name  stat  rank  roll  ctl"
-      ".    flags flags flags flags ctl";
-  }
-  .dcc.sheet.actor .dcc-ilist--spells:not(.dcc-ilist--lean) > .dcc-irow:has(.dcc-skill-summary) {
-    grid-template-areas:
-      "mark name    stat    rank    roll    ctl"
-      ".    flags   flags   flags   flags   ctl"
-      ".    summary summary summary summary ctl";
-  }
-}
-@container ilist (max-width: 649px) {
-  .dcc.sheet.actor .dcc-ilist--skills:not(.dcc-ilist--lean) > li {
-    grid-template-columns: 18px minmax(0, 1fr) 36px 56px 56px 44px;
-    grid-template-areas:
-      "mark name  stat  rank  roll  ctl"
-      ".    flags flags flags flags ctl";
-  }
-  .dcc.sheet.actor .dcc-ilist--skills:not(.dcc-ilist--lean) > .dcc-irow:has(.dcc-skill-summary) {
-    grid-template-areas:
-      "mark name    stat    rank    roll    ctl"
-      ".    flags   flags   flags   flags   ctl"
-      ".    summary summary summary summary ctl";
-  }
-}
-@container ilist (max-width: 409px) {
-  .dcc.sheet.actor .dcc-ilist--spells.dcc-ilist--lean > li {
-    grid-template-columns: minmax(0, 1fr) 36px 56px 68px 44px;
-    grid-template-areas:
-      "name  stat  rank  roll  ctl"
-      "flags flags flags flags ctl";
-  }
-  .dcc.sheet.actor .dcc-ilist--spells.dcc-ilist--lean > .dcc-irow:has(.dcc-skill-summary) {
-    grid-template-areas:
-      "name    stat    rank    roll    ctl"
-      "flags   flags   flags   flags   ctl"
-      "summary summary summary summary ctl";
-  }
-}
-@container ilist (max-width: 389px) {
-  .dcc.sheet.actor .dcc-ilist--skills.dcc-ilist--lean > li {
-    grid-template-columns: minmax(0, 1fr) 36px 56px 56px 44px;
-    grid-template-areas:
-      "name  stat  rank  roll  ctl"
-      "flags flags flags flags ctl";
-  }
-  .dcc.sheet.actor .dcc-ilist--skills.dcc-ilist--lean > .dcc-irow:has(.dcc-skill-summary) {
-    grid-template-areas:
-      "name    stat    rank    roll    ctl"
-      "flags   flags   flags   flags   ctl"
-      "summary summary summary summary ctl";
-  }
-}
 @container ilist (max-width: 549px) {
   .dcc.sheet.actor .dcc-ilist--vehicle:not(.dcc-ilist--mount) > li {
     grid-template-columns: 72px minmax(0, 1fr) 44px 56px 28px 44px;
@@ -2184,3 +2086,5 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 }
 .dcc.sheet.effect .tab.changes ol[data-changes] > li { padding: 4px 2px; border-bottom: 1px solid var(--d-line-soft); }
 .dcc.sheet.effect .tab.changes ol[data-changes] > li:last-child { border-bottom: none; }
+.dcc.sheet.effect .dcc-item-target { margin-top: 3px; font-size: 11px; }
+.dcc.sheet.effect .dcc-item-target select { width: 100%; }

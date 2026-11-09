@@ -25,8 +25,8 @@ export default class VehicleModel extends foundry.abstract.TypeDataModel {
       size: int(4, { min: 1, max: VEHICLE_SIZE_MAX }),
       speed: int(0),
       speedMax: int(4),
-      // null means the default (5). Deliberate deviation: R20 allows 0; minimum here is 1.
-      constitutionModifier: new fields.NumberField({ required: true, nullable: true, integer: true, min: 1, initial: VEHICLE_CONSTITUTION_MODIFIER_DEFAULT }),
+      // null means the default (5); zero is an explicit value.
+      constitutionModifier: new fields.NumberField({ required: true, nullable: true, integer: true, min: 0, initial: VEHICLE_CONSTITUTION_MODIFIER_DEFAULT }),
       passengers: int(1),
       driveSkill: str('Driving'),
       armor: int(0),

@@ -7,6 +7,7 @@ const setup = (system = {}, type = 'mob') => {
     type,
     system: { stats: { strength: { base: 20, modifier: 5 }, dexterity: { base: 10, modifier: 4 } } },
     items: [],
+    updateSource: vi.fn(),
   };
   const model = new AttackModel({ stat: 'strength', rank: 2, mobToHitBase: null, mobToHitNone: false, ...system });
   const item = { id: 'a', type: 'attack', system: model, parent: actor, updateSource: vi.fn() };

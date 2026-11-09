@@ -28,12 +28,6 @@
       {{/unless}}
       {{formGroup systemFields.onHotlist value=systemSource.onHotlist rootId=rootId}}
     </div>
-    {{#if canSkillCheck}}
-    <div class="dcc-item-actions">
-      <button type="button" class="dcc-rollbtn" id="{{rootId}}-skillCheck" data-action="skillCheck"
-              data-tooltip="{{localize 'DCC.Items.SkillCheckTooltip'}}">{{localize "DCC.Items.SkillCheck"}}</button>
-    </div>
-    {{/if}}
   </div>
   {{> "systems/dungeon-crawler-carl/templates/item/partials/description.hbs"}}
 </section>

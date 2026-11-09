@@ -296,13 +296,14 @@ describe('Health Bar UI', () => {
       expect(abilities).toContain('aria-label="{{localize \'DCC.Mob.AbilityBase\' stat=(localize s.label)}}"');
     });
 
-    it('aligns the Abilities grid with Combat, including the optional Mana column', () => {
+    it('distributes five Abilities evenly with balanced padding, regardless of Mana', () => {
       const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
-      expect(abilities).toContain('dcc-mob-abilities{{#if spells.length}} dcc-mob-abilities--with-mana{{/if}}');
+      expect(abilities).toContain('class="dcc-mob-abilities"');
+      expect(abilities).not.toContain('dcc-mob-abilities--with-mana');
       expect(abilities).toContain('class="dcc-stats" role="region" aria-label="{{localize \'DCC.Abilities\'}}" tabindex="0"');
       expect(css).toContain('.dcc.sheet.actor .dcc-mob-abilities { position: relative; padding: 6px 8px; }');
-      expect(css).toContain('.dcc.sheet.actor .dcc-mob .dcc-stats { grid-template-columns: repeat(5, minmax(80px, 1fr)); gap: 2px; overflow-x: auto; padding: 0 24px 4px 0; }');
-      expect(css).toContain('.dcc.sheet.actor .dcc-mob-abilities--with-mana .dcc-stats { grid-template-columns: repeat(6, minmax(80px, 1fr)); }');
+      expect(css).toContain('.dcc.sheet.actor .dcc-mob .dcc-stats { grid-template-columns: repeat(5, minmax(80px, 1fr)); gap: 8px; overflow-x: auto; padding: 0 16px 4px; }');
+      expect(css).not.toContain('.dcc-mob-abilities--with-mana');
     });
 
     it('styles ability-label roll buttons and the combined score display', () => {
@@ -380,6 +381,11 @@ describe('Health Bar UI', () => {
     expect(sheet).toContain('Math.min(12, system.healthBarSlots)');
     expect(css).toContain('grid-template-columns: repeat(var(--dcc-hb-columns), minmax(0, 1fr))');
     for (let tier = 1; tier <= 10; tier++) expect(css).toContain(`.dcc-hb-slot.filled.tier-${tier} {`);
+  });
+
+  it('allows an explicit zero Vehicle Constitution Modifier in the sheet', () => {
+    const vehicle = readFileSync(new URL('../../templates/actor/vehicle/body.hbs', import.meta.url), 'utf8');
+    expect(vehicle).toMatch(/<input[^>]*type="number"[^>]*min="0"[^>]*name="system\.constitutionModifier"[^>]*value="{{systemSource\.constitutionModifier}}"[^>]*placeholder="5"/);
   });
 
   it('shows actor slot percentages below the blocks without removing the heal control', () => {
@@ -638,6 +644,22 @@ describe('sheetItemLists', () => {
     expect(attack).toContain('data-action="deleteSkillUse"');
     expect(list).toContain('data-skill-use-index="{{index}}"');
   });
+  it('carries No Damage to primary and alternate rows and renders plain text', () => {
+    const { attacks } = sheetItemLists({ attack: [
+      it_('a', 'attack', 'Aura', 0, {}, {
+        noDamage: true, skillUses: [{ index: 0, label: 'alternate', noDamage: true }],
+      }),
+    ] });
+    expect(attacks[0].noDamage).toBe(true);
+    expect(attacks[0].skillUses[0].noDamage).toBe(true);
+    const list = readFileSync(new URL('../../templates/actor/partials/attack-list.hbs', import.meta.url), 'utf8');
+    expect(list.match(/{{#if noDamage}}/g)).toHaveLength(2);
+    expect(list.match(/<span class="dcc-no-damage">{{localize "DCC\.Roll\.NoDamage"}}<\/span>/g)).toHaveLength(2);
+    expect(list).not.toContain('data-action="postAttackNotes"');
+    const vehicle = readFileSync(new URL('../../templates/actor/partials/vehicle-weapon-list.hbs', import.meta.url), 'utf8');
+    expect(vehicle).toContain('<span class="dcc-no-damage">{{localize "DCC.Roll.NoDamage"}}</span>');
+    expect(vehicle).not.toContain('data-action="postAttackNotes"');
+  });
   it('attack rows carry the mob static To-Hit target (derived.mobToHit)', () => {
     const { attacks } = sheetItemLists({
       attack: [
@@ -762,6 +784,7 @@ describe('skill and spell authored metadata templates', () => {
   const skill = readFileSync(new URL('../../templates/item/skill.hbs', import.meta.url), 'utf8');
   const spell = readFileSync(new URL('../../templates/item/spell.hbs', import.meta.url), 'utf8');
   const list = readFileSync(new URL('../../templates/actor/partials/skill-list.hbs', import.meta.url), 'utf8');
+  const row = readFileSync(new URL('../../templates/actor/partials/item-row.hbs', import.meta.url), 'utf8');
   const description = readFileSync(new URL('../../templates/item/partials/description.hbs', import.meta.url), 'utf8');
 
   it('edits Range, Cooldown, and Limitations on skills and spells, with spell-only Duration', () => {
@@ -781,12 +804,18 @@ describe('skill and spell authored metadata templates', () => {
     expect(description).toContain('{{descriptionLabel}}');
   });
 
-  it('offers Skill Check on both item sheets and on non-Passive actor rows', () => {
+  it('keeps hotlist editing on item sheets and removes Skill Check controls', () => {
     for (const template of [skill, spell]) {
-      expect(template).toContain('{{#if canSkillCheck}}');
-      expect(template).toContain('data-action="skillCheck"');
+      expect(template).toContain('systemFields.onHotlist value=systemSource.onHotlist');
+      expect(template).not.toContain('data-action="skillCheck"');
     }
-    expect(list).toMatch(/{{#unless isPassive}}[\s\S]*?data-action="skillCheck"[\s\S]*?{{\/unless}}/);
+    expect(list).not.toContain('system.onHotlist');
+    expect(list).not.toContain('data-action="skillCheck"');
+    expect(list).toContain('data-field="system.mark"');
+    expect(row).not.toContain('data-field="system.mark"');
+    expect(list).toContain('data-field="system.enabled"');
+    expect(list).toContain('dcc-c-type');
+    expect(list).toContain('fa-comment');
   });
 
   it('lets Skills and Spells grant a linked Attack', () => {

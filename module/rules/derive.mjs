@@ -34,15 +34,18 @@ const itemById = items => new Map(items.map(item => [idOf(item), item]));
 // the modifier aspect vocabulary (`to_hit`, `damage`); the output is camelCase.
 const attackRow = ({
   statModifier, rank, itemBonus, itemPercent, damageModifierDice, die, damageBonus, damageType, floor,
-  mob = false, mobToHitBase, mobToHitNone = false,
+  mob = false, mobToHitBase, mobToHitNone = false, mobNoDamage = false,
 }) => {
   const base = mob && mobToHitBase != null ? mobToHitBase - 10 : attackToHit(statModifier, rank, 0);
   const toHit = mob && mobToHitNone ? 0 : applyModifiers(base, itemBonus.to_hit || 0, itemPercent.to_hit || 0);
   const damageBase = (+damageBonus || 0) + (itemBonus.damage || 0); // damage stays flat
-  const damageDice = `${die || ''}${damageModifierDice || ''}`;
+  const noDamageDie = /^(none|no damage|-|—)?$/i.test(String(die ?? '').trim());
+  const baseDie = noDamageDie ? '' : (die || '');
+  const damageDice = `${baseDie}${damageModifierDice || ''}`;
+  const noDamage = (mob && mobNoDamage) || (noDamageDie && damageBase === 0 && !damageModifierDice);
   return {
-    rank, toHit, damageBase, damageModifierDice, damageDice,
-    damageLabel: damageLabel(damageDice, damageBase, damageType),
+    rank, toHit, damageBase, damageModifierDice, damageDice, noDamage,
+    damageLabel: noDamage ? '' : damageLabel(damageDice, damageBase, damageType),
     mobToHit: mob && mobToHitNone ? null : mobToHit(toHit, floor),
     mobToHitNone: mob && mobToHitNone,
   };
@@ -76,7 +79,7 @@ const deriveItemRow = (item, context) => {
       statModifier: modifierFor(sys.stat), rank, itemBonus, itemPercent,
       damageModifierDice: itemDice[id]?.damage || '',
       die: sys.die, damageBonus: sys.damageBonus, damageType: sys.damageType, floor,
-      mob: type === 'mob', mobToHitBase: sys.mobToHitBase, mobToHitNone: sys.mobToHitNone,
+      mob: type === 'mob', mobToHitBase: sys.mobToHitBase, mobToHitNone: sys.mobToHitNone, mobNoDamage: sys.mobNoDamage,
     }));
     const byId = itemById(items);
     row.primarySkillId = primaryId || sys.primarySkillId || '';
@@ -94,7 +97,7 @@ const deriveItemRow = (item, context) => {
         statModifier: modifierFor(useStat), rank: useRank, itemBonus, itemPercent,
         damageModifierDice: itemDice[id]?.damage || '',
         die: sys.die, damageBonus: sys.damageBonus, damageType: sys.damageType, floor,
-        mob: type === 'mob', mobToHitBase: sys.mobToHitBase, mobToHitNone: sys.mobToHitNone,
+        mob: type === 'mob', mobToHitBase: sys.mobToHitBase, mobToHitNone: sys.mobToHitNone, mobNoDamage: sys.mobNoDamage,
       });
       return {
         index,
@@ -279,6 +282,7 @@ export const deriveVehicle = (input = {}) => {
       damageBase: row.damageBase,
       damageModifierDice: row.damageModifierDice,
       damageDice: row.damageDice,
+      noDamage: row.noDamage,
       damageLabel: row.damageLabel,
     };
   }

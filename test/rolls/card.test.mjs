@@ -32,11 +32,11 @@ describe('cardContext', () => {
     expect(ctx.roll).toEqual({ total: 25, crit: true, fumble: false });
   });
 
-  it('flags a fumble on a natural 1', () => {
+  it('flags a fumble on a natural 1 while retaining the default black header', () => {
     const ctx = cardContext({ name: 'Punch' }, { roll: { total: 3, d20: 1 } });
     expect(ctx.fumble).toBe(true);
     expect(ctx.crit).toBe(false);
-    expect(ctx.headClass).toBe('fail');
+    expect(ctx.headClass).toBe('');
   });
 
   it('a total of 20 is not a crit unless the die was a 20', () => {
@@ -105,9 +105,11 @@ describe('cardContext', () => {
       ]) expect(css).toContain(rule);
     });
 
-    it('uses the Roll20 header tints: damage red, fumble gray, no crit header class', () => {
+    it('uses black headers in both themes and red only for damage', () => {
+      expect(css).toContain('--rt-bar: #000000;');
+      expect(css.match(/--rt-bar:/g)).toHaveLength(1);
       expect(css).toContain('.dcc-card .dcc-card-head.gold-red');
-      expect(css).toContain('.dcc-card .dcc-card-head.fail');
+      expect(css).not.toContain('.dcc-card .dcc-card-head.fail');
       expect(css).not.toContain('.dcc-card .dcc-card-head.crit');
     });
   });

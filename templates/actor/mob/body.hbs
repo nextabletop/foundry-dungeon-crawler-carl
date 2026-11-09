@@ -142,7 +142,7 @@
 
     <div class="dcc-box">
       <div class="dcc-bar">{{localize "DCC.Abilities"}}</div>
-      <div class="dcc-mob-abilities{{#if spells.length}} dcc-mob-abilities--with-mana{{/if}}">
+      <div class="dcc-mob-abilities">
         {{#if editable}}
         <label class="dcc-mob-edit" data-tooltip="{{localize 'DCC.Mob.EditAbilities'}}">
           <input type="checkbox" name="system.mobAbilitiesEdit" {{checked systemSource.mobAbilitiesEdit}}

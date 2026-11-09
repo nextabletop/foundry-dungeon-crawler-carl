@@ -14,7 +14,8 @@
 //
 // Target grammar:
 //   'strength'                         -> field target (must be in FIELD_TARGETS)
-//   'item:<Name>:<aspect>'             -> one item, matched by name
+//   'item-id:<ID>:<aspect>'            -> one owned item, matched by stable ID
+//   'item:<Name>:<aspect>'             -> legacy name target, matches every item with that name
 //   'group:<attacks|skills>[:<attribute>(=|!=)<value>]:<aspect>' -> a filtered set of items
 // e.g. 'damage_resistance', 'item:Longsword:to_hit',
 //      'group:attacks:damage_type=slashing:to_hit', 'group:skills:class!=bard:mana_cost'.
@@ -40,9 +41,7 @@
 // A group attribute reads its item schema path through ATTRIBUTE_PATHS
 // (`damage_type` -> `system.damageType`).
 //
-// The `item:` / `group:` prefixes are case-insensitive (like fields,
-// sections, attributes and aspects); an item name keeps its casing (names
-// match case-insensitively at resolve time anyway).
+// Prefixes are case-insensitive; stable IDs remain case-sensitive.
 //
 // A predicate whose value is empty or whitespace (`stat=`, `stat!=`) is
 // dropped, so the target is a bare, unfiltered group. This mirrors R20's group
@@ -98,13 +97,17 @@ export const parseTarget = (target) => {
 
   const prefix = trimmed.slice(0, trimmed.indexOf(':') + 1).toLowerCase();
 
-  if (prefix === 'item:') {
+  if (prefix === 'item:' || prefix === 'item-id:') {
     const rest = trimmed.slice(prefix.length);
     const idx = rest.lastIndexOf(':');
     if (idx === -1) return null;
     const name = rest.slice(0, idx).trim();
     const aspectRaw = rest.slice(idx + 1).trim();
     if (!name || !aspectRaw) return null;
+    if (prefix === 'item-id:') {
+      if (!/^[a-z0-9_-]+$/i.test(name)) return null;
+      return { kind: 'itemId', id: name, aspect: canonicalAspect(aspectRaw) ?? aspectRaw };
+    }
     return { kind: 'item', name, aspect: canonicalAspect(aspectRaw) ?? aspectRaw };
   }
 
@@ -218,9 +221,10 @@ export const resolveModifiers = (modifiers, items) => {
       continue;
     }
 
-    if (parsed.kind === 'item') {
-      const key = normName(parsed.name);
-      const matches = (items || []).filter((i) => normName(i.name) === key);
+    if (parsed.kind === 'item' || parsed.kind === 'itemId') {
+      const matches = parsed.kind === 'itemId'
+        ? (items || []).filter(i => idOf(i) === parsed.id)
+        : (items || []).filter(i => normName(i.name) === normName(parsed.name));
       if (matches.length === 0) {
         pushUnresolved(unresolved, modifier, 'noItem');
         continue;

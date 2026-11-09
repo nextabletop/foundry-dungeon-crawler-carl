@@ -133,6 +133,11 @@ describe('applyRamAftermath (R20 applyRam)', () => {
     await a.applyRamAftermath(); // 1 self-damage < Con Mod 3
     expect(a.update).toHaveBeenCalledWith({ 'system.speed': 2 });
   });
+  it('zero Constitution Modifier prevents ram damage from removing slots but still changes Speed', async () => {
+    const a = vehicle({ healthBar: 3, speed: 4, ramDamageDealt: 24, constitutionModifier: 0 });
+    await a.applyRamAftermath();
+    expect(a.update).toHaveBeenCalledWith({ 'system.speed': 2 });
+  });
   it('double-click guard: two concurrent applies issue one update', async () => {
     const a = vehicle({ healthBar: 4, speed: 3, ramDamageDealt: 8, ramTargetLarger: true });
     const [first, second] = await Promise.all([a.applyRamAftermath(), a.applyRamAftermath()]);
@@ -395,6 +400,17 @@ describe('crew resolution (VehicleModel)', () => {
       await a.rollCrewAttack(gob, 'w1');
       expect(postCard.mock.calls.map(call => call[0])).toEqual([gob, gob]);
       expect(gob.system.mobWhisper).toBe(mobWhisper);
+    });
+    it('posts a No Damage Mob crew attack without any damage formula', async () => {
+      const attack = weaponItem('w1', 'Aura', 3);
+      attack.system.derived.noDamage = true;
+      const gob = crewActor({ uuid: 'Actor.gob', type: 'mob', items: [attack] });
+      const a = vehicle({ speed: 2, floor: 2, crew: [{ uuid: 'Actor.gob', role: 'passenger' }] });
+      await a.rollCrewAttack(gob, 'w1');
+      const [poster, fields, formulas] = postCard.mock.calls[0];
+      expect(poster).toBe(gob);
+      expect(fields.target).toBe(13);
+      expect(formulas.damage).toBeUndefined();
     });
     it('skill: posted as the crew actor with the aboard penalty', async () => {
       const carl = crewActor({ items: [skillItem('s1', 'Knives', 4)] });

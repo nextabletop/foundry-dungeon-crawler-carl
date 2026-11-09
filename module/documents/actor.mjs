@@ -13,6 +13,7 @@ import { gmLinkFor } from '../gm-link.mjs';
 import { floorEndBlocked } from '../rules/gm-screen.mjs';
 import { checkTypeLabel, isPassiveCheck } from '../rules/items.mjs';
 import { attackSource, grantedAttack } from '../rules/item-links.mjs';
+import { mobTokenSize } from '../rules/token-size.mjs';
 
 const checkTypeTag = system => checkTypeLabel(system?.checkType, system?.opposedStat, key => game.i18n.localize(key));
 
@@ -32,6 +33,13 @@ export default class DCCActor extends foundry.documents.Actor {
    */
   getRollData() {
     return { ...super.getRollData(), ...this.system.rollShortcuts?.() };
+  }
+
+  /** Size new Mob tokens from descriptors, including actors created before this rule. */
+  async getTokenDocument(data = {}, options = {}) {
+    const size = this.type === 'mob' ? mobTokenSize(this.system.descriptors) : null;
+    if (size === null) return super.getTokenDocument(data, options);
+    return super.getTokenDocument({ width: size, height: size, ...data }, options);
   }
 
   /** Current slots as the bar shows them (the stored healthBar clamped to healthBarSlots). */
@@ -163,6 +171,10 @@ export default class DCCActor extends foundry.documents.Actor {
     const use = hasSkillUse ? item.system?.derived?.skillUses?.[skillUseIndex] : null;
     if (hasSkillUse && !use) return null;
     if (this.type === 'mob' && which !== 'damage' && (use ?? item.system?.derived)?.mobToHitNone) return null;
+    if (which === 'damage' && item.system?.derived?.noDamage) {
+      ui.notifications.warn(game.i18n.format('DCC.Roll.NoDamageWarning', { name: item.name }));
+      return null;
+    }
     if ((this.type === 'vehicle') && this.system.rollsWithGunner(which)) {
       return this.#vehicleGuard(() => rollVehicleWeapon(this, item, cardOptions));
     }

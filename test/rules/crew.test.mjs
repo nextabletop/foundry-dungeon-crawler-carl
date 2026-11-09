@@ -446,6 +446,33 @@ describe('crewAttackCard (R20 crewAttackRollFields)', () => {
     expect(result.roll).toBeUndefined();
     expect(result.damage).toBe('1d6 + 1');
   });
+  it('carries No Damage into Mob crew cards without suppressing their target', () => {
+    const items = [{ id: 'a', type: 'attack', name: 'Aura', system: {
+      die: '1d6', damageType: 'fire',
+      derived: { toHit: 2, noDamage: true, damageBase: 1, damageDice: '1d6' },
+    } }];
+    const attack = crewCacheFrom({ items }).attacks[0];
+    const result = crewAttackCard({ crewName: 'Goblin', attack, mob: true, floor: 3, speed: 4 }, t);
+    expect(attack.noDamage).toBe(true);
+    expect(result.fields.target).toBe(15);
+    expect(result.fields.type).toBe('');
+    expect(result.fields.note).not.toContain('Speed die');
+    expect(result.damage).toBeUndefined();
+    const crawler = crewAttackCard({ crewName: 'Carl', attack, mob: false, speed: 4 }, t);
+    expect(crawler.roll).toBeDefined();
+    expect(crawler.fields.type).toBe('');
+    expect(crawler.fields.note).not.toContain('Speed die');
+    expect(crawler.damage).toBeUndefined();
+  });
+  it('uses valid formulas for normalized sentinel dice and modifier-only damage', () => {
+    const items = [
+      { id: 'a', type: 'attack', name: 'Flat', system: { die: 'none', derived: { damageDice: '', damageBase: 2 } } },
+      { id: 'b', type: 'attack', name: 'Dice', system: { die: 'none', derived: { damageDice: '+1d4', damageBase: 0 } } },
+    ];
+    const [flat, dice] = crewCacheFrom({ items }).attacks;
+    expect(crewAttackCard({ attack: flat, mob: true }, t).damage).toBe('2');
+    expect(crewAttackCard({ attack: dice, mob: true }, t).damage).toBe('0+1d4');
+  });
   it('no penalty and not driving: no penalty line', () => {
     expect(crewAttackCard({ crewName: 'Carl', attack: spear, penalty: 0 }, t).fields.penalty).toBeUndefined();
   });

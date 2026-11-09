@@ -2,7 +2,6 @@ import { SYSTEM_ID, STATS, CHECK_TYPES, ITEM_SLOTS, GUNNER_SLOTS, APP_CLASSES } 
 import { itemModels } from '../data/item/_module.mjs';
 import { DCC_CHANGE_TYPE, describeChange } from '../effects/dcc-change.mjs';
 import { enableViewOnlyControls, isBlankHTML } from './sheet-rows.mjs';
-import { isPassiveCheck } from '../rules/items.mjs';
 import { attackSource, effectiveAttackRank, itemLinkState } from '../rules/item-links.mjs';
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
@@ -36,7 +35,6 @@ export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.app
       createEffect: DCCItemSheet.#onCreateEffect,
       editEffect: DCCItemSheet.#onEditEffect,
       deleteEffect: DCCItemSheet.#onDeleteEffect,
-      skillCheck: DCCItemSheet.#onSkillCheck,
       linkAttack: DCCItemSheet.#onLinkAttack,
       addSkillUse: DCCItemSheet.#onAddSkillUse,
       deleteSkillUse: DCCItemSheet.#onDeleteSkillUse,
@@ -72,15 +70,15 @@ export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.app
     const descriptionHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(description, {
       relativeTo: this.document, secrets: this.document.isOwner, rollData: this.document.getRollData(),
     });
+    const ownedItems = this.document.parent?.items?.contents ?? [];
     const effects = this.document.effects.contents.map(effect => ({
       id: effect.id,
       name: effect.name,
       img: effect.img,
       disabled: effect.disabled,
       suppressed: effect.isSuppressed,
-      changes: effect.system.changes.map(describeChange).join(', '),
+      changes: effect.system.changes.map(change => describeChange(change, ownedItems)).join(', '),
     }));
-    const ownedItems = this.document.parent?.items?.contents ?? [];
     const source = this.document.type === 'attack' ? attackSource(this.document, ownedItems) : null;
     const linkState = this.document.type === 'attack' ? itemLinkState(this.document, ownedItems) : null;
     const skillItems = ownedItems.filter(item => ['skill', 'spell'].includes(item.type));
@@ -137,9 +135,6 @@ export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.app
           ? 'DCC.ItemSheet.NotesUpgrades'
           : (this.document.type === 'attack' ? 'DCC.ItemSheet.NotesEffects' : 'DCC.Item.FIELDS.description.label'),
       ),
-      canSkillCheck: this.document.parent?.type === 'pc'
-        && ['skill', 'spell'].includes(this.document.type)
-        && !isPassiveCheck(systemSource),
       descriptionHTML,
       descriptionEmpty: isBlankHTML(description),
       effects,
@@ -233,13 +228,6 @@ export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.app
 
   static async #onDeleteEffect(event, target) {
     await this._effectFromTarget(target)?.deleteDialog({ classes: [...APP_CLASSES] });
-  }
-
-  /** Manual d20 Skill Check for a Skill/Spell owned by a Crawler. @this {DCCItemSheet} */
-  static async #onSkillCheck() {
-    const actor = this.document.parent;
-    if (!actor || !(await this._flushItemForm())) return;
-    await actor.rollSkillCheck(this.document);
   }
 
   /** Link this owned Attack to the source selected in its item sheet. @this {DCCItemSheet} */

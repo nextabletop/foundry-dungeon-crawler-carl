@@ -1,63 +1,30 @@
-{{!-- Skills or Spells box. Called with `rows` (sheetItemLists().skills / .spells), `spell=true`
-      for the Spells list, and `lean=true` for a mob. The control line is name · stat · rank ·
-      bonus (cast) · enabled, with no mark, check type, mana cost or hotlist columns on lean rows;
-      populated authored metadata and Notes & Upgrades render on a summary line below it.
-      Inline controls carry data-field and no name: the sheet's
-      _onChangeForm updates the item. Each cell (and its header span) carries a dcc-c-* class: a
-      narrow list lays rows out on two lines by grid area, which child order can't express across
-      the skill / spell × full / lean variants. The flags cell (check type, opposed stat, mana cost,
-      enabled, hotlist) labels itself — a select showing its value, a mana chip and toggle chips
-      (a label wrapping a visually hidden checkbox) — so it has no column header and can wrap under
-      the name on a narrow list. --}}
-{{#*inline "toggleChip"}}
-  <label class="dcc-tchip" data-tooltip="{{tooltip}}">
-    <input type="checkbox" id="{{@root.rootId}}-{{id}}-{{key}}" data-field="{{field}}" {{checked value}} aria-label="{{label}}">
-    <span class="dcc-tchip-on"><i class="fa-solid fa-check" inert></i> {{onText}}</span>
-    <span class="dcc-tchip-off"><i class="fa-solid fa-plus" inert></i> {{offText}}</span>
-  </label>
-{{/inline}}
+{{!-- Skills and Spells share the Roll20-style compact row. Editing full item
+      details and hotlist membership happens on the item sheet. --}}
 {{#*inline "skillCells"}}
-  <span class="dcc-icell dcc-c-stat">{{#unless isPassive}}{{#if stat}}{{localize stat}}{{/if}}{{/unless}}</span>
-  <span class="dcc-icell dcc-c-rank">
-    <input class="dcc-iinput" type="number" step="1" id="{{@root.rootId}}-{{id}}-rank" data-field="system.rank" value="{{rank}}"
-           aria-label="{{localize 'DCC.Items.Rank'}}">
-    {{#if rankModified}}<span class="dcc-ieff" data-tooltip="{{localize 'DCC.Items.RankEffectiveTooltip'}}">{{rankEffective}}</span>{{/if}}
-  </span>
+  <span class="dcc-icell dcc-c-rank" data-tooltip="{{#if rankModified}}{{localize 'DCC.Items.RankEffectiveTooltip'}}{{/if}}">{{rankEffective}}</span>
+  <span class="dcc-icell dcc-c-type">{{#if opposedAbbr}}{{localize opposedAbbr}}-{{/if}}{{localize checkTypeKey}}</span>
   <span class="dcc-icell dcc-c-roll">
     {{#if spell}}
-    <button type="button" class="dcc-rollbtn" id="{{@root.rootId}}-{{id}}-castSpell" data-action="castSpell"
-            data-tooltip="{{#if isPassive}}{{localize 'DCC.Items.CastPassiveTooltip'}}{{else if lean}}{{localize 'DCC.Items.CastTooltipNoMana'}}{{else}}{{localize 'DCC.Items.CastTooltip'}}{{/if}}">{{localize "DCC.Roll.Cast"}}{{#unless isPassive}} {{numberFormat bonus sign=true}}{{/unless}}</button>
+    <button type="button" class="dcc-rollbtn dcc-skill-roll" id="{{@root.rootId}}-{{id}}-castSpell" data-action="castSpell"
+            data-tooltip="{{#if isPassive}}{{localize 'DCC.Items.CastPassiveTooltip'}}{{else if lean}}{{localize 'DCC.Items.CastTooltipNoMana'}}{{else}}{{localize 'DCC.Items.CastTooltip'}}{{/if}}"
+            aria-label="{{#if isPassive}}{{localize 'DCC.Items.CastPassiveTooltip'}}{{else}}{{localize 'DCC.Items.CastTooltip'}}{{/if}}">{{#if isPassive}}<i class="fa-solid fa-comment" inert></i>{{else}}{{numberFormat bonus sign=true}}{{/if}}</button>
     {{else}}
-    <button type="button" class="dcc-rollbtn" id="{{@root.rootId}}-{{id}}-rollSkill" data-action="rollSkill"
-            data-tooltip="{{#if isPassive}}{{localize 'DCC.Items.PostPassiveTooltip'}}{{else}}{{localize 'DCC.Items.RollTooltip'}}{{/if}}">{{#if isPassive}}{{localize "DCC.Roll.Post"}}{{else}}{{numberFormat bonus sign=true}}{{/if}}</button>
+    <button type="button" class="dcc-rollbtn dcc-skill-roll" id="{{@root.rootId}}-{{id}}-rollSkill" data-action="rollSkill"
+            data-tooltip="{{#if isPassive}}{{localize 'DCC.Items.PostPassiveTooltip'}}{{else}}{{localize 'DCC.Items.RollTooltip'}}{{/if}}"
+            aria-label="{{#if isPassive}}{{localize 'DCC.Items.PostPassiveTooltip'}}{{else}}{{localize 'DCC.Items.RollTooltip'}}{{/if}}">{{#if isPassive}}<i class="fa-solid fa-comment" inert></i>{{else}}{{numberFormat bonus sign=true}}{{/if}}</button>
     {{/if}}
   </span>
-  <span class="dcc-icell dcc-c-flags">
-    {{#unless lean}}
-    <select class="dcc-iselect" id="{{@root.rootId}}-{{id}}-checkType" data-field="system.checkType"
-            data-tooltip="{{localize 'DCC.Items.CheckType'}}" aria-label="{{localize 'DCC.Items.CheckType'}}">
-      {{selectOptions @root.checkTypes selected=checkType localize=true}}
-    </select>
-    {{#if isOpposed}}
-    <select class="dcc-iselect" id="{{@root.rootId}}-{{id}}-opposedStat" data-field="system.opposedStat"
-            data-tooltip="{{localize 'DCC.Items.OpposedStat'}}" aria-label="{{localize 'DCC.Items.OpposedStat'}}">
-      {{selectOptions @root.opposedStats selected=opposedStat localize=true}}
-    </select>
+  {{#unless lean}}
+  <span class="dcc-icell dcc-c-used">
+    {{#if markable}}
+    <input class="dcc-icheck dcc-used-check" type="checkbox" id="{{@root.rootId}}-{{id}}-mark" data-field="system.mark" {{checked mark}}
+           data-tooltip="{{localize 'DCC.Items.MarkTooltip'}}" aria-label="{{localize 'DCC.Items.Mark'}}">
     {{/if}}
-    {{#if spell}}<span class="dcc-vchip dcc-icost" data-tooltip="{{localize 'DCC.Items.ManaCost'}}">{{localize "DCC.Items.ManaChip" cost=cost}}</span>{{/if}}
-    {{/unless}}
-    {{> toggleChip key="enabled" field="system.enabled" value=enabled
-        onText=(localize "DCC.Chip.EnabledOn") offText=(localize "DCC.Chip.EnabledOff")
-        label=(localize "DCC.Items.Enabled") tooltip=(localize "DCC.Items.EnabledTooltip")}}
-    {{#unless lean}}
-    {{> toggleChip key="hotlist" field="system.onHotlist" value=onHotlist
-        onText=(localize "DCC.Chip.HotlistOn") offText=(localize "DCC.Chip.HotlistOff")
-        label=(localize "DCC.Hotlist.Label") tooltip=(localize "DCC.Hotlist.Toggle" cap=@root.hotlistCap)}}
-    {{#unless isPassive}}
-    <button type="button" class="dcc-rollbtn dcc-skill-check" id="{{@root.rootId}}-{{id}}-skillCheck" data-action="skillCheck"
-            data-tooltip="{{localize 'DCC.Items.SkillCheckTooltip'}}">{{localize "DCC.Items.SkillCheck"}}</button>
-    {{/unless}}
-    {{/unless}}
+  </span>
+  {{/unless}}
+  <span class="dcc-icell dcc-c-mods">
+    <input class="dcc-icheck dcc-mods-check" type="checkbox" id="{{@root.rootId}}-{{id}}-enabled" data-field="system.enabled" {{checked enabled}}
+           data-tooltip="{{localize 'DCC.Items.EnabledTooltip'}}" aria-label="{{localize 'DCC.Items.Enabled'}}">
   </span>
   {{#if hasSummary}}
   <span class="dcc-skill-summary">
@@ -83,15 +50,16 @@
   </div>
   <ol class="dcc-ilist {{#if spell}}dcc-ilist--spells{{else}}dcc-ilist--skills{{/if}}{{#if lean}} dcc-ilist--lean{{/if}}">
     <li class="dcc-ihead">
-      {{#unless lean}}<span class="dcc-c-mark"></span>{{/unless}}
       <span class="dcc-c-name">{{localize "DCC.Sheet.Name"}}</span>
-      <span class="dcc-c-stat">{{localize "DCC.Items.Stat"}}</span>
       <span class="dcc-c-rank">{{localize "DCC.Items.Rank"}}</span>
-      <span class="dcc-c-roll">{{#if spell}}{{localize "DCC.Roll.Cast"}}{{else}}{{localize "DCC.Items.Bonus"}}{{/if}}</span>
+      <span class="dcc-c-type">{{localize "DCC.Items.Type"}}</span>
+      <span class="dcc-c-roll">{{localize "DCC.Items.Roll"}}</span>
+      {{#unless lean}}<span class="dcc-c-used">{{localize "DCC.Items.Used"}}</span>{{/unless}}
+      <span class="dcc-c-mods">{{localize "DCC.Items.Modifiers"}}</span>
       <span class="dcc-c-ctl"></span>
     </li>
     {{#each rows}}
-    {{#> "systems/dungeon-crawler-carl/templates/actor/partials/item-row.hbs" markable=(and markable (not ../lean)) spell=../spell lean=../lean}}{{> skillCells}}{{/"systems/dungeon-crawler-carl/templates/actor/partials/item-row.hbs"}}
+    {{#> "systems/dungeon-crawler-carl/templates/actor/partials/item-row.hbs" spell=../spell lean=../lean}}{{> skillCells}}{{/"systems/dungeon-crawler-carl/templates/actor/partials/item-row.hbs"}}
     {{else}}
     <li class="dcc-iempty">{{#if spell}}{{localize "DCC.Items.NoSpells"}}{{else}}{{localize "DCC.Items.NoSkills"}}{{/if}}</li>
     {{/each}}

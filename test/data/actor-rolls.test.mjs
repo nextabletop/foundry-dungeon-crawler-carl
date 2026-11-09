@@ -135,6 +135,18 @@ describe('rollAttack', () => {
     await actor.rollAttack(own(actor, item), 'damage');
     expect(postCard.mock.calls[0][2]).toEqual({ damage: '1d4+1d6 + 2' });
   });
+  it.each([
+    ['', 3, '3'],
+    ['+1d4', 0, '0+1d4'],
+    ['-1d4', 2, '0-1d4 + 2'],
+  ])('Mob damage rolls normalized dice %j with base %i', async (damageDice, damageBase, formula) => {
+    const mob = new DCCActor({ type: 'mob', name: 'Goblin', system: {} });
+    const attack = own(mob, makeItem('attack', 'Aura', { die: 'none' }, {
+      noDamage: false, damageBase, damageDice,
+    }));
+    await mob.rollAttack(attack, 'damage');
+    expect(postCard.mock.calls[0][2]).toEqual({ damage: formula });
+  });
   it('a Spell-linked Attack rolls its own damage fields', async () => {
     const attack = makeItem('attack', 'Firebolt', { die: '2d6', damageType: 'fire' }, { damageBase: 1, damageDice: '2d6' });
     const actor = makeActor();
@@ -210,6 +222,35 @@ describe('rollAttack', () => {
     await mob.rollAttack(attack, 'damage');
     expect(postCard).toHaveBeenCalledTimes(1);
     expect(postCard.mock.calls[0][2]).toEqual({ damage: '1d6 + 2' });
+  });
+  it('refuses primary and alternate No Damage Mob rolls with a notification', async () => {
+    const savedUi = globalThis.ui;
+    globalThis.ui = { notifications: { warn: vi.fn() } };
+    try {
+      const mob = new DCCActor({ type: 'mob', name: 'Goblin', system: {} });
+      const attack = own(mob, makeItem('attack', 'Aura', {}, {
+        noDamage: true, damageBase: 0, damageDice: '',
+        skillUses: [{ label: 'alternate', noDamage: true }],
+      }));
+      expect(await mob.rollAttack(attack, 'damage')).toBeNull();
+      expect(await mob.rollAttack(attack, 'damage', { skillUseIndex: 0 })).toBeNull();
+      expect(postCard).not.toHaveBeenCalled();
+      expect(ui.notifications.warn).toHaveBeenCalledTimes(2);
+      expect(ui.notifications.warn).toHaveBeenCalledWith('DCC.Roll.NoDamageWarning');
+    } finally {
+      globalThis.ui = savedUi;
+    }
+  });
+  it.each(['pc', 'vehicle'])('refuses no-damage rolls for %s', async type => {
+    const actor = new DCCActor({ type, system: {} });
+    const attack = own(actor, makeItem('attack', 'Aura', {}, { noDamage: true, damageBase: 0, damageDice: '' }));
+    const savedUi = globalThis.ui;
+    globalThis.ui = { notifications: { warn: vi.fn() } };
+    try {
+      expect(await actor.rollAttack(attack, 'damage')).toBeNull();
+      expect(ui.notifications.warn).toHaveBeenCalledOnce();
+      expect(postCard).not.toHaveBeenCalled();
+    } finally { globalThis.ui = savedUi; }
   });
   it.each([
     [true, true, { range: '20ft', notes: 'Reach. · Push.' }],

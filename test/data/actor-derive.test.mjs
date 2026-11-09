@@ -3,6 +3,7 @@ import { STATS } from '../../module/config.mjs';
 import { CreatureModel, PcModel, MobModel, VehicleModel } from '../../module/data/actor/_module.mjs';
 import { WeaponModel } from '../../module/data/item/_module.mjs';
 import DCCActor from '../../module/documents/actor.mjs';
+import { dccChangeHandler } from '../../module/effects/dcc-change.mjs';
 
 // The mock TypeDataModel only Object.assigns its data: pass a full source
 // object and attach `parent` by hand. Assigning `model.parent` only works in
@@ -122,6 +123,19 @@ describe('PcModel derive wiring', () => {
     expect(a.system.derived.toHit).toBe(3); // dex mod 1 + linked Knives rank 2
     expect(a.system.derived.damageLabel).toEqual(expect.any(String));
     expect(g.system.derived).toEqual({});
+  });
+
+  it.each([PcModel, MobModel, VehicleModel])('applies stable item targets through %s derivation', Model => {
+    const items = [dagger(), { ...dagger(), id: 'a2' }];
+    const model = new Model(Model === VehicleModel ? vehicleSource() : pcSource());
+    model.parent = { items };
+    model.prepareBaseData();
+    dccChangeHandler({ system: model }, { key: 'item-id:a1:damage', value: '+1d4', phase: 'initial' });
+    dccChangeHandler({ system: model }, { key: 'item-id:deleted:to_hit', value: '1', phase: 'initial' });
+    model.prepareDerivedData();
+    expect(items[0].system.derived.damageModifierDice).toBe('+1d4');
+    expect(items[1].system.derived.damageModifierDice).toBe('');
+    expect(model.unresolvedModifiers).toEqual([expect.objectContaining({ target: 'item-id:deleted:to_hit', reason: 'noItem' })]);
   });
 
   it('accepts a Map-like items collection', () => {
@@ -253,6 +267,29 @@ describe('VehicleModel derive wiring', () => {
     expect(m.constitutionModifier).toBe(3);
     expect(m.healthConstitutionModifier).toBe(3);
     expect(m.healthPoints.max).toBe(12);
+  });
+
+  it.each(['vehicle', 'mount'])('retains explicit zero Constitution Modifier for a %s', (kind) => {
+    const m = prepare(VehicleModel, vehicleSource({ kind, constitutionModifier: 0, healthBar: 3 }));
+    expect(m.constitutionModifier).toBe(0);
+    expect(m.healthConstitutionModifier).toBe(0);
+    expect(m.healthBarDisplay).toBe(3);
+    expect(m.healthPoints).toEqual({ value: 0, max: 0 });
+  });
+
+  it('recomputes HP without changing filled slots when Constitution Modifier changes or is cleared', () => {
+    const m = prepare(VehicleModel, vehicleSource({ constitutionModifier: 0, healthBar: 3 }));
+    m.constitutionModifier = 2;
+    m.prepareBaseData();
+    m.prepareDerivedData();
+    expect(m.healthBar).toBe(3);
+    expect(m.healthPoints).toEqual({ value: 6, max: 8 });
+    m.constitutionModifier = null;
+    m.prepareBaseData();
+    m.prepareDerivedData();
+    expect(m.healthBar).toBe(3);
+    expect(m.healthConstitutionModifier).toBe(5);
+    expect(m.healthPoints).toEqual({ value: 15, max: 20 });
   });
 
   it('mount gets a step of 10; a plain vehicle gets null', () => {

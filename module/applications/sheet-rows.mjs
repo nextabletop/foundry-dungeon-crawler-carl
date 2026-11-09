@@ -10,6 +10,7 @@ import { UNLINKED, floorEndBlocked, floorEndsAvailable, isRosterPc, undoFloorEnd
 import { crewRoleChoices, crewRoleKey } from '../rules/crew.mjs';
 import { htmlToText } from '../rules/card.mjs';
 import { attackPrimarySkill, attackSource } from '../rules/item-links.mjs';
+import { checkTypeOf } from '../rules/items.mjs';
 
 /**
  * The value an inline item control on the actor sheet writes: a checkbox's
@@ -97,6 +98,7 @@ const attackRow = (item, items) => {
     toHit: d.toHit,
     mobToHit: d.mobToHit,
     mobToHitNone: d.mobToHitNone,
+    noDamage: d.noDamage,
     damageLabel: String(d.damageLabel ?? '').trim(),
     notes: htmlToText((item.system._source ?? item.system).description),
     skillUses: (d.skillUses ?? []).map(use => ({
@@ -116,7 +118,8 @@ const attackRow = (item, items) => {
 const skillRow = (item) => {
   const src = item.system._source ?? item.system;
   const d = item.system.derived ?? {};
-  const isPassive = src.checkType === 'passive';
+  const checkType = checkTypeOf(src.checkType);
+  const isPassive = checkType === 'passive';
   const summary = [
     ['DCC.Items.Range', src.range],
     ['DCC.Items.Cooldown', src.cooldown],
@@ -127,13 +130,15 @@ const skillRow = (item) => {
     img: item.img,
     stat: statAbbr(src.stat),
     rank: src.rank,
-    rankEffective: d.rankEffective,
+    rankEffective: d.rankEffective ?? src.rank,
     rankModified: Number.isFinite(d.rankEffective) && (d.rankEffective !== src.rank),
     bonus: d.skillBonus,
     mark: src.mark,
     enabled: src.enabled,
     checkType: src.checkType,
+    checkTypeKey: `DCC.CheckType.${checkType}`,
     opposedStat: src.opposedStat,
+    opposedAbbr: checkType === 'opposed' ? statAbbr(src.opposedStat) : '',
     isOpposed: src.checkType === 'opposed',
     isPassive,
     markable: !isPassive,
@@ -185,6 +190,7 @@ export const vehicleWeaponRows = (weapons = []) => [...weapons].sort(bySort).map
     gunnerSlot: src.gunnerSlot ?? '',
     skillName: src.skillName ?? '',
     toHit: d.toHit,
+    noDamage: d.noDamage,
     damageLabel: String(d.damageLabel ?? '').trim(),
   };
 });
@@ -225,12 +231,12 @@ export const crewRows = (crew, resolve, kind) => (crew ?? []).map(({ uuid, role 
 });
 
 /** Actor-level effect rows (Buffs & Debuffs), in sort order. */
-export const buffRows = (effects = []) => [...effects].sort(bySort).map(effect => ({
+export const buffRows = (effects = [], items = []) => [...effects].sort(bySort).map(effect => ({
   id: effect.id,
   name: effect.name,
   img: effect.img,
   disabled: effect.disabled,
-  changes: (effect.system?.changes ?? []).map(describeChange).join(', '),
+  changes: (effect.system?.changes ?? []).map(change => describeChange(change, items)).join(', '),
 }));
 
 // ── Inventory tab + hotlist ──

@@ -117,6 +117,14 @@ describe('describeChange', () => {
   it('other change types are named', () => {
     expect(describeChange({ key: 'system.armor', type: 'add', value: '1' })).toBe('system.armor 1 (add)');
   });
+  it('shows the current name and ID for stable targets, with a raw fallback for deleted items', () => {
+    const entry = change({ key: 'item-id:A1:damage', value: '+1d4' });
+    expect(describeChange(entry, [{ id: 'A1', name: 'Renamed Dagger' }]))
+      .toBe('item:Renamed Dagger [A1]:damage +1d4');
+    expect(describeChange(entry, [])).toBe('item-id:A1:damage +1d4');
+    expect(describeChange({ ...entry, type: 'add' }, [{ id: 'A1', name: 'Dagger' }]))
+      .toBe('item-id:A1:damage +1d4 (add)');
+  });
   it('tolerates missing parts', () => {
     expect(describeChange({ type: 'dcc' })).toBe('');
   });

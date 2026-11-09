@@ -187,6 +187,63 @@ describe('deriveCreature — Attacks', () => {
     });
   });
 
+  it.each(['', ' ', 'none', ' NONE ', 'No Damage', '-', '—'])(
+    'derives a Mob with die %j and no modifiers as No Damage', die => {
+      const d = deriveCreature(pc({ type: 'mob', items: [attack('a', 'Aura', {
+        die, skillUses: [{ label: 'alternate' }],
+      })] })).items.a;
+      expect(d).toMatchObject({ noDamage: true, damageDice: '', damageLabel: '' });
+      expect(d.skillUses[0]).toMatchObject({ noDamage: true, damageDice: '', damageLabel: '' });
+    },
+  );
+
+  it.each([
+    [{ die: '1d6', mobNoDamage: true, damageBonus: 4 }, [{ target: 'group:attacks:damage', value: '+1d4' }]],
+    [{ die: 'none', mobNoDamage: true, damageBonus: 0 }, []],
+  ])('explicit Mob No Damage overrides damage fields and modifiers', (system, modifiers) => {
+    const d = deriveCreature(pc({ type: 'mob', items: [attack('a', 'Aura', {
+      ...system, skillUses: [{ label: 'alternate' }],
+    })], modifiers })).items.a;
+    expect(d.noDamage).toBe(true);
+    expect(d.skillUses[0].noDamage).toBe(true);
+  });
+
+  it.each([
+    ['none', 3, [], '', 3],
+    ['No Damage', -2, [], '', -2],
+    ['-', 0, [{ target: 'group:attacks:damage', value: '2' }], '', 2],
+    ['—', 0, [{ target: 'group:attacks:damage', value: '+1d4' }], '+1d4', 0],
+    ['', 0, [{ target: 'group:attacks:damage', value: '-1d4' }], '-1d4', 0],
+  ])('Mob sentinel die %j permits flat or dice damage and is excluded from formulas', (die, damageBonus, modifiers, damageDice, damageBase) => {
+    const d = deriveCreature(pc({ type: 'mob', items: [attack('a', 'Aura', { die, damageBonus })], modifiers })).items.a;
+    expect(d).toMatchObject({ noDamage: false, damageDice, damageBase });
+  });
+
+  it('a flat modifier that cancels the bonus derives No Damage', () => {
+    const d = deriveCreature(pc({
+      type: 'mob', items: [attack('a', 'Aura', { die: '', damageBonus: 2 })],
+      modifiers: [{ target: 'group:attacks:damage', value: '-2' }],
+    })).items.a;
+    expect(d).toMatchObject({ noDamage: true, damageBase: 0 });
+  });
+
+  it('treats blank and sentinel dice without modifiers as No Damage for Crawlers', () => {
+    for (const die of ['', 'none']) {
+      const d = deriveCreature(pc({ items: [attack('a', 'Aura', { die, mobNoDamage: true })] })).items.a;
+      expect(d).toMatchObject({ noDamage: true, damageDice: '' });
+    }
+    const withDamage = deriveCreature(pc({ items: [attack('a', 'Aura', { die: '1d6', mobNoDamage: true })] })).items.a;
+    expect(withDamage).toMatchObject({ noDamage: false, damageDice: '1d6' });
+  });
+
+  it.each([
+    ['none', 3, [], '', 3],
+    ['none', 0, [{ target: 'group:attacks:damage', value: '+1d4' }], '+1d4', 0],
+  ])('Crawler sentinel die preserves flat and dice damage', (die, damageBonus, modifiers, damageDice, damageBase) => {
+    const d = deriveCreature(pc({ items: [attack('a', 'Aura', { die, damageBonus })], modifiers })).items.a;
+    expect(d).toMatchObject({ noDamage: false, damageDice, damageBase });
+  });
+
   it('an Attack linked to Knives uses its effective Rank through stable IDs', () => {
     const items = [
       attack('w1', 'Dagger', { stat: 'dexterity', rank: 0, linkedItemIds: ['s1'] }),
@@ -357,11 +414,28 @@ describe('deriveVehicle', () => {
     expect(deriveVehicle(veh({ constitutionModifier: 3 })).healthPoints.max).toBe(12);
   });
 
+  it.each(['vehicle', 'mount'])('preserves explicit zero Constitution Modifier for a %s', (kind) => {
+    const d = deriveVehicle(veh({ kind, constitutionModifier: 0, healthBar: 3 }));
+    expect(d.constitutionModifierEffective).toBe(0);
+    expect(d.healthBar).toBe(3);
+    expect(d.healthPoints).toEqual({ value: 0, max: 0 });
+  });
+
   it('vehicle Attack rank 2 -> toHit 2 (no stat mod)', () => {
     const d = deriveVehicle(veh({ items: [attack('w1', 'Gun', { stat: 'dexterity', rank: 2, die: '2d8', damageBonus: 0, damageType: 'piercing' })] }));
     expect(d.items.w1.toHit).toBe(2);
     expect(d.items.w1.damageBase).toBe(0);
     expect(d.items.w1.damageLabel).toBe('2d8 piercing');
+  });
+
+  it('derives vehicle No Damage and keeps modifier-only damage rollable', () => {
+    const empty = deriveVehicle(veh({ items: [attack('w1', 'Aura', { die: 'none' })] })).items.w1;
+    expect(empty).toMatchObject({ noDamage: true, damageDice: '', damageLabel: '' });
+    const modified = deriveVehicle(veh({
+      items: [attack('w1', 'Aura', { die: 'none' })],
+      modifiers: [{ target: 'group:attacks:damage', value: '+1d4' }],
+    })).items.w1;
+    expect(modified).toMatchObject({ noDamage: false, damageDice: '+1d4' });
   });
 
   it('a mount gets step 10', () => {

@@ -45,8 +45,12 @@
                 data-tooltip="{{localize 'DCC.Roll.ToHit'}}">{{numberFormat toHit sign=true}}</button>
       </span>
       <span class="dcc-icell dcc-c-dmg">
+        {{#if noDamage}}
+        <span class="dcc-no-damage">{{localize "DCC.Roll.NoDamage"}}</span>
+        {{else}}
         <button type="button" class="dcc-rollbtn dcc-rollbtn--wide" id="{{@root.rootId}}-{{id}}-rollAttack-damage" data-action="rollAttack" data-roll="damage"
                 data-tooltip="{{localize 'DCC.Roll.Damage'}}">{{damageLabel}}</button>
+        {{/if}}
       </span>
     {{/"systems/dungeon-crawler-carl/templates/actor/partials/item-row.hbs"}}
     {{else}}

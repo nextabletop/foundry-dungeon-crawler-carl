@@ -37,8 +37,12 @@
       </span>
       {{/if}}
       <span class="dcc-icell dcc-c-dmg">
+        {{#if noDamage}}
+        <span class="dcc-no-damage">{{localize "DCC.Roll.NoDamage"}}</span>
+        {{else}}
         <button type="button" class="dcc-rollbtn dcc-rollbtn--wide" id="{{@root.rootId}}-{{id}}-rollAttack-damage" data-action="rollAttack" data-roll="damage"
                 data-tooltip="{{#if mob}}{{damageLabel}}{{else}}{{localize 'DCC.Roll.Damage'}}{{/if}}">{{damageLabel}}</button>
+        {{/if}}
       </span>
       {{#if mob}}{{#if notes}}
       <span class="dcc-attack-notes">{{notes}}</span>
@@ -63,8 +67,12 @@
       </span>
       {{/if}}
       <span class="dcc-icell dcc-c-dmg">
+        {{#if noDamage}}
+        <span class="dcc-no-damage">{{localize "DCC.Roll.NoDamage"}}</span>
+        {{else}}
         <button type="button" class="dcc-rollbtn dcc-rollbtn--wide" id="{{@root.rootId}}-{{attackId}}-use-{{index}}-damage" data-action="rollAttack" data-roll="damage"
                 data-skill-use-index="{{index}}" data-tooltip="{{#if ../../mob}}{{damageLabel}}{{else}}{{localize 'DCC.Roll.Damage'}}{{/if}}">{{damageLabel}}</button>
+        {{/if}}
       </span>
       <span></span>
     </li>

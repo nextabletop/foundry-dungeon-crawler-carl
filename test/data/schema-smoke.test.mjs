@@ -104,7 +104,8 @@ describe('actor schemas', () => {
     const schema = VehicleModel.defineSchema();
     expect(Object.keys(schema.crew.element.fields)).toEqual(['uuid', 'role']);
     expect(schema.constitutionModifier.options.nullable).toBe(true);
-    expect(schema.constitutionModifier.options.min).toBe(1);
+    expect(schema.constitutionModifier.options.min).toBe(0);
+    expect(schema.constitutionModifier.initial).toBe(5);
   });
 
   it('chat extra settings default on for PCs, Mobs, and Vehicles', () => {
@@ -159,7 +160,7 @@ describe('item schemas', () => {
 
   it('attack is the canonical offensive-action record', () => {
     expect(keys(AttackModel)).toEqual([
-      ...base, 'stat', 'rank', 'mobToHitBase', 'mobToHitNone', 'primarySkillId', 'skillUses',
+      ...base, 'stat', 'rank', 'mobToHitBase', 'mobToHitNone', 'mobNoDamage', 'primarySkillId', 'skillUses',
       'die', 'damageBonus', 'damageType', 'range', 'gunnerSlot', 'skillName',
     ]);
     const schema = AttackModel.defineSchema();
@@ -167,6 +168,8 @@ describe('item schemas', () => {
     expect(schema.primarySkillId.initial).toBe('');
     expect(schema.mobToHitBase.initial).toBeNull();
     expect(schema.mobToHitNone.initial).toBe(false);
+    expect(schema.mobNoDamage).toBeInstanceOf(foundry.data.fields.BooleanField);
+    expect(schema.mobNoDamage.initial).toBe(false);
     expect(schema.skillUses.initial).toEqual([]);
     expect(schema.skillUses.element.fields).toHaveProperty('skillId');
     expect(schema.skillUses.element.fields.stat.options.choices)

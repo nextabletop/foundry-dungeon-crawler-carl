@@ -29,4 +29,11 @@ describe('Attack Item registration and sheet', () => {
     expect(css).toMatch(/\.dcc-mob-tohit-label \.form-fields > input \{[^}]*flex: 1 1 0;[^}]*width: 0;[^}]*min-width: 0;/);
     expect(css).toMatch(/\.dcc-mob-tohit-label \.form-fields > span \{ flex: none; \}/);
   });
+
+  it('authors No Damage within the Mob-only controls', () => {
+    const attack = read('../../templates/item/attack.hbs');
+    expect(attack).toMatch(/{{#if showMobToHit}}[\s\S]*systemFields\.mobNoDamage value=systemSource\.mobNoDamage[\s\S]*{{\/if}}/);
+    const itemSheet = read('../../module/applications/item-sheet.mjs');
+    expect(itemSheet).toContain("showMobToHit: this.document.type === 'attack' && (!this.document.parent || this.document.parent.type === 'mob')");
+  });
 });

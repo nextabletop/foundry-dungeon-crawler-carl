@@ -1,17 +1,10 @@
 import DCCActorSheetBase from './actor-sheet-base.mjs';
-import { STATS, ROLL_ABBR, CHECK_TYPES, APP_CLASSES } from '../config.mjs';
+import { ROLL_ABBR, APP_CLASSES } from '../config.mjs';
 import { abilityRows, sheetItemLists, buffRows } from './sheet-rows.mjs';
 import { postCard } from '../rolls/card.mjs';
 import { DCC_CHANGE_TYPE } from '../effects/dcc-change.mjs';
 import { crewingOf } from '../rules/crew.mjs';
 import { checkFormula } from '../rules/combat.mjs';
-
-/** Check-type <select> choices: value -> label key. */
-const CHECK_TYPE_OPTIONS = Object.freeze(Object.fromEntries(CHECK_TYPES.map(t => [t, `DCC.CheckType.${t}`])));
-const OPPOSED_STAT_OPTIONS = Object.freeze({
-  '': 'DCC.None',
-  ...Object.fromEntries(STATS.map(stat => [stat, `DCC.Stat.${stat}`])),
-});
 
 /**
  * Creature layer (pc + mob): ability cards, the health bar context, and the
@@ -24,7 +17,6 @@ export default class DCCCreatureSheet extends DCCActorSheetBase {
       rollEvade: DCCCreatureSheet.#onRollEvade,
       rollSkill: DCCCreatureSheet.#onRollSkill,
       castSpell: DCCCreatureSheet.#onCastSpell,
-      skillCheck: DCCCreatureSheet.#onSkillCheck,
       toggleEffect: DCCCreatureSheet.#onToggleEffect,
       createBuff: DCCCreatureSheet.#onCreateBuff,
       editEffect: DCCCreatureSheet.#onEditEffect,
@@ -69,14 +61,12 @@ export default class DCCCreatureSheet extends DCCActorSheetBase {
 
   /**
    * Item and buff lists: canonical `attacks`,
-   * `skills`, `spells`, actor-level `buffs`, and the check-type choices.
+   * `skills`, `spells`, and actor-level `buffs`.
    */
   _prepareItemLists() {
     return {
       ...sheetItemLists(this.document.itemTypes),
-      buffs: buffRows(this.document.effects.contents),
-      checkTypes: CHECK_TYPE_OPTIONS,
-      opposedStats: OPPOSED_STAT_OPTIONS,
+      buffs: buffRows(this.document.effects.contents, this.document.items.contents),
     };
   }
 
@@ -138,13 +128,6 @@ export default class DCCCreatureSheet extends DCCActorSheetBase {
     const item = this._itemFromTarget(target);
     if (!item || !(await this._flushForm())) return;
     await this.document.castSpell(item);
-  }
-
-  /** Manual d20 Skill Check against base Rank. @this {DCCCreatureSheet} */
-  static async #onSkillCheck(_event, target) {
-    const item = this._itemFromTarget(target);
-    if (!item || !(await this._flushForm())) return;
-    await this.document.rollSkillCheck(item);
   }
 
   /** Enable / disable an actor-level buff. @this {DCCCreatureSheet} */

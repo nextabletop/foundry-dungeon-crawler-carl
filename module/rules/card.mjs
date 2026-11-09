@@ -1,7 +1,7 @@
 // Roll chat card — PURE context builder (no Foundry globals).
 // Mirrors the R20 roll template (character-sheet/source/rolltemplate/_index.pug):
-// header tint gold-red for a pure damage roll, gold on a crit, gray on a fumble;
-// body sections render only when their field is present.
+// The header is red for a pure damage roll and black otherwise; body sections
+// render only when their field is present.
 
 /** Card note parts joined with a middle dot; empty / false parts are dropped. */
 export const joinNotes = parts => parts.filter(Boolean).join(' · ');
@@ -60,7 +60,7 @@ export const cardContext = (fields = {}, results = {}) => {
     crit,
     fumble,
     damageOnly,
-    headClass: damageOnly ? 'gold-red' : fumble ? 'fail' : '',
+    headClass: damageOnly ? 'gold-red' : '',
   };
   if (present(fields.tag)) ctx.tag = safe(fields.tag);
   if (hasRoll) ctx.roll = { total: roll.total, crit, fumble };

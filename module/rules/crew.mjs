@@ -4,7 +4,7 @@
 
 import { CREW_ROLES } from '../config.mjs';
 import { checkTypeLabel, idOf, isPassiveCheck } from './items.mjs';
-import { signedFormula, mobToHit } from './combat.mjs';
+import { signedFormula, damageFormula, mobToHit } from './combat.mjs';
 import { joinNotes } from './card.mjs';
 
 //
@@ -84,6 +84,7 @@ export const crewCacheFrom = ({ statModifiers = {}, items = [] } = {}) => {
       name: i.name,
       toHit: num(d.toHit),
       ...(d.mobToHitNone ? { mobToHitNone: true } : {}),
+      ...(d.noDamage ? { noDamage: true } : {}),
       die: d.damageDice ?? src.die ?? '',
       damageBase: num(d.damageBase),
       damageType: src.damageType ?? '',
@@ -156,12 +157,12 @@ export const crewAttackCard = ({ crewName, attack = {}, mob = false, vehicleName
   const fields = {
     name: t(`${CREW_CARD}.SkillName`, { crew: crewName, skill: attack.name }),
     tag: t('DCC.Roll.ToHit'),
-    type: attack.damageType ?? '',
-    note: joinNotes([t(`${CREW_CARD}.Aboard`, { vehicle }), speedDieNote(speed)]),
+    type: attack.noDamage ? '' : (attack.damageType ?? ''),
+    note: joinNotes([t(`${CREW_CARD}.Aboard`, { vehicle }), attack.noDamage ? '' : speedDieNote(speed)]),
   };
   const reasons = [];
   if (aboardPenalty) reasons.push(t(`${CREW_CARD}.AboardPenalty`, { vehicle, penalty: aboardPenalty }));
-  const damage = signedFormula(attack.die, num(attack.damageBase));
+  const damage = attack.noDamage ? undefined : damageFormula(attack.die, num(attack.damageBase));
   if (mob) {
     if (reasons.length) fields.penalty = reasons.join(', ');
     if (!attack.mobToHitNone) fields.target = mobToHit(hit + aboardPenalty, floor);

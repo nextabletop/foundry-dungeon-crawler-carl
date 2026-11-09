@@ -211,6 +211,14 @@ describe('model _preUpdate: healthPoints edits become slot changes', () => {
     expect(c.system).not.toHaveProperty('healthPoints');
   });
 
+  it.each(['vehicle', 'mount'])('ignores HP edits at zero Constitution Modifier for a %s', async (kind) => {
+    const v = prepare(VehicleModel, vehicleSource({ kind, constitutionModifier: 0, healthBar: 3 }));
+    const c = changes({ 'system.healthPoints.value': 10 });
+    await v._preUpdate(c, {}, {});
+    expect(c.system).not.toHaveProperty('healthBar');
+    expect(c.system).not.toHaveProperty('healthPoints');
+  });
+
   it('creature healthConstitutionModifier is the constitution stat mod', () => {
     expect(pc(6, 10).healthConstitutionModifier).toBe(3);
   });
@@ -236,6 +244,16 @@ describe('DCCActor health methods', () => {
     expect(a.system.damageResistance).toBe(3);
     await a.applyDamage(13); // 13 - 3 = 10 -> 2 slots of 5
     expect(a.update).toHaveBeenCalledWith({ 'system.healthBar': 2 });
+  });
+
+  it.each(['vehicle', 'mount'])('zero Constitution Modifier prevents damage from changing %s slots, but allows manual slot edits', async (kind) => {
+    const a = actorFor(prepare(VehicleModel, vehicleSource({ kind, constitutionModifier: 0, healthBar: 3 })));
+    await a.applyDamage(100);
+    expect(a.update).not.toHaveBeenCalled();
+    await a.setSlots(2);
+    expect(a.update).toHaveBeenCalledWith({ 'system.healthBar': 2 });
+    await a.healSlots();
+    expect(a.update).toHaveBeenLastCalledWith({ 'system.healthBar': 4 });
   });
 
   it('healSlots defaults to 1 and clamps at healthBarSlots', async () => {
