@@ -96,13 +96,22 @@ describe('Health Bar UI', () => {
       const defenses = readFileSync(new URL('../../templates/actor/partials/defenses.hbs', import.meta.url), 'utf8');
       const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
 
+      it('uses separate themed boxes for Combat and Attacks with standard list spacing', () => {
+        const attacks = readFileSync(new URL('../../templates/actor/partials/attack-list.hbs', import.meta.url), 'utf8');
+        expect(combat).toMatch(/class="dcc-box dcc-pc-combat"[\s\S]*actor\/partials\/defenses\.hbs[\s\S]*actor\/partials\/unresolved\.hbs"[^}]*}}\s*<\/div>\s*{{> "systems\/dungeon-crawler-carl\/templates\/actor\/partials\/attack-list\.hbs"/);
+        expect(attacks).toContain('class="dcc-box dcc-list dcc-list--attacks"');
+        expect(css).toMatch(/\.dcc-box \{\s*overflow: hidden;\s*padding: 8px;\s*border: 1px solid var\(--d-line\);[^}]*background: var\(--d-field\);/);
+        expect(css).toContain('.dcc-list { margin-top: 8px; }');
+        expect(css).not.toContain('.dcc-pc-combat-panel');
+      });
+
       it('orders the paper-sheet fields in two rows and retains the Evade roll', () => {
         const grid = defenses.slice(defenses.indexOf('dcc-pc-defense-grid'));
         const fields = [
           'DCC.Defense.Evade"', 'system.stats.dexterity.modifier', 'system.evadeBuffLabel',
           'data-action="rollEvade"', 'system.move}}', 'system.step}}',
           'DCC.Defense.DamageResistance"', 'systemSource.armor}}', 'system.damageResistanceBonus',
-          'system.damageResistance}}', 'systemSource.aiFavor}}', 'systemSource.size}}',
+          'system.damageResistance}}', 'systemSource.aiFavor}}', 'systemSource.size}}', 'DCC.Mana.Label',
         ];
         const positions = fields.map(field => grid.indexOf(field));
         expect(positions.every(position => position >= 0)).toBe(true);
@@ -112,6 +121,15 @@ describe('Health Bar UI', () => {
         expect(defenses).not.toContain('dcc-buffline');
         expect(css).toMatch(/\.dcc-pc-defense-grid \.dcc-pc-defense-buff\s*\{[^}]*border: none;[^}]*background: transparent;/s);
         expect(css).toMatch(/\.dcc-pc-defense-grid \.dcc-fbox \.bx\s*\{[^}]*overflow-wrap: anywhere;/s);
+        expect(css).toMatch(/\.dcc-pc-defense-grid \{[^}]*grid-template-columns: minmax\(62px, calc\(50% - 163px\)\) 38px 10px 40px 10px 54px repeat\(2, minmax\(45px, 1fr\)\) 130px;[^}]*gap: 10px 2px;[^}]*min-width: 450px;/s);
+        expect(defenses.match(/class="dcc-fbox dcc-pc-pair-start"/g)).toHaveLength(2);
+        expect(defenses.match(/class="dcc-fbox dcc-pc-pair-end"/g)).toHaveLength(2);
+        expect(css).toContain('.dcc-pc-defense-grid :is(.dcc-pc-pair-start, .dcc-pc-pair-end) { width: 45px; max-width: 100%; }');
+        expect(css).toContain('.dcc-pc-defense-grid .dcc-pc-pair-start { justify-self: end; }');
+        expect(css).toContain('.dcc-pc-defense-grid .dcc-pc-pair-end { justify-self: start; }');
+        expect(defenses).toContain('<span class="dcc-pc-evade-die">d20 +</span>');
+        expect(defenses).toContain('class="dcc-pc-defense-name dcc-pc-evade-name"');
+        expect(css).toMatch(/\.dcc-pc-evade-name \{[^}]*display: flex; align-items: center;[^}]*white-space: nowrap;/);
       });
 
       it('offers owners a persisted edit toggle for all five source fields', () => {
@@ -139,6 +157,21 @@ describe('Health Bar UI', () => {
         expect(css).toMatch(/button\.bx\[data-action="rollEvade"\] \{\s*border-color: #000;\s*background: var\(--d-hot\);\s*color: #fff;/);
         expect(css).toMatch(/button\.bx\[data-action="rollEvade"\]:not\(:disabled\):hover \{[^}]*background: var\(--dcc-hot-hover\);[^}]*color: #fff;/);
         expect(css).toMatch(/button\.bx\[data-action="rollEvade"\]:focus-visible \{[^}]*outline: 2px solid var\(--d-accent\);/);
+      });
+
+      it('places Mana in the third Combat column, with its label above the values', () => {
+        const vitals = readFileSync(new URL('../../templates/actor/pc/vitals.hbs', import.meta.url), 'utf8');
+        const pcSheet = readFileSync(new URL('../../module/applications/pc-sheet.mjs', import.meta.url), 'utf8');
+        expect(vitals).not.toContain('system.mana');
+        expect(combat).toMatch(/class="dcc-box dcc-pc-combat"[\s\S]*class="dcc-bar"[\s\S]*actor\/partials\/defenses\.hbs/);
+        expect(pcSheet).not.toContain("mana: { template: path('actor/pc/mana.hbs') }");
+        expect(defenses).toMatch(/class="dcc-pc-mana"[\s\S]*DCC\.Mana\.Label[\s\S]*{{system\.mana\.max}}[\s\S]*name="system\.mana\.value" value="{{systemSource\.mana\.value}}"[\s\S]*DCC\.Mana\.Max[\s\S]*DCC\.Mana\.Current/);
+        expect(defenses.match(/name="system\.mana\.value"/g)).toHaveLength(1);
+        expect(css).toContain('.dcc-pc-mana .dcc-mana .cur { width: 100%; }');
+        expect(css).toMatch(/\.dcc-pc-mana \{[^}]*grid-column: 9; grid-row: 1 \/ span 2; grid-template-rows: auto auto; align-self: center; gap: 2px;/);
+        expect(css).toMatch(/\.dcc-pc-mana-title \{[^}]*text-align: center;/);
+        expect(css).toContain('.dcc-pc-mana .dcc-mana .sep { font-size: 24px; line-height: 1; }');
+        expect(css).toMatch(/\.dcc-pc-mana \.dcc-mana \.max \{[^}]*border: 1px solid var\(--d-line\);[^}]*background: var\(--d-field\);[^}]*color: var\(--d-ink\);/);
       });
     });
   });
@@ -330,13 +363,10 @@ describe('Health Bar UI', () => {
       expect(combat).not.toContain('DCC.Mob.ToHit');
     });
 
-    it('centers the Mob Attacks heading while keeping its add button on the right', () => {
+    it('uses the shared centered list heading for Mob Attacks', () => {
       const list = readFileSync(new URL('../../templates/actor/partials/attack-list.hbs', import.meta.url), 'utf8');
-      const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
       expect(list).toContain('class="dcc-box dcc-list dcc-list--attacks"');
-      expect(css).toContain('.dcc.sheet.actor .dcc-mob .dcc-list--attacks > .dcc-bar { display: grid; grid-template-columns: 1fr auto 1fr; }');
-      expect(css).toContain('.dcc.sheet.actor .dcc-mob .dcc-list--attacks > .dcc-bar > span { grid-column: 2; }');
-      expect(css).toContain('.dcc.sheet.actor .dcc-mob .dcc-list--attacks > .dcc-bar > .dcc-addbtn { grid-column: 3; justify-self: end; }');
+      expect(list).toContain('class="dcc-bar dcc-bar--list"');
     });
   });
 
@@ -389,6 +419,20 @@ describe('Health Bar UI', () => {
   });
 });
 
+describe('actor section headings', () => {
+  it('centers list titles for Crawlers, Mobs, and Vehicles while keeping controls on the right', () => {
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    expect(css).toMatch(/\.dcc\.sheet\.actor:is\(\.pc, \.mob, \.vehicle\) \.dcc-bar--list \{\s*display: grid;\s*grid-template-columns: minmax\(0, 1fr\) minmax\(0, 2fr\) minmax\(0, 1fr\);/);
+    expect(css).toMatch(/\.dcc-bar--list > span:first-child \{[^}]*grid-column: 2;[^}]*text-align: center;/);
+    expect(css).toMatch(/\.dcc-bar--list > :is\(\.dcc-addbtn, \.dcc-addbtns\) \{[^}]*grid-column: 3;[^}]*justify-self: end;/);
+    expect(css).toContain('.dcc-bar--list .dcc-addbtns { flex-wrap: wrap; justify-content: flex-end; }');
+    for (const path of ['partials/attack-list.hbs', 'partials/buff-list.hbs', 'partials/skill-list.hbs', 'partials/vehicle-weapon-list.hbs', 'mob/body.hbs', 'pc/inventory.hbs']) {
+      const template = readFileSync(new URL(`../../templates/actor/${path}`, import.meta.url), 'utf8');
+      expect(template).toMatch(/class="dcc-bar dcc-bar--list">\s*<span>/);
+    }
+  });
+});
+
 describe('Crawler identity header', () => {
   it('removes the identity header border for Crawlers, Mobs and Vehicles only', () => {
     const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
@@ -405,15 +449,36 @@ describe('Crawler identity header', () => {
     expect(css).toMatch(/nav\.sheet-tabs \{[^}]*border-bottom: 2px solid var\(--d-line\);/);
   });
 
-  it('orders identity fields like the paper sheet and retains the type badge without AI Favor', () => {
+  it('orders identity fields like the paper sheet without Type or AI Favor and centers Level and Floor', () => {
     const header = readFileSync(new URL('../../templates/actor/pc/header.hbs', import.meta.url), 'utf8');
     const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
-    expect(header).toMatch(/name="name"[\s\S]*?DCC\.Header\.Type[\s\S]*?TYPES\.Actor\.[\s\S]*?name="system\.race"[\s\S]*?name="system\.pronouns"[\s\S]*?name="system\.level"[\s\S]*?name="system\.crawlerNumber"[\s\S]*?name="system\.class"[\s\S]*?name="system\.floor"/);
+    expect(header).toMatch(/name="name"[\s\S]*?name="system\.race"[\s\S]*?name="system\.pronouns"[\s\S]*?name="system\.level"[\s\S]*?name="system\.crawlerNumber"[\s\S]*?name="system\.class"[\s\S]*?name="system\.floor"/);
+    expect(header).not.toContain('DCC.Header.Type');
     expect(header).not.toContain('system.aiFavor');
     expect(css).toContain('.dcc-headside { flex: 0 0 80px;');
-    expect(css).toContain('grid-template-columns: repeat(4, minmax(0, 1fr)) max-content repeat(6, minmax(0, 1fr));');
-    expect(css).toContain('"name name name name type race race race pron pron pron"');
-    expect(css).toContain('"lvl lvl crawl crawl crawl class class class class floor floor"');
+    expect(css).toContain('grid-template-columns: repeat(10, minmax(0, 1fr));');
+    expect(css).toContain('"name name name name race race race pron pron pron"');
+    expect(css).toContain('"lvl lvl crawl crawl crawl class class class floor floor"');
+    expect(css).toContain('.dcc-pcfields :is(.dcc-f-level, .dcc-f-floor) { text-align: center; }');
+    expect(css).toContain('.dcc-pcfields :is(.dcc-f-level, .dcc-f-floor) .dcc-fline { text-align: center; }');
+  });
+
+  it('uses Mob-style header labels and no Type field for Crawlers, Mobs and Vehicles', () => {
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    expect(css).toMatch(/\.dcc\.sheet\.actor:is\(\.pc, \.mob, \.vehicle\) \.dcc-header \.dcc-flabel \{[^}]*color: var\(--d-ink\);[^}]*font-family: system-ui[^}]*font-size: 11px;[^}]*font-weight: 700;[^}]*text-transform: none;/);
+    for (const path of ['pc/header.hbs', 'mob/body.hbs', 'vehicle/body.hbs']) {
+      const sheet = readFileSync(new URL(`../../templates/actor/${path}`, import.meta.url), 'utf8');
+      const header = sheet.slice(sheet.indexOf('<header'), sheet.indexOf('</header>'));
+      expect(header).not.toContain('DCC.Header.Type');
+      expect(header).not.toContain('dcc-type-badge');
+    }
+  });
+
+  it('centers the Vehicle Floor label and input', () => {
+    const vehicle = readFileSync(new URL('../../templates/actor/vehicle/body.hbs', import.meta.url), 'utf8');
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    expect(vehicle).toMatch(/class="dcc-field dcc-field--num dcc-grow-2 dcc-vehicle-floor"[\s\S]*?DCC\.Header\.Floor[\s\S]*?name="system\.floor"/);
+    expect(css).toMatch(/\.dcc\.sheet\.actor\.vehicle \.dcc-header \.dcc-vehicle-floor,\s*\.dcc\.sheet\.actor\.vehicle \.dcc-header \.dcc-vehicle-floor \.dcc-fline \{ text-align: center; \}/);
   });
 });
 
@@ -430,7 +495,8 @@ describe('abilityRows', () => {
     const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
     expect(template).toMatch(/<div class="nm">\s*<button[^>]*data-action="rollAbility"[^>]*data-stat="{{s\.key}}"[\s\S]*?>{{localize s\.label}}<\/button>\s*<\/div>\s*<div class="dcc-stat-cols">[\s\S]*?{{s\.enhancement}}[\s\S]*?{{localize "DCC\.Ability\.Enhanced"}}[\s\S]*?dcc-stat-separator[\s\S]*?name="system\.stats\.{{s\.key}}\.base"[\s\S]*?{{localize "DCC\.Ability\.Unenhanced"}}[\s\S]*?<\/label>\s*<\/div>\s*<div class="dcc-stat-col">\s*<span class="dcc-statenh">{{numberFormat s\.modifier sign=true}}<\/span>\s*<span class="dcc-flabel">{{localize "DCC\.Ability\.Modifier"}}<\/span>/);
     expect(template).toContain('<span class="dcc-stat-separator" aria-hidden="true">/</span>');
-    expect(css).toMatch(/\.dcc\.sheet\.actor\.pc \.dcc-a-abil \.dcc-stat \{[^}]*border: none;/);
+    expect(css).toMatch(/\.dcc\.sheet\.actor\.pc \.dcc-a-abil \{[^}]*border: none;/);
+    expect(css).toMatch(/\.dcc\.sheet\.actor\.pc \.dcc-a-abil \.dcc-stat \{[^}]*padding: 3px 4px; border: 1px solid var\(--d-line\);/);
     expect(css).toMatch(/\.dcc\.sheet\.actor\.pc \.dcc-a-abil \.dcc-stat \.nm \{[^}]*justify-content: center; text-align: center;/);
     expect(css).toMatch(/\.dcc\.sheet\.actor\.pc \.dcc-a-abil \.dcc-stat-cols \{[^}]*width: 100%;[^}]*grid-template-columns: minmax\(0, 1fr\) auto minmax\(0, 1fr\);[^}]*gap: 10px;/);
     expect(css).toMatch(/\.dcc\.sheet\.actor\.pc \.dcc-a-abil \.dcc-statmod \{[^}]*padding: 4px 12px;[^}]*align-items: center; justify-content: center;[^}]*font-size: 13px;/);
@@ -456,9 +522,9 @@ describe('abilityRows', () => {
     expect(css).toContain('.dcc-pc-edit-toggle:has(input:focus-visible) { outline: 2px solid var(--d-accent);');
   });
 
-  it('separates Crawler abilities more than their rows and uses an underlined base input', () => {
+  it('spaces Crawler ability cards and uses an underlined base input', () => {
     const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
-    expect(css).toMatch(/\.dcc\.sheet\.actor\.pc \.dcc-a-abil \.dcc-stats \{[^}]*gap: 16px;/);
+    expect(css).toMatch(/\.dcc\.sheet\.actor\.pc \.dcc-a-abil \.dcc-stats \{[^}]*gap: 8px;/);
     expect(css).toMatch(/\.dcc\.sheet\.actor\.pc \.dcc-a-abil \.dcc-stat \{[^}]*gap: 8px;/);
     expect(css).toMatch(/\.dcc\.sheet\.actor\.pc \.dcc-a-abil \.dcc-statbase \{[^}]*display: none; border: none; border-bottom: 1px solid var\(--d-line\); border-radius: 0; background: transparent;/);
     expect(css).toMatch(/\.dcc\.sheet\.actor\.pc \.dcc-a-abil \.dcc-statbase:focus-visible \{[^}]*outline: 2px solid var\(--d-accent\);/);
@@ -491,21 +557,22 @@ describe('abilityRows', () => {
 });
 
 describe('Mob header layout', () => {
-  it('uses a two-column grid in Name, Type, Descriptors, Floor order', () => {
+  it('places Floor beside Name and gives italic Descriptors the full second row', () => {
     const mob = readFileSync(new URL('../../templates/actor/mob/body.hbs', import.meta.url), 'utf8');
     const header = mob.slice(mob.indexOf('<header'), mob.indexOf('</header>'));
     const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
-    const fields = ['name="name"', 'DCC.Header.Type', 'name="system.descriptors"', 'name="system.floor"'];
+    const fields = ['name="name"', 'name="system.floor"', 'name="system.descriptors"'];
     const positions = fields.map(field => header.indexOf(field));
     expect(positions.every(index => index >= 0)).toBe(true);
     expect(positions).toEqual([...positions].sort((a, b) => a - b));
     expect(header).toContain('class="dcc-mobfields"');
     expect(css).toContain('.dcc.sheet.actor .dcc-mobfields { display: grid; grid-template-columns: minmax(0, 1fr) max-content;');
-    expect(header).toMatch(/class="dcc-field dcc-mobfield-centered">\s*<span class="dcc-flabel">{{localize "DCC.Header.Type"}}/);
     expect(header).toMatch(/class="dcc-field dcc-mobfield-centered">\s*<span class="dcc-flabel">{{localize "DCC.Header.Floor"}}/);
+    expect(header).toContain('class="dcc-field dcc-mob-descriptors"');
     expect(css).toContain('.dcc.sheet.actor .dcc-mobfields .dcc-mobfield-centered { text-align: center; }');
-    expect(css).toContain('.dcc.sheet.actor .dcc-mobfields .dcc-type-badge { align-self: stretch; }');
     expect(css).toContain('.dcc.sheet.actor .dcc-mobfields input[name="system.floor"] { box-sizing: border-box; width: 48px; text-align: center; }');
+    expect(css).toContain('.dcc.sheet.actor .dcc-mobfields .dcc-mob-descriptors { grid-column: 1 / -1; }');
+    expect(css).toContain('.dcc.sheet.actor .dcc-mobfields input[name="system.descriptors"] { font-style: italic; }');
   });
 });
 

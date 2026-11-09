@@ -626,6 +626,9 @@
     },
     "Inventory": {
       "Header": "Inventory",
+      "AddItem": "Add Item",
+      "ChooseItemType": "Choose the type of item to add.",
+      "Cancel": "Cancel",
       "GearSlots": "Gear Slots",
       "Accessories": "Accessories",
       "AccessoryCount": "{n}/{cap}",

@@ -1,7 +1,7 @@
 import DCCCreatureSheet from './creature-sheet.mjs';
 import { ACTOR_PARTIALS, templatePath as path, runGuarded, confirmYesNo } from './actor-sheet-base.mjs';
 import { inventoryView, hotlistCells, advancementView, singleFlight } from './sheet-rows.mjs';
-import { ITEM_SLOTS, HOTLIST_CAP, ACCESSORY_CAP } from '../config.mjs';
+import { ITEM_SLOTS, HOTLIST_CAP, ACCESSORY_CAP, APP_CLASSES } from '../config.mjs';
 
 /** Inventory slot <select> choices: value -> label key. */
 const SLOT_OPTIONS = Object.freeze(Object.fromEntries(ITEM_SLOTS.map(s => [s, `DCC.Slot.${s}`])));
@@ -42,6 +42,7 @@ export default class PcSheet extends DCCCreatureSheet {
     classes: ['pc'],
     position: { width: 720, height: 900 },
     actions: {
+      createInventoryItem: PcSheet.#onCreateInventoryItem,
       useHotlist: PcSheet.#onUseHotlist,
       advancementEndSession: PcSheet.#onAdvancementEndSession,
       advancementEndFloor: PcSheet.#onAdvancementEndFloor,
@@ -106,6 +107,30 @@ export default class PcSheet extends DCCCreatureSheet {
       ? game.i18n.format('DCC.Hotlist.CellQuantity', { name: cell.name, quantity: cell.quantity, action })
       : game.i18n.format('DCC.Hotlist.Cell', { name: cell.name, action });
     return { ...cell, label };
+  }
+
+  #createInventoryItem = singleFlight(() => runGuarded(async () => {
+    if (!this.isEditable) return;
+    const type = await foundry.applications.api.DialogV2.wait({
+      window: { title: game.i18n.localize('DCC.Inventory.AddItem') },
+      content: `<p>${foundry.utils.escapeHTML(game.i18n.localize('DCC.Inventory.ChooseItemType'))}</p>`,
+      buttons: [
+        { action: 'gear', label: game.i18n.localize('TYPES.Item.gear') },
+        { action: 'weapon', label: game.i18n.localize('TYPES.Item.weapon') },
+        { action: 'cancel', label: game.i18n.localize('DCC.Inventory.Cancel') },
+      ],
+      classes: [...APP_CLASSES],
+      rejectClose: false,
+      modal: true,
+    });
+    if (type === null || type === 'cancel') return;
+    if (type !== 'gear' && type !== 'weapon') throw new Error(`Unexpected inventory item type: ${type}`);
+    await this._createOwnedItem(type);
+  }));
+
+  /** @this {PcSheet} */
+  static async #onCreateInventoryItem() {
+    await this.#createInventoryItem();
   }
 
   /**

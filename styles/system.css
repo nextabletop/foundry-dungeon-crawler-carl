@@ -321,16 +321,16 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
     "hotlist hotlist";
 }
 .dcc.sheet.actor.pc .dcc-header { grid-area: header; }
-.dcc.sheet.actor.pc .dcc-a-abil { grid-area: abil; align-self: stretch; contain: size; overflow-y: auto; }
+.dcc.sheet.actor.pc .dcc-a-abil { grid-area: abil; align-self: stretch; contain: size; overflow-y: auto; border: none; }
 .dcc.sheet.actor.pc .dcc-vitals { grid-area: vitals; }
 .dcc.sheet.actor.pc nav.sheet-tabs { grid-area: nav; border-top: none; }
 .dcc.sheet.actor.pc .dcc-tab { grid-area: body; height: 100%; }
 .dcc.sheet.actor.pc .dcc-a-hotlist { grid-area: hotlist; }
-.dcc.sheet.actor.pc .dcc-a-abil .dcc-stats { display: flex; flex-direction: column; gap: 16px; }
+.dcc.sheet.actor.pc .dcc-a-abil .dcc-stats { display: flex; flex-direction: column; gap: 8px; }
 .dcc.sheet.actor.pc .dcc-a-abil > .dcc-bar { display: grid; grid-template-columns: 1fr auto 1fr; }
 .dcc.sheet.actor.pc .dcc-a-abil > .dcc-bar > span { grid-column: 2; }
 .dcc.sheet.actor.pc .dcc-a-abil .dcc-pc-abilities-edit { padding: 1px 4px; }
-.dcc.sheet.actor.pc .dcc-a-abil .dcc-stat { gap: 8px; padding: 0; border: none; }
+.dcc.sheet.actor.pc .dcc-a-abil .dcc-stat { gap: 8px; padding: 3px 4px; border: 1px solid var(--d-line); }
 .dcc.sheet.actor.pc .dcc-a-abil .dcc-stat .nm { justify-content: center; text-align: center; }
 .dcc.sheet.actor.pc .dcc-a-abil .dcc-stat-cols { display: grid; width: 100%; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 10px; }
 .dcc.sheet.actor.pc .dcc-a-abil :is(.dcc-stat-col, .dcc-statbase, .dcc-statenh) { width: 100%; min-width: 0; }
@@ -425,28 +425,39 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
   cursor: pointer;
 }
 .dcc.sheet.actor .dcc-headmain { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.dcc.sheet.actor:is(.pc, .mob, .vehicle) .dcc-header .dcc-flabel {
+  color: var(--d-ink);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
 /* PC header (R20 _header.pug): portrait + advancement on the left; fields in two rows on the right. */
 .dcc.sheet.actor .dcc-headside { flex: 0 0 80px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
 .dcc.sheet.actor .dcc-headside .dcc-portrait { width: 80px; height: 80px; }
 .dcc.sheet.actor .dcc-pcfields {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) max-content repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(10, minmax(0, 1fr));
   grid-template-areas:
-    "name name name name type race race race pron pron pron"
-    "lvl lvl crawl crawl crawl class class class class floor floor";
+    "name name name name race race race pron pron pron"
+    "lvl lvl crawl crawl crawl class class class floor floor";
   align-content: start;
   gap: 8px 10px;
 }
 /* Label at the top, input pinned to the bottom, so inputs line up when a label wraps (Gender / Pronouns). */
 .dcc.sheet.actor .dcc-pcfields .dcc-field { min-width: 0; justify-content: space-between; }
 .dcc.sheet.actor .dcc-f-name { grid-area: name; }
-.dcc.sheet.actor .dcc-f-type { grid-area: type; }
 .dcc.sheet.actor .dcc-f-race { grid-area: race; }
 .dcc.sheet.actor .dcc-f-pronouns { grid-area: pron; }
 .dcc.sheet.actor .dcc-f-class { grid-area: class; }
 .dcc.sheet.actor .dcc-f-level { grid-area: lvl; }
 .dcc.sheet.actor .dcc-f-crawler { grid-area: crawl; }
 .dcc.sheet.actor .dcc-f-floor { grid-area: floor; }
+.dcc.sheet.actor .dcc-pcfields :is(.dcc-f-level, .dcc-f-floor) { text-align: center; }
+.dcc.sheet.actor .dcc-pcfields :is(.dcc-f-level, .dcc-f-floor) .dcc-fline { text-align: center; }
+.dcc.sheet.actor.vehicle .dcc-header .dcc-vehicle-floor,
+.dcc.sheet.actor.vehicle .dcc-header .dcc-vehicle-floor .dcc-fline { text-align: center; }
 /* Read-only actor type (R20 .dcc-type-badge). */
 .dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-type-badge {
   align-self: flex-start;
@@ -467,8 +478,9 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 .dcc.sheet.actor .dcc-mobfields { display: grid; grid-template-columns: minmax(0, 1fr) max-content; gap: 8px 10px; }
 .dcc.sheet.actor .dcc-mobfields .dcc-field { min-width: 0; }
 .dcc.sheet.actor .dcc-mobfields .dcc-mobfield-centered { text-align: center; }
-.dcc.sheet.actor .dcc-mobfields .dcc-type-badge { align-self: stretch; }
 .dcc.sheet.actor .dcc-mobfields input[name="system.floor"] { box-sizing: border-box; width: 48px; text-align: center; }
+.dcc.sheet.actor .dcc-mobfields .dcc-mob-descriptors { grid-column: 1 / -1; }
+.dcc.sheet.actor .dcc-mobfields input[name="system.descriptors"] { font-style: italic; }
 /* Identity field width weights (flex-basis 0, so widths follow these). */
 .dcc.sheet.actor .dcc-grow-2 { flex-grow: 2; }
 .dcc.sheet.actor .dcc-grow-3 { flex-grow: 3; }
@@ -518,8 +530,7 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 }
 .dcc.sheet.actor .dcc-advancement-badge.dcc-safehouse .lbl { color: var(--d-safe-ink); }
 
-/* Vitals: health bar box | mana box */
-.dcc.sheet.actor .dcc-vitals { display: grid; grid-template-columns: 1fr 170px; gap: 8px; }
+/* Vitals: health bar */
 .dcc.sheet.actor .dcc-dying {
   padding: 0 6px;
   border-radius: 3px;
@@ -575,7 +586,7 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 .dcc.sheet.actor .dcc-hb-cell .dcc-hb-slot { width: 100%; }
 .dcc.sheet.actor .dcc-hb-percent { display: block; padding-top: 3px; color: var(--d-ink); font-family: var(--d-cond); font-size: clamp(8px, 30cqi, 12px); line-height: 1.2; }
 
-/* Mana: current | / | max, labels on the same grid */
+/* Mana values and labels */
 .dcc.sheet.actor .dcc-mana,
 .dcc.sheet.actor .dcc-mana-lbl {
   display: grid;
@@ -708,6 +719,15 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 }
 
 /* Defenses strip (port of sections/_combat.pug +scss) */
+.dcc.sheet.actor.pc .dcc-pc-mana { display: grid; grid-column: 9; grid-row: 1 / span 2; grid-template-rows: auto auto; align-self: center; gap: 2px; min-width: 0; }
+.dcc.sheet.actor.pc .dcc-pc-mana-title { text-align: center; font-family: var(--d-cond); font-size: 11px; font-weight: 800; text-transform: uppercase; }
+.dcc.sheet.actor.pc .dcc-pc-mana :is(.dcc-mana, .dcc-mana-lbl) { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+.dcc.sheet.actor.pc .dcc-pc-mana .dcc-mana { align-items: center; column-gap: 2px; margin-top: 0; }
+.dcc.sheet.actor.pc .dcc-pc-mana .dcc-mana-lbl { column-gap: 2px; }
+.dcc.sheet.actor.pc .dcc-pc-mana .dcc-mana :is(.cur, .max) { min-width: 0; max-width: 100%; font-size: 20px; overflow-wrap: anywhere; }
+.dcc.sheet.actor.pc .dcc-pc-mana .dcc-mana .cur { width: 100%; }
+.dcc.sheet.actor.pc .dcc-pc-mana .dcc-mana .max { display: flex; align-items: center; justify-content: center; min-width: 34px; min-height: 26px; padding: 2px 4px; border: 1px solid var(--d-line); border-radius: 3px; background: var(--d-field); color: var(--d-ink); }
+.dcc.sheet.actor.pc .dcc-pc-mana .dcc-mana .sep { font-size: 24px; line-height: 1; }
 .dcc.sheet.actor.pc .dcc-pc-combat > .dcc-bar { display: grid; grid-template-columns: 1fr auto 1fr; }
 .dcc.sheet.actor.pc .dcc-pc-combat > .dcc-bar > span { grid-column: 2; }
 .dcc.sheet.actor.pc .dcc-pc-edit-toggle {
@@ -731,13 +751,19 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 .dcc.sheet.actor.pc .dcc-pc-defense-viewport { overflow-x: auto; }
 .dcc.sheet.actor.pc .dcc-pc-defense-grid {
   display: grid;
-  grid-template-columns: minmax(62px, 1fr) 44px 12px minmax(40px, 1fr) 12px minmax(50px, 0.9fr) minmax(50px, 0.9fr) minmax(50px, 0.9fr);
+  /* The first six tracks and half of their adjoining gap occupy half the grid. */
+  grid-template-columns: minmax(62px, calc(50% - 163px)) 38px 10px 40px 10px 54px repeat(2, minmax(45px, 1fr)) 130px;
   align-items: start;
-  gap: 10px 4px;
-  min-width: 480px;
+  gap: 10px 2px;
+  min-width: 450px;
 }
 .dcc.sheet.actor.pc .dcc-pc-defense-name { align-self: start; padding-top: 3px; font-family: var(--d-cond); font-size: 11px; font-weight: 800; text-transform: uppercase; }
+.dcc.sheet.actor.pc .dcc-pc-evade-name { display: flex; align-items: center; justify-content: space-between; gap: 4px; min-height: 26px; padding-top: 0; white-space: nowrap; }
+.dcc.sheet.actor.pc .dcc-pc-evade-die { white-space: nowrap; }
 .dcc.sheet.actor.pc .dcc-pc-defense-grid .dcc-fbox { min-width: 0; }
+.dcc.sheet.actor.pc .dcc-pc-defense-grid :is(.dcc-pc-pair-start, .dcc-pc-pair-end) { width: 45px; max-width: 100%; }
+.dcc.sheet.actor.pc .dcc-pc-defense-grid .dcc-pc-pair-start { justify-self: end; }
+.dcc.sheet.actor.pc .dcc-pc-defense-grid .dcc-pc-pair-end { justify-self: start; }
 .dcc.sheet.actor.pc .dcc-pc-defense-grid .dcc-fbox .bx { max-width: 100%; overflow-wrap: anywhere; }
 .dcc.sheet.actor.pc .dcc-pc-defense-grid .dcc-fbox :is(span, button).bx:not(.dcc-pc-defense-buff) {
   border: 1px solid var(--d-line);
@@ -871,6 +897,30 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
    head and rows share them. */
 .dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-list { margin-top: 8px; }
 .dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-bar--list { justify-content: space-between; }
+.dcc.sheet.actor:is(.pc, .mob, .vehicle) .dcc-bar--list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+}
+.dcc.sheet.actor:is(.pc, .mob, .vehicle) .dcc-bar--list > span:first-child {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.dcc.sheet.actor:is(.pc, .mob, .vehicle) .dcc-bar--list > :is(.dcc-addbtn, .dcc-addbtns) {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+  min-width: 0;
+  max-width: 100%;
+}
+.dcc.sheet.actor:is(.pc, .mob, .vehicle) .dcc-bar--list .dcc-addbtn {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.dcc.sheet.actor:is(.pc, .mob, .vehicle) .dcc-bar--list .dcc-addbtns { flex-wrap: wrap; justify-content: flex-end; }
 .dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-addbtn {
   flex: none;
   width: auto;
@@ -1309,7 +1359,6 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
   text-transform: none;
 }
 .dcc.sheet.actor.mob .dcc-addbtn { font-size: 11px; letter-spacing: 0.02em; text-transform: capitalize; }
-.dcc.sheet.actor.mob .dcc-type-badge { text-transform: none; }
 .dcc.sheet.actor.mob :is(.dcc-attack-notes, .dcc-skill-summary, .dcc-ichanges, .dcc-iempty) { font-size: var(--dcc-mob-note-size); line-height: 1.35; }
 .dcc.sheet.actor.mob .dcc-mob-notes :is(.dcc-bio-view, prose-mirror .editor-content) {
   font-family: var(--d-cond);
@@ -1449,9 +1498,6 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 }
 
 /* Lean item lists (mob): no mark / stat+rank (attacks) / check / passive / hotlist columns. */
-.dcc.sheet.actor .dcc-mob .dcc-list--attacks > .dcc-bar { display: grid; grid-template-columns: 1fr auto 1fr; }
-.dcc.sheet.actor .dcc-mob .dcc-list--attacks > .dcc-bar > span { grid-column: 2; }
-.dcc.sheet.actor .dcc-mob .dcc-list--attacks > .dcc-bar > .dcc-addbtn { grid-column: 3; justify-self: end; }
 .dcc.sheet.actor .dcc-ilist--attacks.dcc-ilist--lean { --dcc-mob-attack-size: 11px; }
 .dcc.sheet.actor .dcc-ilist--attacks.dcc-ilist--lean > li { grid-template-columns: minmax(0, 1fr) 60px clamp(90px, 23%, 126px) 44px; }
 .dcc.sheet.actor .dcc-ilist--attacks.dcc-ilist--lean .dcc-icell { font-size: var(--dcc-mob-attack-size); }

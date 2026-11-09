@@ -1,5 +1,5 @@
 <section class="tab dcc-tab {{tab.cssClass}}" data-group="primary" data-tab="combat">
-  <div class="dcc-pc-combat">
+  <div class="dcc-box dcc-pc-combat">
     <div class="dcc-bar">
       <span>{{localize "DCC.Tab.combat"}}</span>
       {{#if editable}}
@@ -10,8 +10,8 @@
       {{/if}}
     </div>
     {{> "systems/dungeon-crawler-carl/templates/actor/partials/defenses.hbs"}}
+    {{> "systems/dungeon-crawler-carl/templates/actor/partials/unresolved.hbs"}}
   </div>
-  {{> "systems/dungeon-crawler-carl/templates/actor/partials/unresolved.hbs"}}
   {{> "systems/dungeon-crawler-carl/templates/actor/partials/attack-list.hbs"}}
   {{> "systems/dungeon-crawler-carl/templates/actor/partials/crewing.hbs"}}
   {{> "systems/dungeon-crawler-carl/templates/actor/partials/buff-list.hbs"}}

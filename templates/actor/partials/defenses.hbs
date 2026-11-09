@@ -1,6 +1,6 @@
 <div class="dcc-pc-defense-viewport" role="region" aria-label="{{localize 'DCC.Tab.combat'}}" tabindex="0">
   <div class="dcc-pc-defense-grid">
-    <span class="dcc-pc-defense-name">{{localize "DCC.Defense.Evade"}}<br>d20 +</span>
+    <span class="dcc-pc-defense-name dcc-pc-evade-name">{{localize "DCC.Defense.Evade"}}<span class="dcc-pc-evade-die">d20 +</span></span>
     <div class="dcc-fbox">
       <span class="bx">{{system.stats.dexterity.modifier}}</span>
       <span class="lab">{{localize "DCC.Defense.DexterityModifier"}}</span>
@@ -15,7 +15,7 @@
       <button type="button" class="bx tot" data-action="rollEvade" data-tooltip="{{localize 'DCC.Defense.EvadeRollTooltip'}}" aria-label="{{localize 'DCC.Defense.EvadeRollTooltip'}}">{{system.evadeRollLabel}}</button>
       <span class="lab">{{localize "DCC.Defense.EvadeTotal"}}</span>
     </div>
-    <div class="dcc-fbox">
+    <div class="dcc-fbox dcc-pc-pair-start">
       <span class="bx tot">{{system.move}}</span>
       <span class="lab">{{localize "DCC.Defense.Move"}}</span>
       <label class="dcc-fbox dcc-pc-edit-only">
@@ -23,7 +23,7 @@
         <span class="lab">{{localize "DCC.Defense.MoveBase"}}</span>
       </label>
     </div>
-    <div class="dcc-fbox">
+    <div class="dcc-fbox dcc-pc-pair-end">
       <span class="bx tot">{{system.step}}</span>
       <span class="lab">{{localize "DCC.Defense.Step"}}</span>
       <label class="dcc-fbox dcc-pc-edit-only">
@@ -31,7 +31,6 @@
         <span class="lab">{{localize "DCC.Defense.StepBase"}}</span>
       </label>
     </div>
-
     <span class="dcc-pc-defense-name">{{localize "DCC.Defense.DamageResistance"}}</span>
     <div class="dcc-fbox">
       <span class="bx dcc-pc-view-only">{{systemSource.armor}}</span>
@@ -48,15 +47,29 @@
       <span class="bx tot">{{system.damageResistance}}</span>
       <span class="lab">{{localize "DCC.Defense.DamageResistanceTotal"}}</span>
     </div>
-    <div class="dcc-fbox">
+    <div class="dcc-fbox dcc-pc-pair-start">
       <span class="bx dcc-pc-view-only">{{systemSource.aiFavor}}</span>
       <input class="bx dcc-pc-edit-only" type="number" step="1" name="system.aiFavor" value="{{systemSource.aiFavor}}" aria-label="{{localize 'DCC.Header.AiFavor'}}">
       <span class="lab">{{localize "DCC.Header.AiFavor"}}</span>
     </div>
-    <div class="dcc-fbox">
+    <div class="dcc-fbox dcc-pc-pair-end">
       <span class="bx dcc-pc-view-only">{{systemSource.size}}</span>
       <input class="bx dcc-pc-edit-only" type="text" name="system.size" value="{{systemSource.size}}" aria-label="{{localize 'DCC.Defense.Size'}}">
       <span class="lab">{{localize "DCC.Defense.Size"}}</span>
+    </div>
+    <div class="dcc-pc-mana">
+      <span class="dcc-pc-mana-title">{{localize "DCC.Mana.Label"}}</span>
+      <div>
+        <div class="dcc-mana">
+          <span class="max">{{system.mana.max}}</span>
+          <span class="sep">/</span>
+          <input class="cur" type="number" step="1" name="system.mana.value" value="{{systemSource.mana.value}}" aria-label="{{localize 'DCC.Mana.Current'}}">
+        </div>
+        <div class="dcc-mana-lbl">
+          <span>{{localize "DCC.Mana.Max"}}</span>
+          <span>{{localize "DCC.Mana.Current"}}</span>
+        </div>
+      </div>
     </div>
   </div>
 </div>

@@ -13,18 +13,14 @@
             <span class="dcc-flabel">{{localize "DCC.Sheet.Name"}}</span>
             <input class="dcc-fline" type="text" name="name" value="{{document.name}}">
           </label>
-          <div class="dcc-field dcc-mobfield-centered">
-            <span class="dcc-flabel">{{localize "DCC.Header.Type"}}</span>
-            <span class="dcc-type-badge">{{localize (concat "TYPES.Actor." document.type)}}</span>
-          </div>
-          <label class="dcc-field">
-            <span class="dcc-flabel">{{localize "DCC.Mob.Descriptors"}}</span>
-            <input class="dcc-fline" type="text" name="system.descriptors" value="{{systemSource.descriptors}}"
-                   placeholder="{{localize 'DCC.Mob.DescriptorsPlaceholder'}}">
-          </label>
           <label class="dcc-field dcc-mobfield-centered">
             <span class="dcc-flabel">{{localize "DCC.Header.Floor"}}</span>
             <input class="dcc-fline" type="number" step="1" name="system.floor" value="{{systemSource.floor}}">
+          </label>
+          <label class="dcc-field dcc-mob-descriptors">
+            <span class="dcc-flabel">{{localize "DCC.Mob.Descriptors"}}</span>
+            <input class="dcc-fline" type="text" name="system.descriptors" value="{{systemSource.descriptors}}"
+                   placeholder="{{localize 'DCC.Mob.DescriptorsPlaceholder'}}">
           </label>
         </div>
       </div>

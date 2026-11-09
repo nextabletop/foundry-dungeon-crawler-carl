@@ -370,8 +370,16 @@ export default class DCCActorSheetBase extends HandlebarsApplicationMixin(foundr
    * @this {DCCActorSheetBase}
    */
   static async #onCreateItem(_event, target) {
+    await this._createOwnedItem(target.dataset.type);
+  }
+
+  /**
+   * Create an allowed owned Item and open its sheet.
+   * @param {string} type
+   * @protected
+   */
+  async _createOwnedItem(type) {
     if (!this.isEditable) return;
-    const { type } = target.dataset;
     if (!this.constructor.ALLOWED_ITEM_TYPES.includes(type)) return;
     const typeLabel = game.i18n.localize(`TYPES.Item.${type}`);
     const [item] = await this.document.createEmbeddedDocuments('Item', [{
