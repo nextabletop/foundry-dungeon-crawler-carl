@@ -33,6 +33,45 @@ describe('rollSkill', () => {
     expect(fields).toEqual({ name: 'Knives', tag: 'DCC.CheckType.opposed' });
     expect(formulas).toEqual({ roll: '1d20 + 4' });
   });
+
+  describe('rollSkillCheck', () => {
+    it('rolls a utility d20 against base Rank and reports equality as Success without changing Rank', async () => {
+      const actor = makeActor();
+      const skill = own(actor, makeItem('skill', 'Bow', {
+        rank: 7,
+      }, { rankEffective: 10 }));
+      await actor.rollSkillCheck(skill);
+      const [, fields, formulas] = postCard.mock.calls[0];
+      expect(formulas).toEqual({ roll: '1d20' });
+      expect(fields).toBeTypeOf('function');
+      expect(fields({ check: { total: 7, d20: 7 } })).toEqual({
+        name: 'Bow',
+        tag: 'DCC.Advance.SkillCheck',
+        dc: 7,
+        result: 'DCC.Advance.Success',
+        utility: true,
+      });
+      expect(skill.system.rank).toBe(7);
+      expect(skill.update).not.toHaveBeenCalled();
+    });
+
+    it('reports Failure below base Rank', async () => {
+      const actor = makeActor();
+      await actor.rollSkillCheck(own(actor, makeItem('spell', 'Rootfoot', { rank: 7 })));
+      const fields = postCard.mock.calls[0][1];
+      expect(fields({ check: { total: 6, d20: 6 } }).result).toBe('DCC.Advance.Failure');
+    });
+
+    it('refuses Passive, unowned, non-skill, and non-PC rows', async () => {
+      const actor = makeActor();
+      await actor.rollSkillCheck(own(actor, makeItem('skill', 'Aura', { rank: 2, checkType: 'passive' })));
+      await actor.rollSkillCheck(makeItem('skill', 'Unowned', { rank: 2 }));
+      await actor.rollSkillCheck(own(actor, makeItem('weapon', 'Sword', { rank: 2 })));
+      const mob = new DCCActor({ type: 'mob', name: 'Goblin', system: {} });
+      await mob.rollSkillCheck(own(mob, makeItem('skill', 'Sneak', { rank: 2 })));
+      expect(postCard).not.toHaveBeenCalled();
+    });
+  });
   it('an Opposed skill names the opposing stat in its tag', async () => {
     const actor = makeActor();
     await actor.rollSkill(own(actor, makeItem('skill', 'Persuade', {
@@ -136,6 +175,30 @@ describe('castSpell', () => {
     expect(fields).toEqual({ name: 'Aura', tag: 'DCC.CheckType.passive', cost: 3, insufficient: false });
     expect(formulas).toEqual({});
     expect(actor.update).toHaveBeenCalledWith({ 'system.mana.value': 2 });
+  });
+  it('a spell cast includes populated Duration and Cooldown metadata', async () => {
+    const actor = makeActor();
+    const spell = makeItem('spell', 'Rootfoot', {
+      enabled: true, duration: '2 rounds', cooldown: 'Once per scene',
+    }, { skillBonus: 2, manaCostEffective: 1 });
+    await actor.castSpell(own(actor, spell));
+    expect(postCard.mock.calls[0][1]).toEqual({
+      name: 'Rootfoot',
+      tag: 'DCC.CheckType.opposed',
+      duration: '2 rounds',
+      cooldown: 'Once per scene',
+      cost: 1,
+      insufficient: false,
+    });
+  });
+  it('a spell cast omits blank Duration and Cooldown metadata', async () => {
+    const actor = makeActor();
+    const spell = makeItem('spell', 'Zap', {
+      enabled: true, duration: ' ', cooldown: '',
+    }, { skillBonus: 2, manaCostEffective: 1 });
+    await actor.castSpell(own(actor, spell));
+    expect(postCard.mock.calls[0][1]).not.toHaveProperty('duration');
+    expect(postCard.mock.calls[0][1]).not.toHaveProperty('cooldown');
   });
   it('not a spell -> nothing', async () => {
     const actor = makeActor();

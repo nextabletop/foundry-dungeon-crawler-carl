@@ -7,9 +7,8 @@
 
 /* ── Roll chat card (templates/chat/card.hbs) ──
    Port of the R20 roll template (rolltemplate/_index.pug +scss('roll')).
-   Chat messages are always parchment/light in v14 (theme-dark only touches the
-   chat input), so only the light --rt-* palette is ported. .message-content is
-   overflow:hidden, so the card's own margin leaves room for the portrait breakout. */
+   The left margin leaves room for the breakout portrait inside Foundry's clipped
+   message content; the rest follows the Roll20 card dimensions and palette. */
 .dcc-card {
   --rt-card: #f3f2ef;
   --rt-ink: #161616;
@@ -19,14 +18,30 @@
   --rt-bar-text: #ffffff;
   --rt-pill-bg: #ffffff;
   --rt-gold: #c98a06;
+  --rt-crit: #40e240;
+  --rt-fumble: #8b1e22;
   position: relative;
-  margin: 22px 2px 6px 18px;
-  font-family: "Arial Narrow", "Roboto Condensed", "Oswald", system-ui, sans-serif;
-  background: var(--rt-card);
-  color: var(--rt-ink);
+  min-width: 200px;
+  max-width: 300px;
+  margin: 0 2px 6px;
   border: 1px solid var(--rt-line);
   border-radius: 7px;
+  overflow: visible;
+  font-family: "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+  background: var(--rt-card);
+  color: var(--rt-ink);
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+}
+.dcc-card:has(.dcc-card-token) { margin: 22px 2px 6px 18px; }
+body.theme-dark .dcc-card {
+  --rt-card: #1d2026;
+  --rt-ink: #e7e7e7;
+  --rt-ink-dim: #9aa0aa;
+  --rt-line: #3a3f48;
+  --rt-bar: #2c323c;
+  --rt-bar-text: #f0f0f0;
+  --rt-pill-bg: #0d0f13;
+  --rt-gold: #d9a52a;
 }
 
 /* Header bar */
@@ -36,7 +51,6 @@
   gap: 11px;
   min-height: 46px;
   padding: 6px 10px;
-  border-radius: 6px 6px 0 0;
   background: var(--rt-bar);
   color: var(--rt-bar-text);
 }
@@ -64,16 +78,17 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  gap: 8px;
   line-height: 1.12;
 }
 .dcc-card .dcc-card-actname {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 .dcc-card .dcc-card-char {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
@@ -83,7 +98,7 @@
   align-self: flex-start;
   margin-left: auto;
   margin-top: 3px;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -93,15 +108,9 @@
 /* Header tints */
 .dcc-card .dcc-card-head.gold-red {
   background: linear-gradient(90deg, #d31f29, #8c1018);
-  color: var(--d-bar-text);
+  color: #ffffff;
 }
 .dcc-card .dcc-card-head.gold-red .dcc-card-char { color: #ffe0a3; }
-.dcc-card .dcc-card-head.crit {
-  background: linear-gradient(90deg, #c98a06, #b9850b);
-  color: #1a1205;
-}
-.dcc-card .dcc-card-head.crit .dcc-card-char { color: #7a5803; }
-.dcc-card .dcc-card-head.crit .dcc-card-token { border-color: #1a1205; }
 .dcc-card .dcc-card-head.fail {
   background: #3a3f48;
   color: #e7e7e7;
@@ -109,11 +118,8 @@
 .dcc-card .dcc-card-head.fail .dcc-card-char { color: #c98a06; }
 
 /* Body */
-.dcc-card .dcc-card-pad { padding: 9px 11px; }
-.dcc-card .dcc-card-opt,
-.dcc-card .dcc-card-note,
-.dcc-card .dcc-card-cast,
-.dcc-card .dcc-card-insufficient { padding-top: 0; }
+.dcc-card .dcc-card-pad { padding: 6px 11px; }
+.dcc-card .dcc-card-opt { padding-top: 0; }
 .dcc-card .dcc-card-line {
   display: flex;
   align-items: center;
@@ -126,18 +132,22 @@
   gap: 6px;
 }
 .dcc-card .dcc-card-n {
-  padding: 1px 12px;
+  box-sizing: border-box;
+  min-width: 56px;
+  padding: 4px 16px;
   font-size: 24px;
   font-weight: 800;
+  line-height: 1.1;
+  text-align: center;
   color: var(--rt-ink);
   background: var(--rt-pill-bg);
   border: 1px solid var(--rt-line);
   border-radius: 6px;
 }
-.dcc-card .dcc-card-n.rcrit { color: #2e7d32; border-color: #2e7d32; }
-.dcc-card .dcc-card-n.rfail { color: #b71c1c; border-color: #b71c1c; }
+.dcc-card .dcc-card-n.rcrit { color: var(--rt-crit); }
+.dcc-card .dcc-card-n.rfail { color: var(--rt-fumble); border-color: var(--rt-fumble); }
 .dcc-card .dcc-card-u {
-  font-size: 10px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--rt-ink-dim);
@@ -147,20 +157,20 @@
 .dcc-card .dcc-card-chip {
   padding: 1px 6px;
   border-radius: 3px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--d-bar-text);
+  color: #ffffff;
 }
-.dcc-card .dcc-card-chip.crit { background: #2e7d32; }
-.dcc-card .dcc-card-chip.fumble { background: #b71c1c; }
+.dcc-card .dcc-card-chip.crit { background: var(--rt-crit); color: #1a1205; }
+.dcc-card .dcc-card-chip.fumble { background: var(--rt-fumble); }
 .dcc-card .dcc-card-chip.adv { background: #c98a06; color: #1a1205; }
 .dcc-card .dcc-card-opt { text-align: center; }
 
 /* Free-text lines (driver note, aboard penalty, ram aftermath) */
 .dcc-card .dcc-card-note {
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.3;
   text-align: center;
   color: var(--rt-ink-dim);
@@ -170,11 +180,13 @@
 
 /* DC / mana-cost lines + insufficient notice */
 .dcc-card .dcc-card-cast {
-  display: flex;
+  display: grid;
+  grid-template-columns: max-content minmax(0, auto);
   align-items: baseline;
   justify-content: center;
-  gap: 6px;
-  font-size: 11px;
+  column-gap: 6px;
+  font-size: 12px;
+  line-height: 1.35;
   color: var(--rt-ink-dim);
 }
 .dcc-card .dcc-card-castlabel {
@@ -187,10 +199,18 @@
   color: var(--rt-ink);
 }
 .dcc-card .dcc-card-insufficient {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   text-align: center;
   color: #b71c1c;
+}
+.dcc-card .dcc-card-result {
+  padding-top: 0;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--rt-ink);
 }
 
 /* Collapsible dice breakdown (core Roll#getTooltip markup inside <details>) */
@@ -838,6 +858,38 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
   grid-template-columns: 18px minmax(0, 1fr) 36px 56px 68px 348px 44px;
   grid-template-areas: "mark name stat rank roll flags ctl";
 }
+.dcc.sheet.actor .dcc-ilist--skills > .dcc-irow:has(.dcc-skill-summary),
+.dcc.sheet.actor .dcc-ilist--spells > .dcc-irow:has(.dcc-skill-summary) {
+  grid-template-areas:
+    "mark name    stat    rank    roll    flags   ctl"
+    ".    summary summary summary summary summary ctl";
+}
+.dcc.sheet.actor .dcc-skill-summary {
+  grid-area: summary;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+  padding: 1px 3px 2px;
+  font-family: var(--d-cond);
+  font-size: 11px;
+  line-height: 1.25;
+  color: var(--d-ink-dim);
+  text-align: left;
+}
+.dcc.sheet.actor .dcc-skill-summary-fields {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+}
+.dcc.sheet.actor .dcc-skill-summary-field { overflow-wrap: anywhere; }
+.dcc.sheet.actor .dcc-skill-summary-field strong { color: var(--d-ink); }
+.dcc.sheet.actor .dcc-skill-summary-notes {
+  overflow: hidden;
+  color: var(--d-ink);
+  white-space: pre-line;
+}
 .dcc.sheet.actor .dcc-ilist--inventory > li { grid-template-columns: minmax(0, 1fr) 48px 84px 44px 36px 36px 44px; }
 .dcc.sheet.actor .dcc-ilist--buffs > li { grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1.4fr) 44px; }
 .dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-ilist > .dcc-iempty {
@@ -1227,6 +1279,12 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
   grid-template-columns: minmax(0, 1fr) 36px 56px 68px 66px 44px;
   grid-template-areas: "name stat rank roll flags ctl";
 }
+.dcc.sheet.actor .dcc-ilist--skills.dcc-ilist--lean > .dcc-irow:has(.dcc-skill-summary),
+.dcc.sheet.actor .dcc-ilist--spells.dcc-ilist--lean > .dcc-irow:has(.dcc-skill-summary) {
+  grid-template-areas:
+    "name    stat    rank    roll    flags   ctl"
+    "summary summary summary summary summary ctl";
+}
 .dcc.sheet.actor .dcc-ilist--lean .dcc-ihead > span:nth-child(2) { text-align: center; }
 /* Static To-Hit target (no roll): crawlers roll against it. */
 .dcc.sheet.actor .dcc-target {
@@ -1334,6 +1392,7 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 .dcc.sheet.actor .dcc-icell.dcc-c-flags { flex-wrap: wrap; justify-content: flex-start; gap: 4px; min-width: 0; }
 .dcc.sheet.actor .dcc-c-flags select.dcc-iselect { width: auto; max-width: 110px; }
 .dcc.sheet.actor .dcc-c-flags .dcc-vchip { padding: 1px 7px; line-height: 16px; }
+.dcc.sheet.actor .dcc-c-flags .dcc-skill-check { padding: 1px 7px; font-size: 10px; line-height: 16px; }
 /* Toggle chip: a label wrapping a visually hidden checkbox (data-field still drives the update, and
    the checkbox keeps focus + screen-reader state). Filled = on; outlined = off. */
 .dcc.sheet.actor .dcc-tchip {
@@ -1379,6 +1438,12 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
       "mark name  stat  rank  roll  ctl"
       ".    flags flags flags flags ctl";
   }
+  .dcc.sheet.actor .dcc-ilist--spells:not(.dcc-ilist--lean) > .dcc-irow:has(.dcc-skill-summary) {
+    grid-template-areas:
+      "mark name    stat    rank    roll    ctl"
+      ".    flags   flags   flags   flags   ctl"
+      ".    summary summary summary summary ctl";
+  }
 }
 @container ilist (max-width: 649px) {
   .dcc.sheet.actor .dcc-ilist--skills:not(.dcc-ilist--lean) > li {
@@ -1386,6 +1451,12 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
     grid-template-areas:
       "mark name  stat  rank  roll  ctl"
       ".    flags flags flags flags ctl";
+  }
+  .dcc.sheet.actor .dcc-ilist--skills:not(.dcc-ilist--lean) > .dcc-irow:has(.dcc-skill-summary) {
+    grid-template-areas:
+      "mark name    stat    rank    roll    ctl"
+      ".    flags   flags   flags   flags   ctl"
+      ".    summary summary summary summary ctl";
   }
 }
 @container ilist (max-width: 409px) {
@@ -1395,6 +1466,12 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
       "name  stat  rank  roll  ctl"
       "flags flags flags flags ctl";
   }
+  .dcc.sheet.actor .dcc-ilist--spells.dcc-ilist--lean > .dcc-irow:has(.dcc-skill-summary) {
+    grid-template-areas:
+      "name    stat    rank    roll    ctl"
+      "flags   flags   flags   flags   ctl"
+      "summary summary summary summary ctl";
+  }
 }
 @container ilist (max-width: 389px) {
   .dcc.sheet.actor .dcc-ilist--skills.dcc-ilist--lean > li {
@@ -1402,6 +1479,12 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
     grid-template-areas:
       "name  stat  rank  roll  ctl"
       "flags flags flags flags ctl";
+  }
+  .dcc.sheet.actor .dcc-ilist--skills.dcc-ilist--lean > .dcc-irow:has(.dcc-skill-summary) {
+    grid-template-areas:
+      "name    stat    rank    roll    ctl"
+      "flags   flags   flags   flags   ctl"
+      "summary summary summary summary ctl";
   }
 }
 @container ilist (max-width: 549px) {
@@ -1712,6 +1795,8 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 8px 10px;
 }
+.dcc.sheet.item .dcc-item-grid + .dcc-item-grid { margin-top: 8px; }
+.dcc.sheet.item .dcc-item-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
 .dcc.sheet.item .dcc-item-damage-grid {
   display: grid;
   grid-template-columns: minmax(72px, 0.7fr) minmax(72px, 0.7fr) minmax(180px, 2fr);

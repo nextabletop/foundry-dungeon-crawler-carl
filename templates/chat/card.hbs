@@ -1,6 +1,6 @@
 <div class="dcc-card">
   <header class="dcc-card-head {{headClass}}">
-    <span class="dcc-card-token">{{#if img}}<img src="{{img}}" alt="{{characterName}}">{{/if}}</span>
+    {{#if img}}<span class="dcc-card-token"><img src="{{img}}" alt="{{characterName}}"></span>{{/if}}
     <div class="dcc-card-titles">
       <span class="dcc-card-actname">{{name}}</span>
       <span class="dcc-card-char">{{characterName}}</span>
@@ -37,14 +37,26 @@
   {{#if dc}}
   <div class="dcc-card-pad dcc-card-cast"><span class="dcc-card-castlabel">{{localize "DCC.Card.DC"}}</span><span class="dcc-card-castval">{{dc.value}}</span></div>
   {{/if}}
+  {{#if result}}
+  <div class="dcc-card-pad dcc-card-result"><span>{{result}}</span></div>
+  {{/if}}
   {{#if penalty}}
   <div class="dcc-card-pad dcc-card-note"><span>{{penalty}}</span></div>
   {{/if}}
   {{#if note}}
   <div class="dcc-card-pad dcc-card-note"><span>{{note}}</span></div>
   {{/if}}
+  {{#if range}}
+  <div class="dcc-card-pad dcc-card-cast"><span class="dcc-card-castlabel">{{localize "DCC.Card.Range"}}</span><span class="dcc-card-castval">{{range}}</span></div>
+  {{/if}}
   {{#if cost}}
   <div class="dcc-card-pad dcc-card-cast"><span class="dcc-card-castlabel">{{localize "DCC.Card.ManaCost"}}</span><span class="dcc-card-castval">{{cost.value}}</span></div>
+  {{/if}}
+  {{#if duration}}
+  <div class="dcc-card-pad dcc-card-cast"><span class="dcc-card-castlabel">{{localize "DCC.Card.Duration"}}</span><span class="dcc-card-castval">{{duration}}</span></div>
+  {{/if}}
+  {{#if cooldown}}
+  <div class="dcc-card-pad dcc-card-cast"><span class="dcc-card-castlabel">{{localize "DCC.Card.Cooldown"}}</span><span class="dcc-card-castval">{{cooldown}}</span></div>
   {{/if}}
   {{#if insufficient}}
   <div class="dcc-card-pad dcc-card-insufficient"><span>{{localize "DCC.Card.InsufficientMana"}}</span></div>

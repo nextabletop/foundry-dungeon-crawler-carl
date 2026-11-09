@@ -13,6 +13,13 @@
       {{/if}}
       {{formGroup systemFields.class value=systemSource.class rootId=rootId}}
     </div>
+    <div class="dcc-item-grid">
+      {{formGroup systemFields.range value=systemSource.range rootId=rootId}}
+      {{formGroup systemFields.cooldown value=systemSource.cooldown rootId=rootId}}
+    </div>
+    <div class="dcc-item-grid">
+      {{formGroup systemFields.limitations value=systemSource.limitations rootId=rootId}}
+    </div>
     <div class="dcc-item-flags">
       {{formGroup systemFields.enabled value=systemSource.enabled rootId=rootId}}
       {{#unless (eq systemSource.checkType "passive")}}
@@ -20,6 +27,12 @@
       {{/unless}}
       {{formGroup systemFields.onHotlist value=systemSource.onHotlist rootId=rootId}}
     </div>
+    {{#if canSkillCheck}}
+    <div class="dcc-item-actions">
+      <button type="button" class="dcc-rollbtn" id="{{rootId}}-skillCheck" data-action="skillCheck"
+              data-tooltip="{{localize 'DCC.Items.SkillCheckTooltip'}}">{{localize "DCC.Items.SkillCheck"}}</button>
+    </div>
+    {{/if}}
   </div>
   {{> "systems/dungeon-crawler-carl/templates/item/partials/description.hbs"}}
 </section>

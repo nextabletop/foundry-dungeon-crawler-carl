@@ -1,7 +1,8 @@
 {{!-- Skills or Spells box. Called with `rows` (sheetItemLists().skills / .spells), `spell=true`
-      for the Spells list, and `lean=true` for a mob: one line per row — name · stat · rank ·
-      bonus (cast) · enabled — with no mark, check type, mana cost or hotlist columns
-      (R20 ticket 001). Inline controls carry data-field and no name: the sheet's
+      for the Spells list, and `lean=true` for a mob. The control line is name · stat · rank ·
+      bonus (cast) · enabled, with no mark, check type, mana cost or hotlist columns on lean rows;
+      populated authored metadata and Notes & Upgrades render on a summary line below it.
+      Inline controls carry data-field and no name: the sheet's
       _onChangeForm updates the item. Each cell (and its header span) carries a dcc-c-* class: a
       narrow list lays rows out on two lines by grid area, which child order can't express across
       the skill / spell × full / lean variants. The flags cell (check type, opposed stat, mana cost,
@@ -52,8 +53,24 @@
     {{> toggleChip key="hotlist" field="system.onHotlist" value=onHotlist
         onText=(localize "DCC.Chip.HotlistOn") offText=(localize "DCC.Chip.HotlistOff")
         label=(localize "DCC.Hotlist.Label") tooltip=(localize "DCC.Hotlist.Toggle" cap=@root.hotlistCap)}}
+    {{#unless isPassive}}
+    <button type="button" class="dcc-rollbtn dcc-skill-check" id="{{@root.rootId}}-{{id}}-skillCheck" data-action="skillCheck"
+            data-tooltip="{{localize 'DCC.Items.SkillCheckTooltip'}}">{{localize "DCC.Items.SkillCheck"}}</button>
+    {{/unless}}
     {{/unless}}
   </span>
+  {{#if hasSummary}}
+  <span class="dcc-skill-summary">
+    {{#if summary.length}}
+    <span class="dcc-skill-summary-fields">
+      {{#each summary}}
+      <span class="dcc-skill-summary-field"><strong>{{localize label}}:</strong> {{value}}</span>
+      {{/each}}
+    </span>
+    {{/if}}
+    {{#if notes}}<span class="dcc-skill-summary-notes">{{notes}}</span>{{/if}}
+  </span>
+  {{/if}}
 {{/inline}}
 <div class="dcc-box dcc-list">
   <div class="dcc-bar dcc-bar--list">

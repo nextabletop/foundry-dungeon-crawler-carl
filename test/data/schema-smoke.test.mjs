@@ -94,7 +94,8 @@ describe('item schemas', () => {
 
   it('skill', () => {
     expect(keys(SkillModel)).toEqual(expect.arrayContaining([...base,
-      'stat', 'rank', 'mark', 'enabled', 'checkType', 'opposedStat', 'class']));
+      'stat', 'rank', 'mark', 'enabled', 'checkType', 'opposedStat', 'class',
+      'range', 'cooldown', 'limitations']));
     const schema = SkillModel.defineSchema();
     expect(schema.checkType.initial).toBe('opposed');
     expect(schema.checkType.options.choices).toEqual(Object.fromEntries(CHECK_TYPES.map(type => [type, type])));
@@ -103,8 +104,8 @@ describe('item schemas', () => {
     expect(keys(SkillModel)).not.toContain('passive');
   });
 
-  it('spell is a skill plus manaCost and attack', () => {
-    expect(keys(SpellModel)).toEqual(expect.arrayContaining([...keys(SkillModel), 'manaCost', 'attack']));
+  it('spell is a skill plus manaCost, duration, and attack', () => {
+    expect(keys(SpellModel)).toEqual(expect.arrayContaining([...keys(SkillModel), 'manaCost', 'duration', 'attack']));
     const { attack } = SpellModel.defineSchema();
     expect(Object.keys(attack.fields)).toEqual(['enabled', 'die', 'damageBonus', 'damageType']);
     expect(attack.fields.damageType.options.choices).toBeUndefined();

@@ -13,6 +13,9 @@ export default class SkillModel extends BaseItemModel {
       checkType: str('opposed', { choices: CHECK_TYPES }),
       opposedStat: str('', { choices: ['', ...STATS], blank: true }),
       class: str(),
+      range: str(),
+      cooldown: str(),
+      limitations: str(),
     };
   }
 }

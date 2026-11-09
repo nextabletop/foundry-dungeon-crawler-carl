@@ -1,18 +1,23 @@
 import { describe, it, expect } from 'vitest';
 import {
   advancementRoll, rankCapClamp, advancesAt, nextRank, undoPush, undoPop, isDue, planAdvancement,
-  snapshot, restoreUpdates, levelUpBlocker,
+  snapshot, restoreUpdates, levelUpBlocker, skillCheckSuccess,
 } from '../../module/rules/advancement.mjs';
 
 // Ported from character-sheet/__tests__/skills.test.js
 
-describe('advancementRoll (d20 must EXCEED current rank)', () => {
-  it('advances when the roll exceeds rank', () => {
+describe('manual Skill Check and advancement roll (d20 >= current rank)', () => {
+  it('reports success when the roll equals or exceeds Rank', () => {
+    expect(skillCheckSuccess(3, 3)).toBe(true);
+    expect(skillCheckSuccess(3, 4)).toBe(true);
+    expect(skillCheckSuccess(7, 6)).toBe(false);
+  });
+  it('advances when the roll equals or exceeds rank', () => {
+    expect(advancementRoll(3, 3)).toBe(4);
     expect(advancementRoll(3, 4)).toBe(4);
     expect(advancementRoll(0, 1)).toBe(1);
   });
-  it('does not advance when the roll equals or is below rank', () => {
-    expect(advancementRoll(3, 3)).toBe(3);
+  it('does not advance when the roll is below rank', () => {
     expect(advancementRoll(10, 2)).toBe(10);
   });
 });
@@ -110,7 +115,7 @@ describe('planAdvancement', () => {
       skills: [{ id: 'a', system: { rank: 3, mark: true, checkType: 'opposed' } }],
       trigger: 'session',
       floor: 1,
-      rolls: { a: 10 }, // exceeds rank 3
+      rolls: { a: 10 }, // equals or exceeds rank 3
     });
     expect(updates).toEqual([{ id: 'a', rank: 4, mark: false }]);
   });
@@ -120,7 +125,7 @@ describe('planAdvancement', () => {
       skills: [{ id: 'a', system: { rank: 3, mark: true, checkType: 'opposed' } }],
       trigger: 'session',
       floor: 1,
-      rolls: { a: 1 }, // does not exceed rank 3
+      rolls: { a: 1 }, // does not equal or exceed rank 3
     });
     expect(updates).toEqual([{ id: 'a', rank: 3, mark: false }]);
   });

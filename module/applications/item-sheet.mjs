@@ -2,6 +2,7 @@ import { SYSTEM_ID, STATS, CHECK_TYPES, ITEM_SLOTS, GUNNER_SLOTS, APP_CLASSES } 
 import { itemModels } from '../data/item/_module.mjs';
 import { DCC_CHANGE_TYPE, describeChange } from '../effects/dcc-change.mjs';
 import { enableViewOnlyControls, isBlankHTML } from './sheet-rows.mjs';
+import { isPassiveCheck } from '../rules/items.mjs';
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -34,6 +35,7 @@ export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.app
       createEffect: DCCItemSheet.#onCreateEffect,
       editEffect: DCCItemSheet.#onEditEffect,
       deleteEffect: DCCItemSheet.#onDeleteEffect,
+      skillCheck: DCCItemSheet.#onSkillCheck,
     },
   };
 
@@ -80,6 +82,12 @@ export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.app
       systemFields,
       selectOptions,
       typeLabel: game.i18n.localize(CONFIG.Item.typeLabels[this.document.type] ?? this.document.type),
+      descriptionLabel: game.i18n.localize(
+        ['skill', 'spell'].includes(this.document.type) ? 'DCC.ItemSheet.NotesUpgrades' : 'DCC.Item.FIELDS.description.label',
+      ),
+      canSkillCheck: this.document.parent?.type === 'pc'
+        && ['skill', 'spell'].includes(this.document.type)
+        && !isPassiveCheck(systemSource),
       descriptionHTML,
       descriptionEmpty: isBlankHTML(description),
       effects,
@@ -130,6 +138,24 @@ export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.app
     if (editing.length) options.parts = options.parts.filter(id => !editing.includes(id));
   }
 
+  /**
+   * Save pending ordinary fields before a sheet action. The rich-text editor is
+   * excluded so a roll never commits its unsaved buffer.
+   */
+  async _flushItemForm() {
+    if (!this.isEditable) return false;
+    try {
+      const formData = new foundry.applications.ux.FormDataExtended(this.form);
+      delete formData.object['system.description'];
+      const submitData = this._prepareSubmitData(null, this.form, formData);
+      await this._processSubmitData(null, this.form, submitData);
+      return true;
+    } catch (err) {
+      ui.notifications.error(err, { console: true });
+      return false;
+    }
+  }
+
   /** The effect whose row holds the clicked control. */
   _effectFromTarget(target) {
     const id = target.closest('[data-effect-id]')?.dataset.effectId;
@@ -154,5 +180,12 @@ export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.app
 
   static async #onDeleteEffect(event, target) {
     await this._effectFromTarget(target)?.deleteDialog({ classes: [...APP_CLASSES] });
+  }
+
+  /** Manual d20 Skill Check for a Skill/Spell owned by a Crawler. @this {DCCItemSheet} */
+  static async #onSkillCheck() {
+    const actor = this.document.parent;
+    if (!actor || !(await this._flushItemForm())) return;
+    await actor.rollSkillCheck(this.document);
   }
 }

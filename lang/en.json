@@ -106,8 +106,23 @@
         "class": {
           "label": "Class"
         },
+        "range": {
+          "label": "Range",
+          "placeholder": "e.g. 50 feet"
+        },
+        "cooldown": {
+          "label": "Cooldown",
+          "placeholder": "e.g. Once per round"
+        },
+        "limitations": {
+          "label": "Limitations"
+        },
         "manaCost": {
           "label": "Mana Cost"
+        },
+        "duration": {
+          "label": "Duration",
+          "placeholder": "e.g. 2 rounds"
         },
         "attack": {
           "label": "Attack",
@@ -135,6 +150,7 @@
       "Skill": "Skill",
       "Spell": "Spell",
       "SpellAttack": "Spell Attack",
+      "NotesUpgrades": "Notes & Upgrades",
       "Flags": "Flags"
     },
     "Drop": {
@@ -145,6 +161,9 @@
       "Fumble": "Fumble!",
       "Target": "target",
       "DC": "DC",
+      "Range": "Range",
+      "Duration": "Duration",
+      "Cooldown": "Cooldown",
       "ManaCost": "Mana Cost",
       "InsufficientMana": "⚠ Insufficient mana"
     },
@@ -224,6 +243,9 @@
       "EndSession": "End Session",
       "EndFloor": "End Floor",
       "LevelUp": "Level Up",
+      "SkillCheck": "Skill Check",
+      "Success": "Success",
+      "Failure": "Failure",
       "Undo": "Undo",
       "EndSessionTooltip": "End the session: marked skills and spells at rank 4 or lower roll 1d20 to advance; +1 pending level",
       "EndFloorTooltip": "End the floor: marked skills and spells at rank 5 or higher roll 1d20 to advance; Floor +1",
@@ -318,6 +340,9 @@
       "Stat": "Stat",
       "Rank": "Rank",
       "Bonus": "Bonus",
+      "Range": "Range",
+      "Cooldown": "Cooldown",
+      "Duration": "Duration",
       "ManaCost": "Mana cost",
       "ManaChip": "{cost} MP",
       "CheckType": "Check",
@@ -333,6 +358,8 @@
       "CastTooltip": "Cast: 1d20 + skill bonus, spends mana",
       "CastTooltipNoMana": "Cast: 1d20 + skill bonus",
       "CastPassiveTooltip": "Cast this Passive spell without rolling, spends mana",
+      "SkillCheck": "Skill Check",
+      "SkillCheckTooltip": "Roll 1d20 against base Rank; equal or higher succeeds",
       "RankEffectiveTooltip": "Effective rank (with modifiers)",
       "NoAttacks": "No weapons or attack spells.",
       "NoSkills": "No skills.",

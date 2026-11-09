@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { cardContext, naturalD20, htmlToText, joinNotes } from '../../module/rules/card.mjs';
 
 const d = (faces, ...results) => ({ faces, results: results.map(([result, active = true]) => ({ result, active })) });
@@ -22,12 +23,12 @@ describe('naturalD20', () => {
 });
 
 describe('cardContext', () => {
-  it('flags a crit on a natural 20 and tints the header', () => {
+  it('flags a crit on a natural 20 while retaining the default black header', () => {
     const ctx = cardContext({ name: 'Punch', tag: 'To Hit' }, { roll: { total: 25, d20: 20 } });
     expect(ctx.crit).toBe(true);
     expect(ctx.fumble).toBe(false);
     expect(ctx.damageOnly).toBe(false);
-    expect(ctx.headClass).toBe('crit');
+    expect(ctx.headClass).toBe('');
     expect(ctx.roll).toEqual({ total: 25, crit: true, fumble: false });
   });
 
@@ -50,6 +51,13 @@ describe('cardContext', () => {
     expect(ctx.fumble).toBe(false);
   });
 
+  it('utility rolls suppress crit/fumble badges and header tints', () => {
+    const crit = cardContext({ utility: true, result: 'Success' }, { roll: { total: 20, d20: 20 } });
+    const fumble = cardContext({ utility: true, result: 'Failure' }, { roll: { total: 1, d20: 1 } });
+    expect(crit).toMatchObject({ crit: false, fumble: false, headClass: '', result: 'Success' });
+    expect(fumble).toMatchObject({ crit: false, fumble: false, headClass: '', result: 'Failure' });
+  });
+
   it('damage without a roll is damage-only with the gold-red tint', () => {
     const ctx = cardContext({ name: 'Sword', tag: 'Damage', type: 'Slashing' }, { damage: { total: 9 } });
     expect(ctx.damageOnly).toBe(true);
@@ -63,27 +71,69 @@ describe('cardContext', () => {
   it('roll + damage (spell cast) is not damage-only; the roll tint wins', () => {
     const ctx = cardContext({}, { roll: { total: 22, d20: 20 }, damage: { total: 5 } });
     expect(ctx.damageOnly).toBe(false);
-    expect(ctx.headClass).toBe('crit');
+    expect(ctx.headClass).toBe('');
     expect(ctx.damage).toEqual({ total: 5, type: '' });
+  });
+
+  describe('Roll20 card styling parity', () => {
+    const template = readFileSync(new URL('../../templates/chat/card.hbs', import.meta.url), 'utf8');
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+
+    it('renders the breakout portrait only when an image exists', () => {
+      expect(template).toContain('{{#if img}}<span class="dcc-card-token"><img src="{{img}}" alt="{{characterName}}"></span>{{/if}}');
+    });
+
+    it('keeps the Roll20 cast-detail order: Range, Mana Cost, Duration, Cooldown', () => {
+      const positions = ['DCC.Card.Range', 'DCC.Card.ManaCost', 'DCC.Card.Duration', 'DCC.Card.Cooldown']
+        .map(label => template.indexOf(label));
+      expect(positions.every(position => position >= 0)).toBe(true);
+      expect(positions).toEqual([...positions].sort((a, b) => a - b));
+    });
+
+    it('ports the current Roll20 dimensions, typography, palette, and result pill', () => {
+      for (const rule of [
+        'min-width: 200px;',
+        'max-width: 300px;',
+        'font-family: "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;',
+        '--rt-crit: #40e240;',
+        '--rt-fumble: #8b1e22;',
+        'font-size: 14px;',
+        'font-size: 12px;',
+        'min-width: 56px;',
+        'padding: 4px 16px;',
+        'grid-template-columns: max-content minmax(0, auto);',
+      ]) expect(css).toContain(rule);
+    });
+
+    it('uses the Roll20 header tints: damage red, fumble gray, no crit header class', () => {
+      expect(css).toContain('.dcc-card .dcc-card-head.gold-red');
+      expect(css).toContain('.dcc-card .dcc-card-head.fail');
+      expect(css).not.toContain('.dcc-card .dcc-card-head.crit');
+    });
   });
 
   it('passes through all text fields', () => {
     const fields = {
       name: 'Fireball', characterName: 'Carl', img: 'carl.webp', tag: 'Spell',
       target: 14, dc: 12, penalty: 'Aboard: -2', note: 'Driver: Donut',
+      range: '30 feet', duration: '2 rounds', cooldown: 'Once per scene',
       cost: 3, insufficient: true, advantage: 'Advantage',
     };
     const ctx = cardContext(fields, { roll: { total: 11, d20: 9 } });
     expect(ctx).toMatchObject({
       name: 'Fireball', characterName: 'Carl', img: 'carl.webp', tag: 'Spell',
       target: { value: 14 }, dc: { value: 12 }, penalty: 'Aboard: -2', note: 'Driver: Donut',
+      range: '30 feet', duration: '2 rounds', cooldown: 'Once per scene',
       cost: { value: 3 }, insufficient: true, advantage: 'Advantage',
     });
   });
 
   it('omits empty sections', () => {
-    const ctx = cardContext({ name: 'X', tag: '', target: '', dc: null, penalty: undefined, note: '', cost: '', insufficient: false, advantage: '' }, {});
-    for (const k of ['roll', 'damage', 'target', 'dc', 'penalty', 'note', 'cost', 'insufficient', 'advantage', 'tag']) {
+    const ctx = cardContext({
+      name: 'X', tag: '', target: '', dc: null, penalty: undefined, note: '',
+      result: '', range: '', duration: null, cooldown: undefined, cost: '', insufficient: false, advantage: '',
+    }, {});
+    for (const k of ['roll', 'damage', 'target', 'dc', 'result', 'penalty', 'note', 'range', 'duration', 'cooldown', 'cost', 'insufficient', 'advantage', 'tag']) {
       expect(ctx[k], k).toBeUndefined();
     }
     expect(ctx.name).toBe('X');
@@ -121,10 +171,16 @@ describe('cardContext', () => {
     it('breaks [[ and ]] in every text field so core never evaluates them', () => {
       const evil = 'x [[1d20]] y [[[/r 1d6]]]';
       const ctx = cardContext(
-        { name: evil, characterName: evil, tag: evil, type: evil, advantage: evil, penalty: evil, note: evil, target: evil, dc: evil, cost: evil },
+        {
+          name: evil, characterName: evil, tag: evil, type: evil, advantage: evil, penalty: evil, note: evil,
+          result: evil, range: evil, duration: evil, cooldown: evil, target: evil, dc: evil, cost: evil,
+        },
         { damage: { total: 1 } },
       );
-      const texts = [ctx.name, ctx.characterName, ctx.tag, ctx.damage.type, ctx.advantage, ctx.penalty, ctx.note, ctx.target.value, ctx.dc.value, ctx.cost.value];
+      const texts = [
+        ctx.name, ctx.characterName, ctx.tag, ctx.damage.type, ctx.advantage, ctx.penalty, ctx.note,
+        ctx.result, ctx.range, ctx.duration, ctx.cooldown, ctx.target.value, ctx.dc.value, ctx.cost.value,
+      ];
       for (const t of texts) {
         expect(t).not.toContain('[[');
         expect(t).not.toContain(']]');

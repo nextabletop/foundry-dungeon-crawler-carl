@@ -23,6 +23,7 @@ export default class DCCCreatureSheet extends DCCActorSheetBase {
       rollEvade: DCCCreatureSheet.#onRollEvade,
       rollSkill: DCCCreatureSheet.#onRollSkill,
       castSpell: DCCCreatureSheet.#onCastSpell,
+      skillCheck: DCCCreatureSheet.#onSkillCheck,
       toggleEffect: DCCCreatureSheet.#onToggleEffect,
       createBuff: DCCCreatureSheet.#onCreateBuff,
       editEffect: DCCCreatureSheet.#onEditEffect,
@@ -144,6 +145,13 @@ export default class DCCCreatureSheet extends DCCActorSheetBase {
     const item = this._itemFromTarget(target);
     if (!item || !(await this._flushForm())) return;
     await this.document.castSpell(item);
+  }
+
+  /** Manual d20 Skill Check against base Rank. @this {DCCCreatureSheet} */
+  static async #onSkillCheck(_event, target) {
+    const item = this._itemFromTarget(target);
+    if (!item || !(await this._flushForm())) return;
+    await this.document.rollSkillCheck(item);
   }
 
   /** Enable / disable an actor-level buff. @this {DCCCreatureSheet} */

@@ -41,15 +41,16 @@ export const naturalD20 = (dice = []) => {
  * Sections are emitted as objects (or strings) only when present, so the
  * template gates on the section, never on a raw number that may be 0.
  * All text fields are inline-roll-neutralised (see `safe`).
- * @param {object} [fields] {name, characterName, img, tag, type, target, dc, penalty, note, cost, insufficient, advantage}
+ * @param {object} [fields] {name, characterName, img, tag, type, target, dc, result, penalty, note, range, duration, cooldown, cost, insufficient, advantage, utility}
  * @param {{roll?:{total:number, d20:number|null}, damage?:{total:number}}} [results]
  */
 export const cardContext = (fields = {}, results = {}) => {
   const { roll, damage } = results;
   const hasRoll = present(roll?.total);
   const hasDamage = present(damage?.total);
-  const crit = hasRoll && roll.d20 === 20;
-  const fumble = hasRoll && roll.d20 === 1;
+  const utility = !!fields.utility;
+  const crit = hasRoll && !utility && roll.d20 === 20;
+  const fumble = hasRoll && !utility && roll.d20 === 1;
   const damageOnly = hasDamage && !hasRoll;
 
   const ctx = {
@@ -59,7 +60,7 @@ export const cardContext = (fields = {}, results = {}) => {
     crit,
     fumble,
     damageOnly,
-    headClass: damageOnly ? 'gold-red' : crit ? 'crit' : fumble ? 'fail' : '',
+    headClass: damageOnly ? 'gold-red' : fumble ? 'fail' : '',
   };
   if (present(fields.tag)) ctx.tag = safe(fields.tag);
   if (hasRoll) ctx.roll = { total: roll.total, crit, fumble };
@@ -67,8 +68,12 @@ export const cardContext = (fields = {}, results = {}) => {
   if (hasDamage) ctx.damage = { total: damage.total, type: present(fields.type) ? safe(fields.type) : '' };
   if (present(fields.advantage)) ctx.advantage = safe(fields.advantage);
   if (present(fields.dc)) ctx.dc = { value: safe(fields.dc) };
+  if (present(fields.result)) ctx.result = safe(fields.result);
   if (present(fields.penalty)) ctx.penalty = safe(fields.penalty);
   if (present(fields.note)) ctx.note = safe(fields.note);
+  if (present(fields.range)) ctx.range = safe(fields.range);
+  if (present(fields.duration)) ctx.duration = safe(fields.duration);
+  if (present(fields.cooldown)) ctx.cooldown = safe(fields.cooldown);
   // R20 (_spells.js skillRollFields) omits cost/insufficient when 0/false.
   if (present(fields.cost) && Number(fields.cost) !== 0) ctx.cost = { value: safe(fields.cost) };
   if (fields.insufficient) ctx.insufficient = true;

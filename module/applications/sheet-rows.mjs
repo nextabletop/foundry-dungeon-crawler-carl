@@ -9,6 +9,7 @@ import { describeChange } from '../effects/dcc-change.mjs';
 import { levelUpBlocker } from '../rules/advancement.mjs';
 import { UNLINKED, floorEndBlocked, floorEndsAvailable, isRosterPc, undoFloorEndBlockers } from '../rules/gm-screen.mjs';
 import { crewRoleChoices, crewRoleKey } from '../rules/crew.mjs';
+import { htmlToText } from '../rules/card.mjs';
 
 /**
  * The value an inline item control on the actor sheet writes: a checkbox's
@@ -92,6 +93,10 @@ const skillRow = (item) => {
   const src = item.system._source ?? item.system;
   const d = item.system.derived ?? {};
   const isPassive = src.checkType === 'passive';
+  const summary = [
+    ['DCC.Items.Range', src.range],
+    ['DCC.Items.Cooldown', src.cooldown],
+  ];
   const row = {
     id: item.id,
     name: item.name,
@@ -109,11 +114,20 @@ const skillRow = (item) => {
     isPassive,
     markable: !isPassive,
     onHotlist: src.onHotlist,
+    notes: htmlToText(src.description),
   };
   if (item.type === 'spell') {
     row.cost = d.manaCostEffective;
     row.attack = !!src.attack?.enabled;
+    if (Number.isFinite(d.manaCostEffective) && d.manaCostEffective !== 0) {
+      summary.push(['DCC.Items.ManaCost', d.manaCostEffective]);
+    }
+    summary.push(['DCC.Items.Duration', src.duration]);
   }
+  row.summary = summary
+    .filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== '')
+    .map(([label, value]) => ({ label, value }));
+  row.hasSummary = !!(row.summary.length || row.notes);
   return row;
 };
 

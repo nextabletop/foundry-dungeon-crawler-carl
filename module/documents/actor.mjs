@@ -6,7 +6,7 @@ import {
   postDriving, postRam, postRace, rollVehicleWeapon, crewSkillPost, crewAttackPost, applyRamAftermath,
 } from './vehicle-rolls.mjs';
 import {
-  isDue, planAdvancement, undoPush, undoPop, snapshot, restoreUpdates, levelUpBlocker,
+  isDue, planAdvancement, undoPush, undoPop, snapshot, restoreUpdates, levelUpBlocker, skillCheckSuccess,
 } from '../rules/advancement.mjs';
 import { ADVANCING_TYPES, UNDO_MAX, LEVEL_UP_STAT_POINTS } from '../config.mjs';
 import { gmLinkFor } from '../gm-link.mjs';
@@ -14,6 +14,13 @@ import { floorEndBlocked } from '../rules/gm-screen.mjs';
 import { checkTypeLabel, isPassiveCheck } from '../rules/items.mjs';
 
 const checkTypeTag = system => checkTypeLabel(system?.checkType, system?.opposedStat, key => game.i18n.localize(key));
+
+/** Spell metadata that always rides on a cast card when populated. */
+const spellCardMetadata = (system = {}) => Object.fromEntries(
+  ['duration', 'cooldown']
+    .filter(field => String(system[field] ?? '').trim())
+    .map(field => [field, system[field]]),
+);
 
 export default class DCCActor extends foundry.documents.Actor {
   /**
@@ -122,6 +129,26 @@ export default class DCCActor extends foundry.documents.Actor {
   }
 
   /**
+   * Manual Skill Check (Roll20 rollSkillAdvancement): roll a bare d20 against
+   * the stored base Rank and report Success/Failure without changing Rank.
+   * Passive rows and non-PC actors cannot use it.
+   * @param {Item} item - an owned skill or spell
+   * @param {object} [options] - postCard options
+   * @returns {Promise<object|null>}
+   */
+  async rollSkillCheck(item, options = {}) {
+    if ((this.type !== 'pc') || !this.#owns(item) || !ADVANCING_TYPES.includes(item.type) || isPassiveCheck(item.system)) return null;
+    const rank = Math.max(0, +(item.system?._source ?? item.system)?.rank || 0);
+    return postCard(this, ({ check }) => ({
+      name: item.name,
+      tag: game.i18n.localize('DCC.Advance.SkillCheck'),
+      dc: rank,
+      result: game.i18n.localize(skillCheckSuccess(rank, check?.total) ? 'DCC.Advance.Success' : 'DCC.Advance.Failure'),
+      utility: true,
+    }), { roll: '1d20' }, options);
+  }
+
+  /**
    * Attack roll from a weapon or an attack-enabled spell. To-hit and damage
    * are separate rolls. A spell's to-hit casts the spell (R20 dual entry);
    * its damage uses the spell's attack die / type.
@@ -208,6 +235,7 @@ export default class DCCActor extends foundry.documents.Actor {
       return await postCard(this, {
         name: item.name,
         tag: checkTypeTag(item.system),
+        ...spellCardMetadata(item.system),
         ...manaFields,
       }, isPassiveCheck(item.system) ? {} : { roll: checkFormula(d.skillBonus) }, options);
     } finally {

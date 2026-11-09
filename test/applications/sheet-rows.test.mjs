@@ -105,6 +105,41 @@ describe('sheetItemLists', () => {
       checkType: 'passive', isOpposed: false, isPassive: true, markable: false,
     });
   });
+  it('skill rows expose populated authored metadata and plain-text Notes & Upgrades', () => {
+    const { skills, spells } = sheetItemLists({
+      skill: [it_('s', 'skill', 'Crossbow', 0, {
+        range: '50 feet', cooldown: 'Once per round', limitations: 'Needs bolts',
+        description: '<p>Rank 5: ignores cover.</p>',
+      })],
+      spell: [it_('p', 'spell', 'Rootfoot', 0, {
+        range: '30 feet', cooldown: 'Once per scene', duration: '2 rounds',
+        description: '<p>Roots ensnare.</p>', attack: {},
+      }, { manaCostEffective: 5 })],
+    });
+    expect(skills[0]).toMatchObject({
+      summary: [
+        { label: 'DCC.Items.Range', value: '50 feet' },
+        { label: 'DCC.Items.Cooldown', value: 'Once per round' },
+      ],
+      notes: 'Rank 5: ignores cover.',
+      hasSummary: true,
+    });
+    expect(skills[0].summary.some(field => field.value === 'Needs bolts')).toBe(false);
+    expect(spells[0].summary).toEqual([
+      { label: 'DCC.Items.Range', value: '30 feet' },
+      { label: 'DCC.Items.Cooldown', value: 'Once per scene' },
+      { label: 'DCC.Items.ManaCost', value: 5 },
+      { label: 'DCC.Items.Duration', value: '2 rounds' },
+    ]);
+  });
+  it('blank metadata and zero mana cost do not create an actor summary', () => {
+    const { skills, spells } = sheetItemLists({
+      skill: [it_('s', 'skill', 'Blank', 0, { range: ' ', cooldown: '', description: '<p></p>' })],
+      spell: [it_('p', 'spell', 'Free', 0, { attack: {} }, { manaCostEffective: 0 })],
+    });
+    expect(skills[0]).toMatchObject({ summary: [], notes: '', hasSummary: false });
+    expect(spells[0]).toMatchObject({ summary: [], notes: '', hasSummary: false });
+  });
   it('empty input -> empty lists', () => {
     expect(sheetItemLists()).toEqual({ attacks: [], skills: [], spells: [] });
   });
@@ -132,6 +167,38 @@ describe('skill rows carry the hotlist flag', () => {
     });
     expect(skills[0].onHotlist).toBe(true);
     expect(spells[0].onHotlist).toBe(false);
+  });
+});
+
+describe('skill and spell authored metadata templates', () => {
+  const skill = readFileSync(new URL('../../templates/item/skill.hbs', import.meta.url), 'utf8');
+  const spell = readFileSync(new URL('../../templates/item/spell.hbs', import.meta.url), 'utf8');
+  const list = readFileSync(new URL('../../templates/actor/partials/skill-list.hbs', import.meta.url), 'utf8');
+  const description = readFileSync(new URL('../../templates/item/partials/description.hbs', import.meta.url), 'utf8');
+
+  it('edits Range, Cooldown, and Limitations on skills and spells, with spell-only Duration', () => {
+    for (const template of [skill, spell]) {
+      for (const field of ['range', 'cooldown', 'limitations']) {
+        expect(template).toContain(`systemFields.${field} value=systemSource.${field}`);
+      }
+    }
+    expect(spell).toContain('systemFields.duration value=systemSource.duration');
+    expect(skill).not.toContain('systemFields.duration');
+  });
+
+  it('renders populated actor summaries and uses the context-specific description label', () => {
+    expect(list).toContain('{{#if hasSummary}}');
+    expect(list).toContain('{{#each summary}}');
+    expect(list).toContain('dcc-skill-summary-notes');
+    expect(description).toContain('{{descriptionLabel}}');
+  });
+
+  it('offers Skill Check on both item sheets and on non-Passive actor rows', () => {
+    for (const template of [skill, spell]) {
+      expect(template).toContain('{{#if canSkillCheck}}');
+      expect(template).toContain('data-action="skillCheck"');
+    }
+    expect(list).toMatch(/{{#unless isPassive}}[\s\S]*?data-action="skillCheck"[\s\S]*?{{\/unless}}/);
   });
 });
 
