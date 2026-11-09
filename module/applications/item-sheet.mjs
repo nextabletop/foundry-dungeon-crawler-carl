@@ -3,6 +3,7 @@ import { itemModels } from '../data/item/_module.mjs';
 import { DCC_CHANGE_TYPE, describeChange } from '../effects/dcc-change.mjs';
 import { enableViewOnlyControls, isBlankHTML } from './sheet-rows.mjs';
 import { isPassiveCheck } from '../rules/items.mjs';
+import { attackSource, effectiveAttackRank, itemLinkState } from '../rules/item-links.mjs';
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -36,6 +37,7 @@ export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.app
       editEffect: DCCItemSheet.#onEditEffect,
       deleteEffect: DCCItemSheet.#onDeleteEffect,
       skillCheck: DCCItemSheet.#onSkillCheck,
+      linkAttack: DCCItemSheet.#onLinkAttack,
     },
   };
 
@@ -76,6 +78,23 @@ export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.app
       suppressed: effect.isSuppressed,
       changes: effect.system.changes.map(describeChange).join(', '),
     }));
+    const ownedItems = this.document.parent?.items?.contents ?? [];
+    const source = this.document.type === 'attack' ? attackSource(this.document, ownedItems) : null;
+    const linkState = this.document.type === 'attack' ? itemLinkState(this.document, ownedItems) : null;
+    const attackLink = this.document.type === 'attack' ? {
+      owned: Boolean(this.document.parent),
+      sourceId: source?.id ?? '',
+      sourceOptions: Object.fromEntries([
+        ['', game.i18n.localize('DCC.None')],
+        ...ownedItems
+          .filter(item => item.id !== this.document.id && item.type !== 'attack')
+          .map(item => [item.id, `${item.name} (${game.i18n.localize(CONFIG.Item.typeLabels[item.type] ?? item.type)})`]),
+      ]),
+      rank: effectiveAttackRank(this.document, ownedItems),
+      rankLinked: ['skill', 'spell'].includes(source?.type),
+      staleIds: linkState.staleIds,
+      asymmetricNames: linkState.asymmetric.map(item => item.name),
+    } : null;
     return Object.assign(context, {
       system,
       systemSource,
@@ -83,7 +102,9 @@ export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.app
       selectOptions,
       typeLabel: game.i18n.localize(CONFIG.Item.typeLabels[this.document.type] ?? this.document.type),
       descriptionLabel: game.i18n.localize(
-        ['skill', 'spell'].includes(this.document.type) ? 'DCC.ItemSheet.NotesUpgrades' : 'DCC.Item.FIELDS.description.label',
+        ['skill', 'spell'].includes(this.document.type)
+          ? 'DCC.ItemSheet.NotesUpgrades'
+          : (this.document.type === 'attack' ? 'DCC.ItemSheet.NotesEffects' : 'DCC.Item.FIELDS.description.label'),
       ),
       canSkillCheck: this.document.parent?.type === 'pc'
         && ['skill', 'spell'].includes(this.document.type)
@@ -91,6 +112,7 @@ export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.app
       descriptionHTML,
       descriptionEmpty: isBlankHTML(description),
       effects,
+      attackLink,
       config: CONFIG.DCC,
     });
   }
@@ -187,5 +209,17 @@ export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.app
     const actor = this.document.parent;
     if (!actor || !(await this._flushItemForm())) return;
     await actor.rollSkillCheck(this.document);
+  }
+
+  /** Link this owned Attack to the source selected in its item sheet. @this {DCCItemSheet} */
+  static async #onLinkAttack() {
+    if (!(await this._flushItemForm())) return;
+    const sourceId = this.element.querySelector('[data-attack-source]')?.value ?? '';
+    try {
+      await this.document.setAttackSource(sourceId);
+      this.render();
+    } catch (err) {
+      ui.notifications.error(err, { console: true });
+    }
   }
 }

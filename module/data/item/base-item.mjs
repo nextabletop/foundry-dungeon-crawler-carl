@@ -1,4 +1,4 @@
-import { bool, html } from '../_fields.mjs';
+import { bool, html, strArray } from '../_fields.mjs';
 
 /** Fields shared by every DCC item type. */
 export default class BaseItemModel extends foundry.abstract.TypeDataModel {
@@ -9,6 +9,7 @@ export default class BaseItemModel extends foundry.abstract.TypeDataModel {
     return {
       description: html(),
       onHotlist: bool(false),
+      linkedItemIds: strArray(),
     };
   }
 

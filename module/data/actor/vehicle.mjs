@@ -4,7 +4,7 @@ import { deriveVehicle } from '../../rules/derive.mjs';
 import { crewCacheFrom, crewSkillBonus, crewSlotRole } from '../../rules/crew.mjs';
 import { resetModifiers, ownedItems, engineItems, assignItemDerived, assignHealth, rewriteHealthPointsEdit } from './_derive-wiring.mjs';
 
-const DERIVED_ITEM_TYPES = new Set(['weapon']);
+const DERIVED_ITEM_TYPES = new Set(['attack']);
 
 /**
  * A crew actor's roll-time cache (R20 crewPayload, read live instead of

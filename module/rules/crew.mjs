@@ -3,7 +3,7 @@
 // No Foundry globals — see foundry/module/rules/ conventions.
 
 import { CREW_ROLES } from '../config.mjs';
-import { checkTypeLabel, idOf, isAttackSpell, isPassiveCheck } from './items.mjs';
+import { checkTypeLabel, idOf, isPassiveCheck } from './items.mjs';
 import { signedFormula, mobToHit } from './combat.mjs';
 import { joinNotes } from './card.mjs';
 
@@ -14,7 +14,7 @@ import { joinNotes } from './card.mjs';
 // driverOf (VehicleModel#crewMember / #resolveDriver read the crew actor
 // directly), refreshCrewCards (crew rows read the live actor, sheet-rows
 // crewRows) and the roll workers (DCCActor#rollCrewSkill / #rollCrewAttack /
-// #rollWeapon).
+// #rollAttack).
 
 // A cached skill by NAME (case-insensitive); untrained -> the cached stat
 // mod for `statKey` with rank 0. No cache at all -> +0 untrained.
@@ -61,8 +61,7 @@ const num = (v) => (Number.isFinite(+v) ? +v : 0);
  * The crew cache (R20 crewPayload): `{ statModifiers, skills, attacks }`.
  * - skills: skills then spells (R20 spells are skill rows),
  *   `{ id, name, stat, bonus, checkType, opposedStat, description }`
- * - attacks: weapons then attack-enabled spells, `{ id, name, toHit, die, damageBase, damageType }`;
- *   a spell's die / type come from `system.attack`
+ * - attacks: canonical Attack Items, `{ id, name, toHit, die, damageBase, damageType }`
  * `items` are plain `{ id, type, name, system }` with `system.derived`.
  */
 export const crewCacheFrom = ({ statModifiers = {}, items = [] } = {}) => {
@@ -77,10 +76,17 @@ export const crewCacheFrom = ({ statModifiers = {}, items = [] } = {}) => {
     opposedStat: i.system?.opposedStat ?? '',
     description: i.system?.description ?? '',
   }));
-  const attacks = [...of('weapon'), ...of('spell').filter(isAttackSpell)].map((i) => {
-    const src = i.type === 'spell' ? (i.system.attack ?? {}) : (i.system ?? {});
+  const attacks = of('attack').map((i) => {
+    const src = i.system ?? {};
     const d = i.system?.derived ?? {};
-    return { id: idOf(i), name: i.name, toHit: num(d.toHit), die: src.die ?? '', damageBase: num(d.damageBase), damageType: src.damageType ?? '' };
+    return {
+      id: idOf(i),
+      name: i.name,
+      toHit: num(d.toHit),
+      die: d.damageDice ?? src.die ?? '',
+      damageBase: num(d.damageBase),
+      damageType: src.damageType ?? '',
+    };
   });
   return { statModifiers: { ...statModifiers }, skills, attacks };
 };

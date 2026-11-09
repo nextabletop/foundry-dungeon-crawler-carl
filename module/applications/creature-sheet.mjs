@@ -74,7 +74,7 @@ export default class DCCCreatureSheet extends DCCActorSheetBase {
   }
 
   /**
-   * Item and buff lists: `attacks` (weapons + attack-enabled spells),
+   * Item and buff lists: canonical `attacks`,
    * `skills`, `spells`, actor-level `buffs`, and the check-type choices.
    */
   _prepareItemLists() {

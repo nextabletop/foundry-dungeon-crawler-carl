@@ -11,6 +11,7 @@ const { default: DCCActor } = await import('../../module/documents/actor.mjs');
 const makeActor = (system = {}) => {
   const actor = new DCCActor({ type: 'pc', name: 'Carl', system: { mana: { value: 5, max: 10 }, autoEnableCast: true, ...system } });
   actor.update = vi.fn(async () => actor);
+  actor.items = { contents: [] };
   return actor;
 };
 let nextId = 0;
@@ -23,7 +24,12 @@ const makeItem = (type, name, system = {}, derived = {}) => {
 beforeEach(() => postCard.mockClear());
 
 /** Owned item: parented to `actor`. */
-const own = (actor, item) => Object.assign(item, { parent: actor });
+const own = (actor, item) => {
+  item.parent = actor;
+  actor.items ??= { contents: [] };
+  if (!actor.items.contents.includes(item)) actor.items.contents.push(item);
+  return item;
+};
 
 describe('rollSkill', () => {
   it('rolls 1d20 + skillBonus tagged with the check type', async () => {
@@ -101,38 +107,50 @@ describe('rollSkill', () => {
   });
 });
 
-describe('rollWeapon', () => {
+describe('rollAttack', () => {
   it('to-hit: 1d20 + toHit', async () => {
     const actor = makeActor();
-    await actor.rollWeapon(own(actor, makeItem('weapon', 'Dagger', { die: '1d4', damageType: 'piercing' }, { toHit: 4, damageBase: 0 })), 'toHit');
+    await actor.rollAttack(own(actor, makeItem('attack', 'Dagger', { die: '1d4', damageType: 'piercing' }, { toHit: 4, damageBase: 0 })), 'toHit');
     const [, fields, formulas] = postCard.mock.calls[0];
     expect(fields).toEqual({ name: 'Dagger', tag: 'DCC.Roll.ToHit' });
     expect(formulas).toEqual({ roll: '1d20 + 4' });
   });
   it('damage: die + damageBase with the damage type', async () => {
     const actor = makeActor();
-    await actor.rollWeapon(own(actor, makeItem('weapon', 'Dagger', { die: '1d4', damageType: 'piercing' }, { toHit: 4, damageBase: 2 })), 'damage');
+    await actor.rollAttack(own(actor, makeItem('attack', 'Dagger', { die: '1d4', damageType: 'piercing' }, { toHit: 4, damageBase: 2, damageDice: '1d4' })), 'damage');
     const [, fields, formulas] = postCard.mock.calls[0];
     expect(fields).toEqual({ name: 'Dagger', tag: 'DCC.Roll.Damage', type: 'piercing' });
     expect(formulas).toEqual({ damage: '1d4 + 2' });
   });
   it('damage with a blank die rolls damageBase alone', async () => {
     const actor = makeActor();
-    await actor.rollWeapon(own(actor, makeItem('weapon', 'Punch', { die: '', damageType: '' }, { damageBase: 3 })), 'damage');
+    await actor.rollAttack(own(actor, makeItem('attack', 'Punch', { die: '', damageType: '' }, { damageBase: 3, damageDice: '' })), 'damage');
     expect(postCard.mock.calls[0][2]).toEqual({ damage: '3' });
   });
-  it('spell attack: damage uses attack.die / attack.damageType', async () => {
-    const spell = makeItem('spell', 'Firebolt', { attack: { enabled: true, die: '2d6', damageType: 'fire' } }, { damageBase: 1, skillBonus: 2, manaCostEffective: 1 });
+  it('damage includes roll-time modifier dice from derivation', async () => {
     const actor = makeActor();
-    await actor.rollWeapon(own(actor, spell), 'damage');
+    const item = makeItem('attack', 'Dagger', { die: '1d4' }, {
+      damageBase: 2, damageModifierDice: '+1d6', damageDice: '1d4+1d6',
+    });
+    await actor.rollAttack(own(actor, item), 'damage');
+    expect(postCard.mock.calls[0][2]).toEqual({ damage: '1d4+1d6 + 2' });
+  });
+  it('a Spell-linked Attack rolls its own damage fields', async () => {
+    const attack = makeItem('attack', 'Firebolt', { die: '2d6', damageType: 'fire' }, { damageBase: 1, damageDice: '2d6' });
+    const actor = makeActor();
+    await actor.rollAttack(own(actor, attack), 'damage');
     const [, fields, formulas] = postCard.mock.calls[0];
     expect(fields.type).toBe('fire');
     expect(formulas).toEqual({ damage: '2d6 + 1' });
   });
-  it('spell attack: to-hit casts the spell (dual entry)', async () => {
+  it('a Spell-linked Attack to-hit casts the source Spell (dual entry)', async () => {
     const actor = makeActor();
-    const spell = makeItem('spell', 'Firebolt', { enabled: true, attack: { enabled: true, die: '2d6' } }, { toHit: 9, skillBonus: 2, manaCostEffective: 1 });
-    await actor.rollWeapon(own(actor, spell), 'toHit');
+    const spell = own(actor, makeItem('spell', 'Firebolt', { enabled: true }, { skillBonus: 2, manaCostEffective: 1 }));
+    const attack = own(actor, makeItem('attack', 'Firebolt Attack', {
+      linkedItemIds: [spell.id],
+    }, { toHit: 9 }));
+    spell.system.linkedItemIds = [attack.id];
+    await actor.rollAttack(attack, 'toHit');
     expect(postCard.mock.calls[0][2]).toEqual({ roll: '1d20 + 2' });
     expect(actor.update).toHaveBeenCalledWith({ 'system.mana.value': 4 });
   });
@@ -212,10 +230,13 @@ describe('roll options and ownership', () => {
   it('forwards options (speaker) to postCard for every entry point, incl. spell reroutes', async () => {
     const actor = makeActor();
     await actor.rollSkill(own(actor, makeItem('skill', 'K', {}, { skillBonus: 1 })), { speaker });
-    await actor.rollWeapon(own(actor, makeItem('weapon', 'W', { die: '1d4' }, { toHit: 1, damageBase: 0 })), 'toHit', { speaker });
-    await actor.rollWeapon(own(actor, makeItem('weapon', 'W', { die: '1d4' }, { toHit: 1, damageBase: 0 })), 'damage', { speaker });
+    await actor.rollAttack(own(actor, makeItem('attack', 'W', { die: '1d4' }, { toHit: 1, damageBase: 0 })), 'toHit', { speaker });
+    await actor.rollAttack(own(actor, makeItem('attack', 'W', { die: '1d4' }, { toHit: 1, damageBase: 0, damageDice: '1d4' })), 'damage', { speaker });
     await actor.rollSkill(own(actor, makeItem('spell', 'S', { enabled: true }, { skillBonus: 1, manaCostEffective: 0 })), { speaker });
-    await actor.rollWeapon(own(actor, makeItem('spell', 'S', { enabled: true }, { skillBonus: 1, manaCostEffective: 0 })), 'toHit', { speaker });
+    const spell = own(actor, makeItem('spell', 'S', { enabled: true }, { skillBonus: 1, manaCostEffective: 0 }));
+    const attack = own(actor, makeItem('attack', 'S Attack', { linkedItemIds: [spell.id] }, { toHit: 1 }));
+    spell.system.linkedItemIds = [attack.id];
+    await actor.rollAttack(attack, 'toHit', { speaker });
     expect(postCard).toHaveBeenCalledTimes(5);
     for (const call of postCard.mock.calls) expect(call[3]).toEqual({ speaker });
   });
@@ -223,7 +244,7 @@ describe('roll options and ownership', () => {
     const actor = makeActor();
     const other = makeActor();
     await actor.rollSkill(own(other, makeItem('skill', 'K', {}, { skillBonus: 1 })));
-    await actor.rollWeapon(own(other, makeItem('weapon', 'W', {}, { toHit: 1 })));
+    await actor.rollAttack(own(other, makeItem('attack', 'W', {}, { toHit: 1 })));
     await actor.castSpell(own(other, makeItem('spell', 'S', {}, { skillBonus: 1 })));
     await actor.rollSkill(makeItem('skill', 'Unowned', {}, { skillBonus: 1 }));
     expect(postCard).not.toHaveBeenCalled();
@@ -311,9 +332,9 @@ describe('useHotlistItem', () => {
     expect(postCard.mock.calls[0][1]).toMatchObject({ name: 'Zap', cost: 3 });
     expect(actor.update).toHaveBeenCalledWith({ 'system.mana.value': 2 });
   });
-  it('weapon -> to-hit roll', async () => {
+  it('Attack -> to-hit roll', async () => {
     const actor = makeActor();
-    await actor.useHotlistItem(own(actor, makeItem('weapon', 'Dagger', { die: '1d4' }, { toHit: 4, damageBase: 0 })));
+    await actor.useHotlistItem(own(actor, makeItem('attack', 'Dagger', { die: '1d4' }, { toHit: 4, damageBase: 0 })));
     expect(postCard.mock.calls[0][1]).toEqual({ name: 'Dagger', tag: 'DCC.Roll.ToHit' });
     expect(postCard.mock.calls[0][2]).toEqual({ roll: '1d20 + 4' });
   });
@@ -337,7 +358,7 @@ describe('useHotlistItem', () => {
   });
   it('forwards options for rolls too', async () => {
     const actor = makeActor();
-    await actor.useHotlistItem(own(actor, makeItem('weapon', 'W', {}, { toHit: 1 })), { speaker });
+    await actor.useHotlistItem(own(actor, makeItem('attack', 'W', {}, { toHit: 1 })), { speaker });
     expect(postCard.mock.calls[0][3]).toEqual({ speaker });
   });
   it('an item not owned by this actor -> null, nothing posted', async () => {

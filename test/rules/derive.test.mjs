@@ -12,9 +12,9 @@ const pc = (over = {}) => ({
   stats: stats(), manaStat: 'intelligence', modifiers: [], items: [], ...over,
 });
 
-const weapon = (id, name, system = {}) => ({
-  id, type: 'weapon', name,
-  system: { stat: 'strength', rank: 0, skill: '', die: '1d6', damageBonus: 0, damageType: 'slashing', ...system },
+const attack = (id, name, system = {}) => ({
+  id, type: 'attack', name,
+  system: { stat: 'strength', rank: 0, die: '1d6', damageBonus: 0, damageType: 'slashing', linkedItemIds: [], ...system },
 });
 const skill = (id, name, system = {}) => ({
   id, type: 'skill', name, system: { stat: 'dexterity', rank: 0, enabled: true, class: '', ...system },
@@ -24,7 +24,6 @@ const spell = (id, name, system = {}) => ({
   system: {
     stat: 'intelligence', rank: 0, enabled: true, class: '', manaCost: 0,
     ...system,
-    attack: { enabled: false, die: '', damageBonus: 0, damageType: '', ...(system.attack || {}) },
   },
 });
 
@@ -104,14 +103,14 @@ describe('deriveCreature — stats, health, defenses', () => {
   });
 });
 
-describe('deriveCreature — weapons', () => {
-  const base = () => pc({ stats: stats({ dexterity: 10 }), items: [weapon('w1', 'Dagger', { stat: 'dexterity', rank: 2, die: '1d4', damageBonus: 1, damageType: 'piercing' })] });
+describe('deriveCreature — Attacks', () => {
+  const base = () => pc({ stats: stats({ dexterity: 10 }), items: [attack('w1', 'Dagger', { stat: 'dexterity', rank: 2, die: '1d4', damageBonus: 1, damageType: 'piercing' })] });
 
   it('toHit = dexterityModifier 4 + rank 2 = 6; damage label and mob target', () => {
     const d = deriveCreature(base());
     expect(d.items.w1.toHit).toBe(6);
     expect(d.items.w1.damageBase).toBe(1);
-    expect(d.items.w1.damageLabel).toBe('1d4 +1 piercing');
+    expect(d.items.w1.damageLabel).toBe('1d4+1 piercing');
     expect(d.items.w1.mobToHit).toBe(10 + 6 + 1);
   });
 
@@ -134,27 +133,39 @@ describe('deriveCreature — weapons', () => {
     i.modifiers = [{ target: 'group:attacks:damage', value: '2' }];
     const d = deriveCreature(i);
     expect(d.items.w1.damageBase).toBe(3);
-    expect(d.items.w1.damageLabel).toBe('1d4 +3 piercing');
+    expect(d.items.w1.damageLabel).toBe('1d4+3 piercing');
   });
 
-  it('weapon linked to skill Knives (rank 3) uses 3; skill rank modifiers do not carry over', () => {
+  it('dice damage modifiers remain roll-time dice instead of becoming a flat bonus', () => {
+    const i = base();
+    i.modifiers = [{ target: 'group:attacks:damage', value: '+1d6' }];
+    const d = deriveCreature(i);
+    expect(d.items.w1).toMatchObject({
+      damageBase: 1,
+      damageModifierDice: '+1d6',
+      damageDice: '1d4+1d6',
+      damageLabel: '1d4+1d6+1 piercing',
+    });
+  });
+
+  it('an Attack linked to Knives uses its effective Rank through stable IDs', () => {
     const items = [
-      weapon('w1', 'Dagger', { stat: 'dexterity', rank: 0, skill: 'Knives' }),
-      skill('s1', 'Knives', { stat: 'dexterity', rank: 3 }),
+      attack('w1', 'Dagger', { stat: 'dexterity', rank: 0, linkedItemIds: ['s1'] }),
+      skill('s1', 'Knives', { stat: 'dexterity', rank: 3, linkedItemIds: ['w1'] }),
     ];
     const d = deriveCreature(pc({ items }));
     expect(d.items.w1.toHit).toBe(1 + 3);
     const d2 = deriveCreature(pc({ items, modifiers: [{ target: 'group:skills:rank', value: '1' }] }));
     expect(d2.items.s1.rankEffective).toBe(4);
-    expect(d2.items.w1.toHit).toBe(1 + 3);
+    expect(d2.items.w1.toHit).toBe(1 + 4);
   });
 
   it('exposes the rank the attack used (linked skill base rank, else its own)', () => {
     const items = [
-      weapon('w1', 'Dagger', { stat: 'dexterity', rank: 0, skill: 'Knives' }),
-      skill('s1', 'Knives', { stat: 'dexterity', rank: 3 }),
-      weapon('w2', 'Club', { rank: 2 }),
-      weapon('w3', 'Stick', { rank: 2, skill: 'Ghost' }),
+      attack('w1', 'Dagger', { stat: 'dexterity', rank: 0, linkedItemIds: ['s1'] }),
+      skill('s1', 'Knives', { stat: 'dexterity', rank: 3, linkedItemIds: ['w1'] }),
+      attack('w2', 'Club', { rank: 2 }),
+      attack('w3', 'Stick', { rank: 2, linkedItemIds: ['missing'] }),
     ];
     const d = deriveCreature(pc({ items }));
     expect(d.items.w1.rank).toBe(3);
@@ -162,20 +173,25 @@ describe('deriveCreature — weapons', () => {
     expect(d.items.w3.rank).toBe(2);
   });
 
-  it('weapon linked to a missing skill falls back to its own rank', () => {
-    const d = deriveCreature(pc({ items: [weapon('w1', 'Club', { rank: 2, skill: 'Ghost' })] }));
+  it('an Attack with a stale source link falls back to its own Rank', () => {
+    const d = deriveCreature(pc({ items: [attack('w1', 'Club', { rank: 2, linkedItemIds: ['missing'] })] }));
     expect(d.items.w1.toHit).toBe(3);
   });
 
-  it('attack-enabled spell gets group:attacks:to_hit +1', () => {
-    const items = [spell('sp1', 'Fireball', { rank: 2, attack: { enabled: true, die: '2d6', damageBonus: 1, damageType: 'fire' } })];
+  it('a Spell-linked Attack gets group:attacks:to_hit and linked effective Rank', () => {
+    const items = [
+      spell('sp1', 'Fireball', { rank: 2, linkedItemIds: ['a1'] }),
+      attack('a1', 'Fireball Attack', {
+        stat: 'intelligence', linkedItemIds: ['sp1'], die: '2d6', damageBonus: 1, damageType: 'fire',
+      }),
+    ];
     const d = deriveCreature(pc({ items, modifiers: [{ target: 'group:attacks:to_hit', value: '1' }] }));
-    expect(d.items.sp1.toHit).toBe(1 + 2 + 1);
-    expect(d.items.sp1.damageBase).toBe(1);
-    expect(d.items.sp1.damageLabel).toBe('2d6 +1 fire');
+    expect(d.items.a1.toHit).toBe(1 + 2 + 1);
+    expect(d.items.a1.damageBase).toBe(1);
+    expect(d.items.a1.damageLabel).toBe('2d6+1 fire');
   });
 
-  it('a spell without attack.enabled has no attack keys', () => {
+  it('a Spell has no embedded attack-derived keys', () => {
     const d = deriveCreature(pc({ items: [spell('sp1', 'Heal', { rank: 1 })] }));
     expect(d.items.sp1.toHit).toBeUndefined();
     expect(d.items.sp1.damageLabel).toBeUndefined();
@@ -235,11 +251,11 @@ describe('deriveVehicle', () => {
     expect(deriveVehicle(veh({ constitutionModifier: 3 })).healthPoints.max).toBe(12);
   });
 
-  it('vehicle weapon rank 2 -> toHit 2 (no stat mod)', () => {
-    const d = deriveVehicle(veh({ items: [weapon('w1', 'Gun', { stat: 'dexterity', rank: 2, die: '2d8', damageBonus: 0, damageType: 'piercing' })] }));
+  it('vehicle Attack rank 2 -> toHit 2 (no stat mod)', () => {
+    const d = deriveVehicle(veh({ items: [attack('w1', 'Gun', { stat: 'dexterity', rank: 2, die: '2d8', damageBonus: 0, damageType: 'piercing' })] }));
     expect(d.items.w1.toHit).toBe(2);
     expect(d.items.w1.damageBase).toBe(0);
-    expect(d.items.w1.damageLabel).toBe('2d8 +0 piercing');
+    expect(d.items.w1.damageLabel).toBe('2d8 piercing');
   });
 
   it('a mount gets step 10', () => {
@@ -290,23 +306,23 @@ describe('deriveCreature — review hardening', () => {
   it("a prototype-key stat ('constructor') reads stat mod 0, not a function", () => {
     const d = deriveCreature(pc({ items: [
       skill('s1', 'Odd', { stat: 'constructor', rank: 2 }),
-      weapon('w1', 'Odd Stick', { stat: '__proto__', rank: 1 }),
+      attack('w1', 'Odd Stick', { stat: '__proto__', rank: 1 }),
     ] }));
     expect(d.items.s1.skillBonus).toBe(2);
     expect(d.items.w1.toHit).toBe(1);
     expect(allFinite(d)).toBe(true);
   });
 
-  it('duplicate names: item:K:rank hits every K; a weapon linking to K uses the first K in list order', () => {
+  it('duplicate skill names all receive modifiers while a stable link selects one source', () => {
     const items = [
-      skill('s1', 'K', { rank: 2 }),
+      skill('s1', 'K', { rank: 2, linkedItemIds: ['w1'] }),
       skill('s2', 'k ', { rank: 7 }),
-      weapon('w1', 'Blade', { stat: 'strength', rank: 0, skill: 'K' }),
+      attack('w1', 'Blade', { stat: 'strength', rank: 0, linkedItemIds: ['s1'] }),
     ];
     const d = deriveCreature(pc({ items, modifiers: [{ target: 'item:K:rank', value: '1' }] }));
     expect(d.items.s1.rankEffective).toBe(3);
     expect(d.items.s2.rankEffective).toBe(8);
-    expect(d.items.w1.toHit).toBe(1 + 2);
+    expect(d.items.w1.toHit).toBe(1 + 3);
   });
 });
 
@@ -340,7 +356,7 @@ describe('deriveCreature — garbage in', () => {
     const d = deriveCreature(pc({
       level: 'x', floor: NaN, healthBar: '7', armor: '3', moveBase: 'abc', stepBase: NaN,
       stats: stats({ strength: '20', dexterity: NaN }),
-      items: [weapon('w1', 'W', { rank: '2', damageBonus: 'z' }), spell('sp1', 'S', { rank: NaN, manaCost: '4' })],
+      items: [attack('w1', 'W', { rank: '2', damageBonus: 'z' }), spell('sp1', 'S', { rank: NaN, manaCost: '4' })],
     }));
     check(d);
     expect(d.healthBar).toBe(7);
@@ -378,15 +394,15 @@ describe('deriveCreature — garbage in', () => {
 
   it('accepts a Map (e.g. an EmbeddedCollection) of items, same result as the array', () => {
     const list = [
-      weapon('w1', 'Dagger', { stat: 'dexterity', rank: 0, skill: 'Knives' }),
-      skill('s1', 'Knives', { rank: 3 }),
+      attack('w1', 'Dagger', { stat: 'dexterity', rank: 0, linkedItemIds: ['s1'] }),
+      skill('s1', 'Knives', { rank: 3, linkedItemIds: ['w1'] }),
       spell('sp1', 'Fireball', { manaCost: 10 }),
     ];
     const modifiers = [{ target: 'item:Fireball:mana_cost', value: '-50%' }];
     const fromMap = deriveCreature(pc({ items: new Map(list.map((it) => [it.id, it])), modifiers: new Set(modifiers) }));
     expect(fromMap).toEqual(deriveCreature(pc({ items: list, modifiers })));
     expect(fromMap.items.w1.toHit).toBe(1 + 3);
-    const vMap = deriveVehicle({ size: 4, items: new Map([['w1', weapon('w1', 'Gun', { rank: 2 })]]) });
+    const vMap = deriveVehicle({ size: 4, items: new Map([['w1', attack('w1', 'Gun', { rank: 2 })]]) });
     expect(vMap.items.w1.toHit).toBe(2);
   });
 
@@ -421,8 +437,8 @@ describe('deriveVehicle — garbage in', () => {
   it('NaN and string numbers; null items/modifiers; gear and id-less items skipped', () => {
     const d = deriveVehicle({
       kind: 'vehicle', size: '3', speed: 'fast', constitutionModifier: 'x', armor: NaN, healthBar: '2',
-      items: [null, { id: 'g1', type: 'gear', name: 'Tarp', system: {} }, { type: 'weapon', name: 'NoId', system: {} },
-        weapon('w1', 'Gun', { rank: 'z' })],
+      items: [null, { id: 'g1', type: 'gear', name: 'Tarp', system: {} }, { type: 'attack', name: 'NoId', system: {} },
+        attack('w1', 'Gun', { rank: 'z' })],
       modifiers: [null, { target: 'damage_resistance', value: '1' }],
     });
     check(d);

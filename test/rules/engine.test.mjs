@@ -57,6 +57,10 @@ describe('parseModifierValue (text -> {kind, value})', () => {
   it('trims whitespace', () => {
     expect(parseModifierValue(' 5 ')).toEqual({ kind: 'flat', value: 5 });
   });
+  it('normalizes signed dice as a roll-time modifier', () => {
+    expect(parseModifierValue('1D4')).toEqual({ kind: 'dice', value: 0, dice: '+1d4' });
+    expect(parseModifierValue('- 2d6')).toEqual({ kind: 'dice', value: 0, dice: '-2d6' });
+  });
   it('unparseable body degrades to 0, kind preserved', () => {
     expect(parseModifierValue('  ')).toEqual({ kind: 'flat', value: 0 });
     expect(parseModifierValue('abc')).toEqual({ kind: 'flat', value: 0 });

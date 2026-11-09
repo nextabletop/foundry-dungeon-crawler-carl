@@ -19,13 +19,16 @@ describe('attackToHit', () => {
 
 describe('damageLabel (value-bearing label)', () => {
   it('formats die + signed flat + type', () => {
-    expect(damageLabel('2d8', 4, 'slashing')).toBe('2d8 +4 slashing');
+    expect(damageLabel('2d8', 4, 'slashing')).toBe('2d8+4 slashing');
   });
   it('shows negative flats and omits an empty type', () => {
-    expect(damageLabel('1d6', -2, '')).toBe('1d6 -2');
+    expect(damageLabel('1d6', -2, '')).toBe('1d6-2');
   });
-  it('still shows +0', () => {
-    expect(damageLabel('1d4', 0, 'bludgeoning')).toBe('1d4 +0 bludgeoning');
+  it('omits a zero modifier', () => {
+    expect(damageLabel('1d4', 0, 'bludgeoning')).toBe('1d4 bludgeoning');
+  });
+  it('labels an attack with no die and no modifier as no damage', () => {
+    expect(damageLabel('', 0, '')).toBe('No damage');
   });
 });
 
@@ -87,6 +90,7 @@ describe('signedFormula / checkFormula / damageFormula', () => {
     expect(damageFormula('1d6', -2)).toBe('1d6 - 2');
     expect(damageFormula('', 5)).toBe('5');
     expect(damageFormula(undefined, 0)).toBe('0');
+    expect(damageFormula('+1d4', 0)).toBe('0+1d4');
   });
 });
 

@@ -12,6 +12,7 @@ import { ADVANCING_TYPES, UNDO_MAX, LEVEL_UP_STAT_POINTS } from '../config.mjs';
 import { gmLinkFor } from '../gm-link.mjs';
 import { floorEndBlocked } from '../rules/gm-screen.mjs';
 import { checkTypeLabel, isPassiveCheck } from '../rules/items.mjs';
+import { attackSource } from '../rules/item-links.mjs';
 
 const checkTypeTag = system => checkTypeLabel(system?.checkType, system?.opposedStat, key => game.i18n.localize(key));
 
@@ -149,28 +150,26 @@ export default class DCCActor extends foundry.documents.Actor {
   }
 
   /**
-   * Attack roll from a weapon or an attack-enabled spell. To-hit and damage
-   * are separate rolls. A spell's to-hit casts the spell (R20 dual entry);
-   * its damage uses the spell's attack die / type.
-   * @param {Item} item
+   * Roll a canonical Attack Item. To-hit and damage are separate. A linked
+   * Spell source makes To-Hit invoke the same cast path as that Spell.
+   * @param {Item} item - an owned Attack
    * @param {'toHit'|'damage'} [which='toHit']
    * @param {object} [options] - postCard options
    * @returns {Promise<object|null>}
    */
-  async rollWeapon(item, which = 'toHit', options = {}) {
-    if (!this.#owns(item)) return null;
+  async rollAttack(item, which = 'toHit', options = {}) {
+    if (!this.#owns(item) || item.type !== 'attack') return null;
     if ((this.type === 'vehicle') && this.system.rollsWithGunner(which)) {
       return this.#vehicleGuard(() => rollVehicleWeapon(this, item, options));
     }
-    const isSpell = item.type === 'spell';
-    if (isSpell && (which !== 'damage')) return this.castSpell(item, options);
+    const source = attackSource(item, this.items);
+    if ((source?.type === 'spell') && (which !== 'damage')) return this.castSpell(source, options);
     const d = item.system?.derived ?? {};
     if (which === 'damage') {
       if (!Number.isFinite(d.damageBase)) return null;
-      const attack = isSpell ? (item.system.attack ?? {}) : item.system;
       return postCard(this, {
-        name: item.name, tag: game.i18n.localize('DCC.Roll.Damage'), type: attack.damageType ?? '',
-      }, { damage: damageFormula(attack.die, d.damageBase) }, options);
+        name: item.name, tag: game.i18n.localize('DCC.Roll.Damage'), type: item.system.damageType ?? '',
+      }, { damage: damageFormula(d.damageDice, d.damageBase) }, options);
     }
     if (!Number.isFinite(d.toHit)) return null;
     return postCard(this, { name: item.name, tag: game.i18n.localize('DCC.Roll.ToHit') }, { roll: checkFormula(d.toHit) }, options);
@@ -178,7 +177,7 @@ export default class DCCActor extends foundry.documents.Actor {
 
   /**
    * Use an item from the hotlist (also the entry point for macros / crew):
-   * spell -> castSpell, weapon -> to-hit, skill -> skill check, gear -> a
+   * spell -> castSpell, Attack -> to-hit, skill -> skill check, gear/weapon -> a
    * roll-less card with the item's description as plain text. Not gated on
    * `onHotlist`, so any owned item can be "used".
    * @param {Item} item - an item owned by this actor
@@ -189,11 +188,12 @@ export default class DCCActor extends foundry.documents.Actor {
     if (!this.#owns(item)) return null;
     switch (item.type) {
       case 'spell': return this.castSpell(item, options);
-      case 'weapon': return this.rollWeapon(item, 'toHit', options);
+      case 'attack': return this.rollAttack(item, 'toHit', options);
       case 'skill': return this.rollSkill(item, options);
+      case 'weapon':
       case 'gear': return postCard(this, {
         name: item.name,
-        tag: game.i18n.localize('TYPES.Item.gear'),
+        tag: game.i18n.localize(`TYPES.Item.${item.type}`),
         note: htmlToText(item.system?.description),
       }, {}, options);
       default: return null;
@@ -250,7 +250,7 @@ export default class DCCActor extends foundry.documents.Actor {
   // points (sheet, macros) and the per-vehicle re-entry guards.
 
   /**
-   * Re-entry guard: one vehicle card (Drive / Ram / Race, a vehicle weapon,
+   * Re-entry guard: one vehicle card (Drive / Ram / Race, a vehicle Attack,
    * a crew roll) in flight per vehicle, so a double-click posts one card
    * (same pattern as #casting).
    */
@@ -284,11 +284,11 @@ export default class DCCActor extends foundry.documents.Actor {
   }
 
   /**
-   * Roll a crew member's attack (weapon or attack spell) from this vehicle:
+   * Roll a crew member's canonical Attack from this vehicle:
    * to-hit with the aboard penalty (the Driver / Rider at Disadvantage) plus
    * damage. Posted as the crew actor.
    * @param {Actor} crew - a PC / Mob aboard this vehicle (this user: Observer or better)
-   * @param {string} itemId - the crew actor's weapon / attack-spell id
+   * @param {string} itemId - the crew actor's Attack Item id
    * @param {object} [options] - postCard options
    * @returns {Promise<object|null>}
    */

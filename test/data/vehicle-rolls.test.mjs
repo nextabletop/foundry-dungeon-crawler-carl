@@ -178,7 +178,7 @@ const crewActor = ({ uuid = 'Actor.carl', type = 'pc', name = 'Carl', modifiers 
 });
 const skillItem = (id, name, bonus, stat = 'dexterity') => ({ id, type: 'skill', name, system: { stat, derived: { skillBonus: bonus } } });
 const weaponItem = (id, name, toHit, die = '1d8', damageBase = 2) => ({
-  id, type: 'weapon', name, system: { stat: 'strength', die, damageType: 'piercing', derived: { toHit, damageBase } },
+  id, type: 'attack', name, system: { stat: 'strength', die, damageType: 'piercing', derived: { toHit, damageBase, damageDice: die } },
 });
 
 describe('crew resolution (VehicleModel)', () => {
@@ -245,7 +245,7 @@ describe('crew resolution (VehicleModel)', () => {
       withNames();
       world['Actor.carl'] = crewActor({ players: 0 });
       const a = vehicle({ crew: [{ uuid: 'Actor.carl', role: 'gunner1' }] });
-      await a.rollWeapon({ parent: a, type: 'weapon', name: 'Turret', system: { gunnerSlot: '1', skillName: 'Guns', stat: 'dexterity', derived: { toHit: 1 } } });
+      await a.rollAttack({ parent: a, type: 'attack', name: 'Turret', system: { gunnerSlot: '1', skillName: 'Guns', stat: 'dexterity', derived: { toHit: 1 } } });
       expect(postCard.mock.calls[0][1].note).toBe('DCC.Crew.Card.GunnerUntrained|DCC.Crew.Unknown');
     });
     it('crew skill cards (posted as the crew actor) keep the real name', async () => {
@@ -303,15 +303,15 @@ describe('crew resolution (VehicleModel)', () => {
     expect(options.privacyOf).toBe(world['Actor.gob']);
   });
 
-  describe('vehicle weapon to-hit (rollWeapon on a vehicle)', () => {
+  describe('vehicle Attack to-hit', () => {
     const turret = (a, over = {}) => ({
-      parent: a, type: 'weapon', name: 'Turret',
-      system: { gunnerSlot: '1', skillName: 'Guns', stat: 'dexterity', die: '2d6', derived: { toHit: 1, damageBase: 0 }, ...over },
+      parent: a, type: 'attack', name: 'Turret',
+      system: { gunnerSlot: '1', skillName: 'Guns', stat: 'dexterity', die: '2d6', derived: { toHit: 1, damageBase: 0, damageDice: '2d6' }, ...over },
     });
     it('the gunner skill bonus + the weapon to-hit', async () => {
       world['Actor.carl'] = crewActor({ items: [skillItem('s1', 'Guns', 5)] });
       const a = vehicle({ crew: [{ uuid: 'Actor.carl', role: 'gunner1' }] });
-      await a.rollWeapon(turret(a));
+      await a.rollAttack(turret(a));
       const [poster, fields, formulas, options] = postCard.mock.calls[0];
       expect(poster).toBe(a);
       expect(formulas.roll).toBe('1d20 + 6');
@@ -320,7 +320,7 @@ describe('crew resolution (VehicleModel)', () => {
     });
     it('no gunner: 1d20 + weapon to-hit', async () => {
       const a = vehicle();
-      await a.rollWeapon(turret(a, { gunnerSlot: '' }));
+      await a.rollAttack(turret(a, { gunnerSlot: '' }));
       const [, fields, formulas, options] = postCard.mock.calls[0];
       expect(formulas.roll).toBe('1d20 + 1');
       expect(fields.note).toBe('DCC.Crew.Card.NoGunner');
@@ -329,13 +329,13 @@ describe('crew resolution (VehicleModel)', () => {
     it('a mount attacks on its own (plain derived to-hit)', async () => {
       world['Actor.carl'] = crewActor({ items: [skillItem('s1', 'Guns', 5)] });
       const a = vehicle({ kind: 'mount', crew: [{ uuid: 'Actor.carl', role: 'gunner1' }] });
-      await a.rollWeapon(turret(a));
+      await a.rollAttack(turret(a));
       expect(postCard.mock.calls[0][2].roll).toBe('1d20 + 1');
       expect(foundry.utils.fromUuidSync).not.toHaveBeenCalled();
     });
     it('damage is the plain weapon damage', async () => {
       const a = vehicle();
-      await a.rollWeapon(turret(a), 'damage');
+      await a.rollAttack(turret(a), 'damage');
       expect(postCard.mock.calls[0][2].damage).toBe('2d6');
     });
   });

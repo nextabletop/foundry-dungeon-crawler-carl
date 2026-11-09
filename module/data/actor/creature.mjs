@@ -3,7 +3,7 @@ import { deriveCreature } from '../../rules/derive.mjs';
 import { int, str, html, pool } from '../_fields.mjs';
 import { resetModifiers, ownedItems, engineItems, assignItemDerived, assignHealth, rewriteHealthPointsEdit } from './_derive-wiring.mjs';
 
-const DERIVED_ITEM_TYPES = new Set(['weapon', 'skill', 'spell']);
+const DERIVED_ITEM_TYPES = new Set(['attack', 'skill', 'spell']);
 
 /**
  * Shared model for creatures (pc + mob).

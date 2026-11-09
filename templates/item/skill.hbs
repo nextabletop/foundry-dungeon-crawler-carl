@@ -22,6 +22,7 @@
     </div>
     <div class="dcc-item-flags">
       {{formGroup systemFields.enabled value=systemSource.enabled rootId=rootId}}
+      {{formGroup systemFields.isAttack value=systemSource.isAttack rootId=rootId}}
       {{#unless (eq systemSource.checkType "passive")}}
       {{formGroup systemFields.mark value=systemSource.mark rootId=rootId}}
       {{/unless}}

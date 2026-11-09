@@ -14,7 +14,8 @@ import { resolveModifiers } from './modifiers.mjs';
 import { clampSlots, healthPointsFromHealthBar, maxHealthPointsFromConstitution } from './health.mjs';
 import { attackToHit, damageLabel, mobToHit, mobEvade } from './combat.mjs';
 import { vehicleMove, cruiseMph } from './vehicle.mjs';
-import { idOf, isAttackSpell, isPassiveCheck, normName } from './items.mjs';
+import { idOf, isPassiveCheck } from './items.mjs';
+import { attackSource } from './item-links.mjs';
 
 // Entry sanitation. Accept any iterable (arrays, Sets, and Foundry's
 // EmbeddedCollection, which extends Map — for a Map, take its values, since
@@ -27,32 +28,26 @@ export const toList = (v) => {
 const cleanModifiers = (modifiers) => toList(modifiers).filter((m) => m && typeof m === 'object');
 const cleanItems = (items) => toList(items).filter((it) => it && idOf(it) != null);
 
-// name -> skill (or spell: R20 spells are skill rows) for weapon linking.
-// First match in list order wins.
-const skillsByName = (items) => {
-  const map = new Map();
-  for (const it of items) {
-    if (it.type !== 'skill' && it.type !== 'spell') continue;
-    const key = normName(it.name);
-    if (key && !map.has(key)) map.set(key, it);
-  }
-  return map;
-};
-
 // One attack row's materialized values (_engine.js:379-395).
 // `rank` is the rank the attack used (a linked skill's base rank, else its own).
 // `itemBonus`/`itemPercent` are this item's resolveModifiers buckets, keyed by
 // the modifier aspect vocabulary (`to_hit`, `damage`); the output is camelCase.
-const attackRow = ({ statModifier, rank, itemBonus, itemPercent, die, damageBonus, damageType, floor }) => {
+const attackRow = ({
+  statModifier, rank, itemBonus, itemPercent, damageModifierDice, die, damageBonus, damageType, floor,
+}) => {
   const toHit = applyModifiers(attackToHit(statModifier, rank, 0), itemBonus.to_hit || 0, itemPercent.to_hit || 0);
   const damageBase = (+damageBonus || 0) + (itemBonus.damage || 0); // damage stays flat
-  return { rank, toHit, damageBase, damageLabel: damageLabel(die, damageBase, damageType), mobToHit: mobToHit(toHit, floor) };
+  const damageDice = `${die || ''}${damageModifierDice || ''}`;
+  return {
+    rank, toHit, damageBase, damageModifierDice, damageDice,
+    damageLabel: damageLabel(damageDice, damageBase, damageType), mobToHit: mobToHit(toHit, floor),
+  };
 };
 
 // Per-item derived values for a creature (_engine.js:369-417). Returns null for
 // item types with nothing to derive (e.g. gear).
 const deriveItemRow = (item, context) => {
-  const { modifierFor, itemBonuses, itemPercents, skills, floor } = context;
+  const { modifierFor, itemBonuses, itemPercents, itemDice, items, floor } = context;
   const id = idOf(item);
   const sys = item.system || {};
   const itemBonus = itemBonuses[id] || {};
@@ -67,19 +62,17 @@ const deriveItemRow = (item, context) => {
     }
   }
 
-  if (item.type === 'weapon') {
-    // A linked skill's BASE rank replaces the weapon's (R20 syncs the base).
-    const linked = skills.get(normName(sys.skill));
-    const rank = linked ? (+linked.system?.rank || 0) : (+sys.rank || 0);
+  if (item.type === 'attack') {
+    const source = attackSource(item, items);
+    const sourceId = idOf(source ?? {});
+    const sourceSystem = source?.system ?? {};
+    const rank = ['skill', 'spell'].includes(source?.type)
+      ? applyModifiers(+sourceSystem.rank || 0, itemBonuses[sourceId]?.rank || 0, itemPercents[sourceId]?.rank || 0)
+      : (+sys.rank || 0);
     Object.assign(row, attackRow({
       statModifier: modifierFor(sys.stat), rank, itemBonus, itemPercent,
+      damageModifierDice: itemDice[id]?.damage || '',
       die: sys.die, damageBonus: sys.damageBonus, damageType: sys.damageType, floor,
-    }));
-  } else if (isAttackSpell(item)) {
-    const attack = sys.attack;
-    Object.assign(row, attackRow({
-      statModifier: modifierFor(sys.stat), rank: +sys.rank || 0, itemBonus, itemPercent,
-      die: attack.die, damageBonus: attack.damageBonus, damageType: attack.damageType, floor,
     }));
   }
 
@@ -113,7 +106,7 @@ const deriveItemRow = (item, context) => {
  *   unresolved: Array<{target:string, reason:string, modifier:object}>
  * }}
  * - `healthBar` is a DISPLAY clamp to [0, healthBarSlots]; do not write it back to source data.
- * - `items` holds only weapon/skill/spell entries; consumers should read
+ * - `items` holds only Attack/Skill/Spell entries; consumers should read
  *   `derived = d.items[id] ?? {}`.
  * - Values are numbers; display labels (sign prefix etc.) are the view layer's job.
  *   `damageLabel` is the one pre-assembled string, as in R20.
@@ -123,7 +116,9 @@ export const deriveCreature = (input = {}) => {
   const floor = +input.floor || 0;
 
   // Resolve modifiers into field and per-item flat/percent buckets.
-  const { bonus, percent, itemBonus, itemPercent, unresolved } = resolveModifiers(cleanModifiers(input.modifiers), items);
+  const {
+    bonus, percent, itemBonus, itemPercent, itemDice, unresolved,
+  } = resolveModifiers(cleanModifiers(input.modifiers), items);
 
   // Stats: base -> enhanced -> stat modifier.
   const stats = {};
@@ -154,8 +149,10 @@ export const deriveCreature = (input = {}) => {
   const move = applyModifiers(+input.moveBase || 0, bonus.move || 0, percent.move || 0);
   const step = applyModifiers(+input.stepBase || 0, bonus.step || 0, percent.step || 0);
 
-  // Per-item values: skills/spells, then weapons and attack spells.
-  const context = { modifierFor, itemBonuses: itemBonus, itemPercents: itemPercent, skills: skillsByName(items), floor };
+  // Per-item values: skills/spells, then canonical Attacks.
+  const context = {
+    modifierFor, itemBonuses: itemBonus, itemPercents: itemPercent, itemDice, items, floor,
+  };
   const itemsOut = {};
   for (const item of items) {
     const row = deriveItemRow(item, context);
@@ -198,12 +195,14 @@ export const deriveCreature = (input = {}) => {
  * }}
  * - `healthBar` is a DISPLAY clamp to [0, healthBarSlots]; do not write it back to source data.
  * - `constitutionModifierEffective` is the input `constitutionModifier` with the default applied.
- * - `items` holds only weapon entries; consumers should read `d.items[id] ?? {}`.
+ * - `items` holds only Attack entries; consumers should read `d.items[id] ?? {}`.
  * - `step` is present only for a mount.
  */
 export const deriveVehicle = (input = {}) => {
   const items = cleanItems(input.items);
-  const { bonus, percent, itemBonus, itemPercent, unresolved } = resolveModifiers(cleanModifiers(input.modifiers), items);
+  const {
+    bonus, percent, itemBonus, itemPercent, itemDice, unresolved,
+  } = resolveModifiers(cleanModifiers(input.modifiers), items);
 
   const size = Math.max(1, Math.min(VEHICLE_SIZE_MAX, Math.trunc(+input.size || 0)));
   const rawConstitutionModifier = input.constitutionModifier;
@@ -219,18 +218,25 @@ export const deriveVehicle = (input = {}) => {
   const damageResistance = applyModifiers(+input.armor || 0, bonus.damage_resistance || 0, percent.damage_resistance || 0);
   const speed = +input.speed || 0;
 
-  // Vehicle weapons have no ability mod: to-hit is rank + vehicle-side mods;
+  // Vehicle attacks have no ability mod: to-hit is rank + vehicle-side mods;
   // the gunner's skill bonus is added at roll time (_engine.js:376-381).
   const itemsOut = {};
   for (const item of items) {
-    if (item.type !== 'weapon') continue;
+    if (item.type !== 'attack') continue;
     const id = idOf(item);
     const sys = item.system || {};
     const row = attackRow({
       statModifier: 0, rank: +sys.rank || 0, itemBonus: itemBonus[id] || {}, itemPercent: itemPercent[id] || {},
+      damageModifierDice: itemDice[id]?.damage || '',
       die: sys.die, damageBonus: sys.damageBonus, damageType: sys.damageType, floor: 0,
     });
-    itemsOut[id] = { toHit: row.toHit, damageBase: row.damageBase, damageLabel: row.damageLabel };
+    itemsOut[id] = {
+      toHit: row.toHit,
+      damageBase: row.damageBase,
+      damageModifierDice: row.damageModifierDice,
+      damageDice: row.damageDice,
+      damageLabel: row.damageLabel,
+    };
   }
 
   const result = {

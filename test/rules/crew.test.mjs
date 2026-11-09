@@ -313,8 +313,9 @@ describe('crewEvent (the crewRenderTargets event for an actor)', () => {
 describe('crewCacheFrom (roll-time cache from a live crew actor)', () => {
   const items = [
     { id: 's1', type: 'skill', name: 'Driving', system: { stat: 'dexterity', checkType: 'unopposed', derived: { skillBonus: 8 } } },
-    { id: 'p1', type: 'spell', name: 'Magic Missile', system: { stat: 'intelligence', checkType: 'opposed', opposedStat: 'dexterity', attack: { enabled: true, die: '1d10', damageType: 'force' }, derived: { skillBonus: 4, toHit: 5, damageBase: 2 } } },
-    { id: 'w1', type: 'weapon', name: 'Spear', system: { stat: 'strength', die: '1d8', damageType: 'piercing', derived: { toHit: 9, damageBase: 4 } } },
+    { id: 'p1', type: 'spell', name: 'Magic Missile', system: { stat: 'intelligence', checkType: 'opposed', opposedStat: 'dexterity', derived: { skillBonus: 4 } } },
+    { id: 'a1', type: 'attack', name: 'Spear', system: { stat: 'strength', die: '1d8', damageType: 'piercing', derived: { toHit: 9, damageBase: 4, damageDice: '1d8' } } },
+    { id: 'a2', type: 'attack', name: 'Magic Missile Attack', system: { stat: 'intelligence', die: '1d10', damageType: 'force', derived: { toHit: 5, damageBase: 2, damageDice: '1d10' } } },
     { id: 'g1', type: 'gear', name: 'Rope', system: {} },
     { id: 'p2', type: 'spell', name: 'Heal', system: { stat: 'charisma', checkType: 'passive', description: '<p>Restore health.</p>', attack: { enabled: false }, derived: { skillBonus: 1 } } },
   ];
@@ -327,10 +328,10 @@ describe('crewCacheFrom (roll-time cache from a live crew actor)', () => {
       { id: 'p2', name: 'Heal', stat: 'charisma', bonus: 1, checkType: 'passive', opposedStat: '', description: '<p>Restore health.</p>' },
     ]);
   });
-  it('attacks are weapons then attack spells; a spell reads die / type from system.attack', () => {
+  it('attacks are canonical Attack Items with derived damage dice', () => {
     expect(crewCacheFrom({ items }).attacks).toEqual([
-      { id: 'w1', name: 'Spear', toHit: 9, die: '1d8', damageBase: 4, damageType: 'piercing' },
-      { id: 'p1', name: 'Magic Missile', toHit: 5, die: '1d10', damageBase: 2, damageType: 'force' },
+      { id: 'a1', name: 'Spear', toHit: 9, die: '1d8', damageBase: 4, damageType: 'piercing' },
+      { id: 'a2', name: 'Magic Missile Attack', toHit: 5, die: '1d10', damageBase: 2, damageType: 'force' },
     ]);
   });
   it('tolerates no input', () => {

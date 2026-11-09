@@ -63,8 +63,8 @@ export const postRam = (vehicle, options) => postVehicleCard(vehicle, ram, optio
 export const postRace = (vehicle, options) => postVehicleCard(vehicle, race, options);
 
 /**
- * A vehicle weapon's to-hit (R20 rollVehicleWeapon): the crew member in the
- * weapon's gunner slot adds their bonus for its skill (rules/crew.mjs
+ * A vehicle Attack's to-hit: the crew member in the Attack's gunner slot adds
+ * their bonus for its skill (rules/crew.mjs
  * vehicleWeaponCard). Posted as the vehicle; a mob gunner's card follows
  * the mob's privacy. A mount's attacks don't come here (they roll alone).
  * @returns {Promise<object|null>}

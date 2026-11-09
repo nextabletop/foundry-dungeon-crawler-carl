@@ -71,7 +71,7 @@ export default class DCCActorSheetBase extends HandlebarsApplicationMixin(foundr
       createItem: DCCActorSheetBase.#onCreateItem,
       editItem: DCCActorSheetBase.#onEditItem,
       deleteItem: DCCActorSheetBase.#onDeleteItem,
-      rollWeapon: DCCActorSheetBase.#onRollWeapon,
+      rollAttack: DCCActorSheetBase.#onRollAttack,
     },
   };
 
@@ -398,12 +398,12 @@ export default class DCCActorSheetBase extends HandlebarsApplicationMixin(foundr
    * read before the flush: a re-render replaces the DOM).
    * @this {DCCActorSheetBase}
    */
-  static async #onRollWeapon(_event, target) {
+  static async #onRollAttack(_event, target) {
     const item = this._itemFromTarget(target);
     if (!item) return;
     const which = target.dataset.roll === 'damage' ? 'damage' : 'toHit';
     if (!(await this._flushForm())) return;
-    await this.document.rollWeapon(item, which);
+    await this.document.rollAttack(item, which);
   }
 
   /** Open an owned item's sheet. @this {DCCActorSheetBase} */

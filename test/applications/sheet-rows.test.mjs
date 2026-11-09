@@ -10,20 +10,16 @@ describe('inlineFieldValue', () => {
   });
 
   describe('item damage field layout', () => {
-    const weapon = readFileSync(new URL('../../templates/item/weapon.hbs', import.meta.url), 'utf8');
-    const spell = readFileSync(new URL('../../templates/item/spell.hbs', import.meta.url), 'utf8');
+    const attack = readFileSync(new URL('../../templates/item/attack.hbs', import.meta.url), 'utf8');
     const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
 
-    it('uses free-text Damage Type controls for weapons and spell attacks', () => {
-      expect(weapon).toContain('systemFields.damageType value=systemSource.damageType rootId=rootId');
-      expect(spell).toContain('systemFields.attack.fields.damageType value=systemSource.attack.damageType rootId=rootId');
-      expect(weapon).not.toContain('selectOptions.damageType');
-      expect(spell).not.toContain('selectOptions.damageType');
+    it('uses a free-text Damage Type control for canonical Attacks', () => {
+      expect(attack).toContain('systemFields.damageType value=systemSource.damageType rootId=rootId');
+      expect(attack).not.toContain('selectOptions.damageType');
     });
 
     it('gives Damage Type a wider column than Damage Die and Damage Bonus', () => {
-      expect(weapon).toContain('class="dcc-item-damage-grid"');
-      expect(spell).toContain('class="dcc-item-grid dcc-item-damage-grid"');
+      expect(attack).toContain('class="dcc-item-damage-grid"');
       expect(css).toContain('grid-template-columns: minmax(72px, 0.7fr) minmax(72px, 0.7fr) minmax(180px, 2fr);');
     });
   });
@@ -63,32 +59,39 @@ describe('sheetItemLists', () => {
     id, type, name, img: `${id}.svg`, sort, system: { ...system, derived, _source: system },
   });
   const lists = sheetItemLists({
-    weapon: [it_('w2', 'weapon', 'Club', 200, { stat: 'strength' }, { rank: 1, toHit: 2, damageLabel: ' +0' }),
-      it_('w1', 'weapon', 'Axe', 100, { stat: 'strength' })],
+    attack: [
+      it_('a2', 'attack', 'Zap Attack', 200, { stat: 'intelligence', linkedItemIds: ['p2'] }, { rank: 2, toHit: 3, damageLabel: '1d6+2 fire' }),
+      it_('a1', 'attack', 'Axe', 100, { stat: 'strength' }, { rank: 1, toHit: 2, damageLabel: '1d6+1 slashing' }),
+    ],
     skill: [it_('s2', 'skill', 'Brawl', 0, { stat: 'strength', rank: 1 }), it_('s1', 'skill', 'Axes', 0, { stat: 'dexterity', rank: 2 }, { rankEffective: 3, skillBonus: 4 })],
-    spell: [it_('p2', 'spell', 'Zap', 5, { stat: 'intelligence', attack: { enabled: true } }, { toHit: 1, manaCostEffective: 3 }),
-      it_('p1', 'spell', 'Heal', 5, { stat: 'intelligence', attack: { enabled: false } })],
+    spell: [it_('p2', 'spell', 'Zap', 5, { stat: 'intelligence', linkedItemIds: ['a2'] }, { manaCostEffective: 3 }),
+      it_('p1', 'spell', 'Heal', 5, { stat: 'intelligence' })],
   });
-  it('orders by sort, then name; attacks are weapons then attack spells', () => {
-    expect(lists.attacks.map(r => r.id)).toEqual(['w1', 'w2', 'p2']);
+  it('orders each canonical item list by sort, then name', () => {
+    expect(lists.attacks.map(r => r.id)).toEqual(['a1', 'a2']);
     expect(lists.skills.map(r => r.id)).toEqual(['s1', 's2']);
     expect(lists.spells.map(r => r.id)).toEqual(['p1', 'p2']);
   });
   it('attack rows: derived values, spell flag, trimmed label', () => {
-    expect(lists.attacks[1]).toMatchObject({ stat: 'DCC.StatAbbr.strength', rank: 1, toHit: 2, damageLabel: '+0', isSpell: false });
-    expect(lists.attacks[2].isSpell).toBe(true);
+    expect(lists.attacks[0]).toMatchObject({
+      stat: 'DCC.StatAbbr.strength', rank: 1, toHit: 2, damageLabel: '1d6+1 slashing', isSpell: false,
+    });
+    expect(lists.attacks[1].isSpell).toBe(true);
   });
   it('attack rows carry the mob static To-Hit target (derived.mobToHit)', () => {
     const { attacks } = sheetItemLists({
-      weapon: [it_('w', 'weapon', 'Club', 0, { stat: 'strength' }, { toHit: 2, mobToHit: 13 })],
-      spell: [it_('p', 'spell', 'Zap', 0, { attack: { enabled: true } }, { mobToHit: 11 })],
+      attack: [
+        it_('a', 'attack', 'Club', 0, { stat: 'strength' }, { toHit: 2, mobToHit: 13 }),
+        it_('p', 'attack', 'Zap', 1, {}, { mobToHit: 11 }),
+      ],
     });
     expect(attacks.map(r => r.mobToHit)).toEqual([13, 11]);
   });
   it('skill rows: source rank, effective rank flag, cost for spells', () => {
     expect(lists.skills[0]).toMatchObject({ rank: 2, rankEffective: 3, rankModified: true, bonus: 4 });
     expect(lists.skills[1].rankModified).toBe(false);
-    expect(lists.spells[1]).toMatchObject({ cost: 3, attack: true });
+    expect(lists.spells[1]).toMatchObject({ cost: 3 });
+    expect(lists.spells[1]).not.toHaveProperty('attack');
     expect(lists.skills[0].cost).toBeUndefined();
   });
   it('skill rows expose opposed/passive display state from checkType', () => {
@@ -200,6 +203,12 @@ describe('skill and spell authored metadata templates', () => {
     }
     expect(list).toMatch(/{{#unless isPassive}}[\s\S]*?data-action="skillCheck"[\s\S]*?{{\/unless}}/);
   });
+
+  it('lets Skills and Spells grant a linked Attack', () => {
+    for (const template of [skill, spell]) {
+      expect(template).toContain('systemFields.isAttack value=systemSource.isAttack');
+    }
+  });
 });
 
 describe('inventoryView', () => {
@@ -249,16 +258,20 @@ describe('hotlistCells', () => {
     item('r', 'gear', 'Rations', 1, { onHotlist: true, quantity: 4 }),
     item('h', 'gear', 'Helm', 0, { onHotlist: false, quantity: 1 }),
     item('d', 'weapon', 'Dagger', 9, { onHotlist: true, quantity: 1 }),
+    item('a', 'attack', 'Dagger Attack', 0, { onHotlist: true }),
   ];
   const cells = hotlistCells(items);
-  it('always 10 cells: grouped gear, weapon, skill, spell, each by sort then name, then empty (null) cells', () => {
+  it('always 10 cells: grouped inventory, skills/spells, Attacks, then empty cells', () => {
     expect(cells).toHaveLength(10);
-    expect(cells.slice(0, 4).map(c => c.id)).toEqual(['r', 'd', 'k', 'z']);
-    expect(cells.slice(4).every(c => c === null)).toBe(true);
+    expect(cells.slice(0, 5).map(c => c.id)).toEqual(['r', 'd', 'k', 'z', 'a']);
+    expect(cells.slice(5).every(c => c === null)).toBe(true);
   });
   it('entries carry name, img, type; quantity only when above 1', () => {
     expect(cells[0]).toEqual({ id: 'r', name: 'Rations', img: 'r.svg', type: 'gear', quantity: 4, hint: 'DCC.Hotlist.Use.gear' });
-    expect(cells.slice(0, 4).map(c => c.hint)).toEqual(['DCC.Hotlist.Use.gear', 'DCC.Hotlist.Use.weapon', 'DCC.Hotlist.Use.skill', 'DCC.Hotlist.Use.spell']);
+    expect(cells.slice(0, 5).map(c => c.hint)).toEqual([
+      'DCC.Hotlist.Use.gear', 'DCC.Hotlist.Use.weapon', 'DCC.Hotlist.Use.skill',
+      'DCC.Hotlist.Use.spell', 'DCC.Hotlist.Use.attack',
+    ]);
     expect(cells[1].quantity).toBeNull();
     expect(cells[3].quantity).toBeNull();
   });
@@ -404,7 +417,7 @@ describe('vehicleWeaponRows', () => {
   // The prepared instance differs from the stored source (as after derived
   // data / effects), so the source reads are observable.
   const w = (id, name, sort, source = {}, derived = {}, instance = {}) => ({
-    id, type: 'weapon', name, img: `${id}.svg`, sort, system: { ...source, ...instance, derived, _source: source },
+    id, type: 'attack', name, img: `${id}.svg`, sort, system: { ...source, ...instance, derived, _source: source },
   });
   const rows = vehicleWeaponRows([
     w('w2', 'Turret', 200, { rank: 2, gunnerSlot: '1', skillName: 'Gunnery' }, { toHit: 3, damageLabel: '2d8 +0 piercing ' },
@@ -431,19 +444,22 @@ describe('crewRows (vehicle crew rows from the live crew actors)', () => {
     system: { healthBarDisplay: 7, healthBarSlots: 10, damageResistance: 2 },
     itemTypes: {
       skill: [it_('s1', 'skill', 'Driving', 0, { stat: 'dexterity', rank: 3 }, { skillBonus: 6 })],
-      spell: [it_('p1', 'spell', 'Zap', 0, { stat: 'intelligence', attack: { enabled: true } }, { skillBonus: 2, toHit: 4 })],
-      weapon: [it_('w1', 'weapon', 'Fist', 0, { stat: 'strength' }, { toHit: 3 })],
+      spell: [it_('p1', 'spell', 'Zap', 0, { stat: 'intelligence', linkedItemIds: ['a2'] }, { skillBonus: 2 })],
+      attack: [
+        it_('a1', 'attack', 'Fist', 0, { stat: 'strength' }, { toHit: 3 }),
+        it_('a2', 'attack', 'Zap Attack', 1, { stat: 'intelligence', linkedItemIds: ['p1'] }, { toHit: 4 }),
+      ],
     },
   };
   const actors = { 'Actor.carl': carl };
   const resolve = uuid => (actors[uuid] ? { actor: actors[uuid], limited: true, observer: true } : null);
   const rows = crewRows([{ uuid: 'Actor.carl', role: 'driver' }, { uuid: 'Actor.gone', role: 'gunner1' }], resolve, 'vehicle');
 
-  it('a live member: name, HB / DR, role, and the roll lists (skills then spells; weapons then attack spells)', () => {
+  it('a live member: name, HB / DR, role, and canonical roll lists', () => {
     expect(rows[0]).toMatchObject({
       index: 0, uuid: 'Actor.carl', role: 'driver', roleLabel: 'DCC.Crew.Role.driver', missing: false, limited: false, name: 'Carl', img: 'carl.svg', healthBar: 7, healthBarSlots: 10, damageResistance: 2,
       skills: [{ id: 's1', name: 'Driving', bonus: 6 }, { id: 'p1', name: 'Zap', bonus: 2 }],
-      attacks: [{ id: 'w1', name: 'Fist', toHit: 3 }, { id: 'p1', name: 'Zap', toHit: 4 }],
+      attacks: [{ id: 'a1', name: 'Fist', toHit: 3 }, { id: 'a2', name: 'Zap Attack', toHit: 4 }],
     });
   });
   it('role options: value -> label key, per the vehicle kind', () => {

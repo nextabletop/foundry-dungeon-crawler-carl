@@ -1,20 +1,12 @@
 import SkillModel from './skill.mjs';
-import { int, str, bool } from '../_fields.mjs';
+import { int, str } from '../_fields.mjs';
 
 export default class SpellModel extends SkillModel {
   static defineSchema() {
-    const fields = foundry.data.fields;
     return {
       ...super.defineSchema(),
       manaCost: int(0),
       duration: str(),
-      // When enabled the spell also appears in the attack list.
-      attack: new fields.SchemaField({
-        enabled: bool(false),
-        die: str(''),
-        damageBonus: int(0),
-        damageType: str(),
-      }),
     };
   }
 }

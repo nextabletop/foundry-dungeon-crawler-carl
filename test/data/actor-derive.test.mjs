@@ -30,9 +30,10 @@ const prepare = (Model, source, items = []) => {
 };
 
 const item = (id, type, name, system = {}) => ({ id, type, name, system });
-const dagger = () => item('w1', 'weapon', 'Dagger',
-  { stat: 'dexterity', rank: 0, skill: 'Knives', die: '1d4', damageBonus: 0, damageType: 'piercing' });
-const knives = () => item('s1', 'skill', 'Knives', { stat: 'dexterity', rank: 2, enabled: true, class: '' });
+const dagger = () => item('a1', 'attack', 'Dagger',
+  { stat: 'dexterity', rank: 0, die: '1d4', damageBonus: 0, damageType: 'piercing', linkedItemIds: ['s1'] });
+const knives = () => item('s1', 'skill', 'Knives',
+  { stat: 'dexterity', rank: 2, enabled: true, class: '', linkedItemIds: ['a1'] });
 const rope = () => item('g1', 'gear', 'Rope', { quantity: 1 });
 
 describe('PcModel derive wiring', () => {
@@ -86,15 +87,15 @@ describe('PcModel derive wiring', () => {
     expect(model.damageResistanceBonus).toBe(3);
   });
 
-  it('writes item.system.derived for weapons and skills, {} for gear', () => {
+  it('writes item.system.derived for Attacks and skills, {} for gear', () => {
     const items = [dagger(), knives(), rope()];
     items[2].system.derived = { stale: true };
     prepare(PcModel, pcSource(), items);
-    const [w, s, g] = items;
+    const [a, s, g] = items;
     expect(s.system.derived.rankEffective).toBe(2);
     expect(s.system.derived.skillBonus).toBe(3); // dex mod 1 + rank 2
-    expect(w.system.derived.toHit).toBe(3); // dex mod 1 + linked Knives rank 2
-    expect(w.system.derived.damageLabel).toEqual(expect.any(String));
+    expect(a.system.derived.toHit).toBe(3); // dex mod 1 + linked Knives rank 2
+    expect(a.system.derived.damageLabel).toEqual(expect.any(String));
     expect(g.system.derived).toEqual({});
   });
 
@@ -171,7 +172,7 @@ describe('VehicleModel derive wiring', () => {
   });
 
   it('preparing twice on the same instance gives identical results', () => {
-    const items = [item('w1', 'weapon', 'Cannon', { rank: 2, die: '2d6', damageBonus: 1, damageType: 'fire' }), rope()];
+    const items = [item('a1', 'attack', 'Cannon', { rank: 2, die: '2d6', damageBonus: 1, damageType: 'fire' }), rope()];
     const m = prepare(VehicleModel, vehicleSource({ healthBar: 2 }), items);
     const snapshot = () => structuredClone({ ...m, parent: undefined, derived: items.map(i => i.system.derived) });
     const first = snapshot();
@@ -180,8 +181,8 @@ describe('VehicleModel derive wiring', () => {
     expect(snapshot()).toEqual(first);
   });
 
-  it('weapons get derived values; other items get {}', () => {
-    const items = [item('w1', 'weapon', 'Cannon', { rank: 2, die: '2d6', damageBonus: 1, damageType: 'fire' }), rope()];
+  it('Attacks get derived values; other items get {}', () => {
+    const items = [item('a1', 'attack', 'Cannon', { rank: 2, die: '2d6', damageBonus: 1, damageType: 'fire' }), rope()];
     prepare(VehicleModel, vehicleSource(), items);
     expect(items[0].system.derived.toHit).toBe(2);
     expect(items[0].system.derived.damageBase).toBe(1);

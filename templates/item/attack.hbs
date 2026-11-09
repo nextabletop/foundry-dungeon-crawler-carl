@@ -1,0 +1,57 @@
+<section class="dcc-item-body">
+  {{> "systems/dungeon-crawler-carl/templates/item/partials/header.hbs"}}
+  <div class="dcc-box dcc-item-section">
+    <div class="dcc-bar">{{localize "DCC.ItemSheet.Attack"}}</div>
+    <div class="dcc-item-grid">
+      {{formGroup systemFields.stat value=systemSource.stat options=selectOptions.stat rootId=rootId}}
+      {{formGroup systemFields.rank value=attackLink.rank disabled=attackLink.rankLinked rootId=rootId}}
+      <div class="dcc-item-damage-grid">
+        {{formGroup systemFields.die value=systemSource.die rootId=rootId}}
+        {{formGroup systemFields.damageBonus value=systemSource.damageBonus rootId=rootId}}
+        {{formGroup systemFields.damageType value=systemSource.damageType rootId=rootId}}
+      </div>
+      {{formGroup systemFields.range value=systemSource.range rootId=rootId classes="dcc-item-wide"}}
+    </div>
+    <div class="dcc-item-flags">
+      {{formGroup systemFields.onHotlist value=systemSource.onHotlist rootId=rootId}}
+    </div>
+  </div>
+  <div class="dcc-box dcc-item-section">
+    <div class="dcc-bar">{{localize "DCC.ItemSheet.VehicleAttack"}}</div>
+    <div class="dcc-item-grid">
+      {{formGroup systemFields.gunnerSlot value=systemSource.gunnerSlot options=selectOptions.gunnerSlot blank=false rootId=rootId}}
+      {{formGroup systemFields.skillName value=systemSource.skillName rootId=rootId}}
+    </div>
+  </div>
+  <div class="dcc-box dcc-item-section">
+    <div class="dcc-bar">{{localize "DCC.ItemSheet.SourceLink"}}</div>
+    {{#if attackLink.owned}}
+    <div class="dcc-item-grid">
+      <div class="form-group dcc-item-wide">
+        <label for="{{rootId}}-attack-source">{{localize "DCC.ItemSheet.Source"}}</label>
+        <div class="form-fields">
+          <select id="{{rootId}}-attack-source" data-attack-source>
+            {{selectOptions attackLink.sourceOptions selected=attackLink.sourceId}}
+          </select>
+        </div>
+        <p class="hint">{{localize "DCC.ItemSheet.SourceHint"}}</p>
+      </div>
+    </div>
+    {{#if attackLink.rankLinked}}
+    <p class="hint">{{localize "DCC.ItemSheet.LinkedRankHint"}}</p>
+    {{/if}}
+    {{#if attackLink.staleIds.length}}
+    <p class="notification warning">{{localize "DCC.ItemSheet.StaleLinks" ids=attackLink.staleIds}}</p>
+    {{/if}}
+    {{#if attackLink.asymmetricNames.length}}
+    <p class="notification warning">{{localize "DCC.ItemSheet.AsymmetricLinks" names=attackLink.asymmetricNames}}</p>
+    {{/if}}
+    <div class="dcc-item-actions">
+      <button type="button" class="dcc-rollbtn" data-action="linkAttack">{{localize "DCC.ItemSheet.ApplySource"}}</button>
+    </div>
+    {{else}}
+    <p class="hint">{{localize "DCC.ItemSheet.UnownedAttack"}}</p>
+    {{/if}}
+  </div>
+  {{> "systems/dungeon-crawler-carl/templates/item/partials/description.hbs"}}
+</section>

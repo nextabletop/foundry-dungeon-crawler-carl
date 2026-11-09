@@ -28,7 +28,8 @@
       "weapon": { "htmlFields": ["description"] },
       "skill": { "htmlFields": ["description"] },
       "spell": { "htmlFields": ["description"] },
-      "gear": { "htmlFields": ["description"] }
+      "gear": { "htmlFields": ["description"] },
+      "attack": { "htmlFields": ["description"] }
     }
   },
   "grid": { "type": 1, "distance": 5, "units": "ft", "diagonals": 0 },

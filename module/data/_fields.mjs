@@ -15,6 +15,11 @@ export const str = (initial = '', { choices, ...options } = {}) => new foundry.d
   ...(choices ? { choices: Array.isArray(choices) ? Object.fromEntries(choices.map(v => [v, v])) : choices } : {}),
 });
 
+/** A required array of strings. */
+export const strArray = (initial = []) => new foundry.data.fields.ArrayField(str(), {
+  required: true, nullable: false, initial,
+});
+
 /** A required, non-nullable BooleanField. */
 export const bool = (initial = false) => new foundry.data.fields.BooleanField({
   required: true, nullable: false, initial,

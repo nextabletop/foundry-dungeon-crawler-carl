@@ -24,15 +24,16 @@ export const statModifier = (value) => {
 export const isActive = (v) => v !== undefined && v !== null && v !== '' && v !== '0' && v !== 0 && v !== false;
 
 // Parse a modifier amount text into {kind, value} (ADR-0008). A trailing '%'
-// makes it a percent (the leading body parsed as a number); anything else is a
-// flat number. An unparseable body degrades to 0 with the kind preserved.
-// Ported verbatim from _engine.js:110.
+// makes it a percent. A signed dice expression is retained for roll time and
+// contributes no static value. Anything else is a flat number.
 export const parseModifierValue = (raw) => {
   const s = String(raw == null ? '' : raw).trim();
   if (s.endsWith('%')) {
     const n = Number(s.slice(0, -1));
     return { kind: 'percent', value: Number.isNaN(n) ? 0 : n };
   }
+  const dice = /^([+-]?)\s*(\d+d\d+)$/i.exec(s);
+  if (dice) return { kind: 'dice', value: 0, dice: `${dice[1] || '+'}${dice[2].toLowerCase()}` };
   const n = Number(s);
   return { kind: 'flat', value: Number.isNaN(n) ? 0 : n };
 };

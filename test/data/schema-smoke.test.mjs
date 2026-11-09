@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { CHECK_TYPES, STATS } from '../../module/config.mjs';
 import { CreatureModel, PcModel, MobModel, VehicleModel, GmScreenModel, actorModels } from '../../module/data/actor/_module.mjs';
-import { WeaponModel, SkillModel, SpellModel, GearModel, itemModels } from '../../module/data/item/_module.mjs';
+import {
+  WeaponModel, SkillModel, SpellModel, GearModel, AttackModel, itemModels,
+} from '../../module/data/item/_module.mjs';
 import DCCEffectModel from '../../module/data/effect/effect-model.mjs';
 
 const keys = Model => Object.keys(Model.defineSchema());
@@ -84,17 +86,15 @@ describe('actor schemas', () => {
 });
 
 describe('item schemas', () => {
-  const base = ['description', 'onHotlist'];
+  const base = ['description', 'onHotlist', 'linkedItemIds'];
 
   it('weapon', () => {
-    expect(keys(WeaponModel)).toEqual(expect.arrayContaining([...base,
-      'stat', 'rank', 'skill', 'die', 'damageBonus', 'damageType', 'quantity', 'slot', 'active', 'gunnerSlot', 'skillName']));
-    expect(WeaponModel.defineSchema().damageType.options.choices).toBeUndefined();
+    expect(keys(WeaponModel)).toEqual([...base, 'quantity', 'slot', 'active']);
   });
 
   it('skill', () => {
     expect(keys(SkillModel)).toEqual(expect.arrayContaining([...base,
-      'stat', 'rank', 'mark', 'enabled', 'checkType', 'opposedStat', 'class',
+      'stat', 'rank', 'mark', 'enabled', 'isAttack', 'checkType', 'opposedStat', 'class',
       'range', 'cooldown', 'limitations']));
     const schema = SkillModel.defineSchema();
     expect(schema.checkType.initial).toBe('opposed');
@@ -104,19 +104,29 @@ describe('item schemas', () => {
     expect(keys(SkillModel)).not.toContain('passive');
   });
 
-  it('spell is a skill plus manaCost, duration, and attack', () => {
-    expect(keys(SpellModel)).toEqual(expect.arrayContaining([...keys(SkillModel), 'manaCost', 'duration', 'attack']));
-    const { attack } = SpellModel.defineSchema();
-    expect(Object.keys(attack.fields)).toEqual(['enabled', 'die', 'damageBonus', 'damageType']);
-    expect(attack.fields.damageType.options.choices).toBeUndefined();
+  it('spell is a skill plus manaCost and duration, without embedded attack data', () => {
+    expect(keys(SpellModel)).toEqual([...keys(SkillModel), 'manaCost', 'duration']);
   });
 
   it('gear', () => {
     expect(keys(GearModel)).toEqual(expect.arrayContaining([...base, 'quantity', 'slot', 'active', 'accessory']));
   });
 
-  it('itemModels maps the four item types', () => {
-    expect(itemModels).toEqual({ weapon: WeaponModel, skill: SkillModel, spell: SpellModel, gear: GearModel });
+  it('attack is the canonical offensive-action record', () => {
+    expect(keys(AttackModel)).toEqual([
+      ...base, 'stat', 'rank', 'die', 'damageBonus', 'damageType', 'range', 'gunnerSlot', 'skillName',
+    ]);
+    expect(AttackModel.defineSchema().linkedItemIds.initial).toEqual([]);
+  });
+
+  it('itemModels maps all five item types', () => {
+    expect(itemModels).toEqual({
+      weapon: WeaponModel,
+      skill: SkillModel,
+      spell: SpellModel,
+      gear: GearModel,
+      attack: AttackModel,
+    });
   });
 });
 

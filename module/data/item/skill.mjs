@@ -10,6 +10,7 @@ export default class SkillModel extends BaseItemModel {
       rank: int(0),
       mark: bool(false),
       enabled: bool(false),
+      isAttack: bool(false),
       checkType: str('opposed', { choices: CHECK_TYPES }),
       opposedStat: str('', { choices: ['', ...STATS], blank: true }),
       class: str(),

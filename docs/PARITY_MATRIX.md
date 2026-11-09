@@ -4,30 +4,20 @@ Last audited: 2026-11-09
 Roll20 source baseline: `f241a34c`  
 Foundry system baseline: `e8da8e7`
 
-This document tracks behavioral and UI parity between the current Roll20
-character sheet in `character-sheet/` and the Foundry VTT system in
-`foundry-system/`.
+This document tracks behavioral and UI parity between the current Roll20 character sheet in `character-sheet/` and the Foundry VTT system in `foundry-system/`.
 
-The goal is not a line-for-line port. Roll20 repeating rows, sheet workers, and
-`k.send` protocols should become native Foundry documents, data models,
-applications, Active Effects, UUID links, and chat messages while preserving
-the player-visible rules and workflows.
+The goal is not a line-for-line port. Roll20 repeating rows, sheet workers, and `k.send` protocols should become native Foundry documents, data models, applications, Active Effects, UUID links, and chat messages while preserving the player-visible rules and workflows.
 
 ## Authority and scope
 
 When sources disagree, use this order:
 
-1. Current Roll20 tests under
-   [`character-sheet/__tests__/`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/__tests/)
-2. Current domain glossary in
-   [`character-sheet/CONTEXT.md`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/CONTEXT.md)
-3. Current Roll20 source under
-   [`character-sheet/source/`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/)
+1. Current Roll20 tests under [`character-sheet/__tests__/`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/__tests/)
+2. Current domain glossary in [`character-sheet/CONTEXT.md`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/CONTEXT.md)
+3. Current Roll20 source under [`character-sheet/source/`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/)
 4. Older Foundry implementation plans and comments
 
-For example, the glossary currently says using a skill automatically marks it,
-but the current spell tests require the Used checkbox to remain manual. The
-tests are authoritative for this audit.
+For example, the glossary currently says using a skill automatically marks it, but the current spell tests require the Used checkbox to remain manual. The tests are authoritative for this audit.
 
 ### Included
 
@@ -48,13 +38,12 @@ tests are authoritative for this audit.
 - Unsourced rules that neither implementation should invent
 - Exact pixel parity where Foundry's native interaction is clearer
 
-Because there are no existing Foundry characters, schema corrections may be
-made directly without migration hooks, aliases, or dual-read compatibility.
+Because there are no existing Foundry characters, schema corrections may be made directly without migration hooks, aliases, or dual-read compatibility.
 
 ## Status legend
 
 | Status | Meaning |
-|---|---|
+| --- | --- |
 | Aligned | The current Foundry behavior matches the current Roll20 contract. |
 | Native equivalent | The implementation differs by platform but preserves the contract. |
 | Partial | Some of the contract exists, but important fields, rules, or UI are missing. |
@@ -67,7 +56,7 @@ made directly without migration hooks, aliases, or dual-read compatibility.
 ## Priority legend
 
 | Priority | Meaning |
-|---|---|
+| --- | --- |
 | P0 | Rules or schema blocker. Complete before dependent UI/content work. |
 | P1 | Required player-facing parity. |
 | P2 | Important workflow, presentation, or content parity. |
@@ -76,22 +65,22 @@ made directly without migration hooks, aliases, or dual-read compatibility.
 
 ## Implementation batches
 
-| Batch | Scope |
-|---|---|
-| B1 | Schema and shared vocabulary |
-| B2 | Core calculations, Health Bar, resources, and settings |
-| B3 | Skills, spells, check types, and advancement |
-| B4 | Attacks, linkage, rolls, and chat cards |
-| B5 | Inventory, modifiers, buffs, and hotlist |
-| B6 | Mob rules and UI |
-| B7 | Vehicle/Mount and crew reconciliation |
-| B8 | Compendium content and compound drops |
-| B9 | Visual, accessibility, live Foundry, and regression pass |
+| Batch | Scope                                                    |
+| ----- | -------------------------------------------------------- |
+| B1    | Schema and shared vocabulary                             |
+| B2    | Core calculations, Health Bar, resources, and settings   |
+| B3    | Skills, spells, check types, and advancement             |
+| B4    | Attacks, linkage, rolls, and chat cards                  |
+| B5    | Inventory, modifiers, buffs, and hotlist                 |
+| B6    | Mob rules and UI                                         |
+| B7    | Vehicle/Mount and crew reconciliation                    |
+| B8    | Compendium content and compound drops                    |
+| B9    | Visual, accessibility, live Foundry, and regression pass |
 
 ## 1. Platform architecture
 
 | ID | Contract | Roll20 evidence | Foundry evidence | Status | Priority | Batch / next action |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | ARC-01 | Crawler, Mob, Vehicle/Mount, and GM Screen are distinct sheet modes. | [`CONTEXT.md`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/CONTEXT.md), [`views/`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/views/) | [`system.json`](../system.json), [`module/data/actor/`](../module/data/actor/) | Native equivalent | - | Keep separate Foundry Actor types. |
 | ARC-02 | Rules calculations are deterministic and testable outside the UI. | [`engine.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/engine.test.js) | [`module/rules/`](../module/rules/), [`test/rules/`](../test/rules/) | Native equivalent | - | Continue pure-rule-first implementation. |
 | ARC-03 | Item-like repeating rows become durable Foundry documents. | [`_inventory.pug`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/sections/_inventory.pug), [`_skills.pug`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/sections/_skills.pug) | [`module/data/item/`](../module/data/item/) | Native equivalent | - | Keep owned Items; revise schemas in B1. |
@@ -101,7 +90,7 @@ made directly without migration hooks, aliases, or dual-read compatibility.
 ## 2. Core creature data and calculations
 
 | ID | Contract | Roll20 evidence | Foundry evidence | Status | Priority | Batch / next action |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | CORE-01 | Five stats store Unenhanced values and derive Enhanced values and Stat Mods from the current threshold table. | [`CONTEXT.md`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/CONTEXT.md), [`engine.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/engine.test.js) | [`data/actor/creature.mjs`](../module/data/actor/creature.mjs), [`rules/engine.mjs`](../module/rules/engine.mjs) | Aligned | - | Preserve tests while changing dependent rules. |
 | CORE-02 | Modifier materialization is `floor((base + flat) * (1 + percent / 100))`. | [`_engine.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/javascript/_engine.js), [`engine.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/engine.test.js) | [`rules/engine.mjs`](../module/rules/engine.mjs) | Aligned | - | No change. |
 | CORE-03 | Crawler Evade roll bonus is Dex Mod + Int Mod + Evade modifiers, with no hidden +10. | [`CONTEXT.md`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/CONTEXT.md), [`_combat.pug`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/sections/_combat.pug) | [`rules/derive.mjs`](../module/rules/derive.mjs) derives `10 + Dex Mod`. | Divergent | P0 | B2: correct the rule, labels, roll, and tests. |
@@ -115,7 +104,7 @@ made directly without migration hooks, aliases, or dual-read compatibility.
 ## 3. Health Bar and damage
 
 | ID | Contract | Roll20 evidence | Foundry evidence | Status | Priority | Batch / next action |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | HP-01 | Health Bar slots are the source of truth; HP is slots multiplied by Con Mod. | [`CONTEXT.md`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/CONTEXT.md), [`healthbar.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/healthbar.test.js) | [`rules/health.mjs`](../module/rules/health.mjs), [`data/actor/_derive-wiring.mjs`](../module/data/actor/_derive-wiring.mjs) | Aligned | - | Preserve. |
 | HP-02 | PC auto slots = 10; Mob auto slots = min(Level, 10); Vehicle slots = Size, never below 1. | [`CONTEXT.md`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/CONTEXT.md), [`engine.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/engine.test.js) | [`rules/engine.mjs`](../module/rules/engine.mjs), [`rules/derive.mjs`](../module/rules/derive.mjs) | Aligned | - | Preserve as auto behavior. |
 | HP-03 | PC and Mob may override slot count with any positive whole number up to the sanity guard of 100. | [`_settings.pug`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/views/_settings.pug), [`hbslots.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/hbslots.test.js) | No actor field or derive input exists. | Missing | P0 | B1/B2: add nullable custom slot count and use it in derive/view logic. |
@@ -129,7 +118,7 @@ made directly without migration hooks, aliases, or dual-read compatibility.
 ## 4. Modifiers, buffs, and effects
 
 | ID | Contract | Roll20 evidence | Foundry evidence | Status | Priority | Batch / next action |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | MOD-01 | Modifier values support flat numbers, percentages, and roll-time dice such as `+1d4`. | [`_engine.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/javascript/_engine.js), [`engine.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/engine.test.js) | [`rules/engine.mjs`](../module/rules/engine.mjs) supports only flat and percent. | Partial | P0 | B1/B4: add dice parsing and carry dice to supported attack damage rolls. |
 | MOD-02 | Field targets include stats, DR, Evade, Move, Step, and Mana using current snake_case vocabulary. | [`_engine.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/javascript/_engine.js), [`modifiers.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/modifiers.test.js) | [`config.mjs`](../module/config.mjs), [`rules/modifiers.mjs`](../module/rules/modifiers.mjs) | Aligned | - | Preserve vocabulary. |
 | MOD-03 | A modifier may target one specific attack/skill row without relying on a mutable name. | [`CONTEXT.md`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/CONTEXT.md), [`modifiers.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/modifiers.test.js) | [`rules/modifiers.mjs`](../module/rules/modifiers.mjs) targets an item by name. | Divergent | P0 | B1/B5: use stable owned Item IDs/UUIDs in the Foundry target representation. |
@@ -142,7 +131,7 @@ made directly without migration hooks, aliases, or dual-read compatibility.
 ## 5. Skills, spells, and advancement
 
 | ID | Contract | Roll20 evidence | Foundry evidence | Status | Priority | Batch / next action |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | SKL-01 | Check types are Opposed (default), Unopposed, Evade, and Passive; Generic is not offered. | [`CONTEXT.md`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/CONTEXT.md), [`_skills.pug`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/source/sections/_skills.pug), [`engine.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/__tests__/engine.test.js) | [`config.mjs`](../module/config.mjs), [`data/item/skill.mjs`](../module/data/item/skill.mjs), and the actor/item skill controls use the four current check types with Opposed as the default. | Aligned | - | Completed 2026-11-09. |
 | SKL-02 | Opposed checks may name the opposing stat and display `<STAT>-Opposed`. | [`_spells.js`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/source/javascript/_spells.js), [`spells.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/__tests__/spells.test.js) | [`data/item/skill.mjs`](../module/data/item/skill.mjs), [`rules/items.mjs`](../module/rules/items.mjs), and the actor/item sheets expose `opposedStat` only for Opposed checks. | Aligned | - | Completed 2026-11-09. |
 | SKL-03 | Passive non-spells have no d20, no Stat contribution, no Used mark UI, and post their description card. | [`CONTEXT.md`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/CONTEXT.md), [`spells.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/__tests__/spells.test.js) | [`rules/derive.mjs`](../module/rules/derive.mjs), [`documents/actor.mjs`](../module/documents/actor.mjs), actor/item sheets, advancement, and crew quick-use share the Passive check-type behavior. | Aligned | - | Completed 2026-11-09. |
@@ -161,16 +150,16 @@ made directly without migration hooks, aliases, or dual-read compatibility.
 ## 6. Attacks, rolls, and chat cards
 
 | ID | Contract | Roll20 evidence | Foundry evidence | Status | Priority | Batch / next action |
-|---|---|---|---|---|---|---|
-| ATK-01 | Every offensive action is an Attack record; a granting item/skill/spell links to it rather than embedding its fields. | [`CONTEXT.md`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/CONTEXT.md), [`linkage.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/linkage.test.js) | Weapons are Items, but spells embed an `attack` schema in [`data/item/spell.mjs`](../module/data/item/spell.mjs). | Divergent | P0 | B1/B4: settle Foundry Attack/Weapon representation and remove embedded spell attack data. |
-| ATK-02 | Linked chains are stable, bidirectional, stale-tolerant, and cascade deletion across item -> spell/skill -> attack. | [`linkage.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/linkage.test.js) | No general owned-item linkage model exists. | Missing | P0 | B1/B4: use owned Item IDs/UUIDs and document hooks/services. |
-| ATK-03 | Linked rows keep independent names; granting skill Rank flows one way to the linked attack. | [`linkage.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/linkage.test.js) | Weapons may resolve a skill by mutable name; spell attacks share the spell document. | Divergent | P0 | B4: replace name resolution with stable linkage. |
+| --- | --- | --- | --- | --- | --- | --- |
+| ATK-01 | Every offensive action is an Attack record; a granting item/skill/spell links to it rather than embedding its fields. | [`CONTEXT.md`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/CONTEXT.md), [`linkage.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/linkage.test.js) | Creature, Mob, Vehicle, hotlist, and crew attack paths use canonical [`AttackModel`](../module/data/item/attack.mjs) Items; attack-marked Skills/Spells automatically create a linked Attack when owned or dropped, while Weapon remains inventory-only. | Aligned | - | Completed 2026-11-09. |
+| ATK-02 | Linked chains are stable, bidirectional, stale-tolerant, and cascade deletion across item -> spell/skill -> attack. | [`linkage.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/linkage.test.js) | [`item-links.mjs`](../module/rules/item-links.mjs) uses stable owned Item IDs, validates/repairs bidirectional links, tolerates stale/asymmetric references, and walks mutually linked chains for guarded cascade deletion in [`item.mjs`](../module/documents/item.mjs). | Aligned | - | Preserve while wiring compound drops and generated Attacks. |
+| ATK-03 | Linked rows keep independent names; granting skill Rank flows one way to the linked attack. | [`linkage.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/linkage.test.js) | Attack/source names remain independent; stable Item links supply the linked Skill/Spell effective Rank without mutable-name resolution. | Aligned | - | Completed 2026-11-09. |
 | ATK-04 | Attacks may select a primary skill and alternate skill uses; missing/ambiguous names are visible. | [`skilluse.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/skilluse.test.js) | One weapon `skill` name exists; alternate skill-use rows/statuses do not. | Partial | P1 | B4: define native linked-skill and alternate-use representation. |
-| ATK-05 | PC To-Hit is Stat Mod + linked/effective Rank + modifiers. | [`attacks.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/attacks.test.js), [`engine.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/engine.test.js) | [`rules/derive.mjs`](../module/rules/derive.mjs) | Partial | P0 | B4: retain formula but source Rank through stable links. |
-| ATK-06 | To-Hit and Damage are separate rolls; a spell's linked attack To-Hit invokes the same cast path as the spell. | [`_spells.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/javascript/_spells.js), [`linkage.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/linkage.test.js) | Rolls are separate; embedded attack-spell To-Hit invokes cast. | Partial | P0 | B4: preserve dual entry with linked Attack Items. |
-| ATK-07 | Damage supports die + flat modifier + roll-time modifier dice + free-text damage type. | [`_spells.js`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/source/javascript/_spells.js), [`attackfields.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/__tests__/attackfields.test.js) | Weapon and Spell Attack models/forms now accept free-text damage types; roll-time modifier dice remain missing. | Partial | P0 | B4: add roll-time damage modifier dice. |
-| ATK-08 | Zero flat damage is omitted from the label; a blank die and zero flat label as No Damage. | [`attacks.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/attacks.test.js) | [`rules/combat.mjs`](../module/rules/combat.mjs) always formats a signed flat, including `+0`. | Divergent | P1 | B4: align labels and formula/card guards. |
-| ATK-09 | Attacks have free-text Range and Notes & Effects. | [`_combat.pug`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/sections/_combat.pug), [`spells.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/spells.test.js) | No attack fields exist. | Missing | P0 | B1/B4: add fields to Attack/Weapon schema and sheets. |
+| ATK-05 | PC To-Hit is Stat Mod + linked/effective Rank + modifiers. | [`attacks.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/attacks.test.js), [`engine.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/engine.test.js) | [`rules/derive.mjs`](../module/rules/derive.mjs) resolves linked effective Rank by stable Item ID before applying Attack modifiers. | Aligned | - | Completed 2026-11-09. |
+| ATK-06 | To-Hit and Damage are separate rolls; a spell's linked attack To-Hit invokes the same cast path as the spell. | [`_spells.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/javascript/_spells.js), [`linkage.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/linkage.test.js) | [`DCCActor.rollAttack`](../module/documents/actor.mjs) keeps separate rolls and routes a Spell-linked Attack's To-Hit through `castSpell`. | Aligned | - | Completed 2026-11-09. |
+| ATK-07 | Damage supports die + flat modifier + roll-time modifier dice + free-text damage type. | [`_spells.js`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/source/javascript/_spells.js), [`attackfields.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/__tests__/attackfields.test.js) | Canonical Attacks store die/flat/free-text type; [`modifiers.mjs`](../module/rules/modifiers.mjs) preserves signed dice modifiers for derivation, labels, crew caches, and damage rolls. | Aligned | - | Completed 2026-11-09. |
+| ATK-08 | Zero flat damage is omitted from the label; a blank die and zero flat label as No Damage. | [`attacks.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/attacks.test.js) | [`rules/combat.mjs`](../module/rules/combat.mjs) matches the current Roll20 label contract, including compact signed modifiers and the No Damage fallback. | Aligned | - | Completed 2026-11-09. |
+| ATK-09 | Attacks have free-text Range and Notes & Effects. | [`_combat.pug`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/sections/_combat.pug), [`spells.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/spells.test.js) | [`AttackModel`](../module/data/item/attack.mjs) stores Range and the shared HTML description is labeled Notes & Effects on its item sheet. | Aligned | - | Completed 2026-11-09. |
 | ATK-10 | Settings control whether attack/spell Range and Notes appear in chat; Duration/Cooldown appear when set. | [`_settings.pug`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/views/_settings.pug), [`_spells.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/javascript/_spells.js) | No corresponding actor settings or card fields exist. | Missing | P1 | B2/B4: add settings and card context. |
 | ATK-11 | Chat text from editable descriptions/range/notes is sanitized and line-safe. | [`_spells.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/javascript/_spells.js), [`spells.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/spells.test.js) | [`rules/card.mjs`](../module/rules/card.mjs) strips HTML for notes. | Partial | P1 | B4: test all new card fields and Foundry HTML/text handling. |
 | ATK-12 | Crit/fumble presentation and natural-d20 extraction work for normal rolls; utility rolls suppress badges. | [`spells.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/__tests__/spells.test.js), [`rolltemplate/_index.pug`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/source/rolltemplate/_index.pug) | Foundry cards match the current Roll20 visual contract; utility-marked rolls such as manual Skill Checks retain the black header and suppress crit/fumble badges. | Aligned | - | Completed 2026-11-09. |
@@ -179,11 +168,11 @@ made directly without migration hooks, aliases, or dual-read compatibility.
 ## 7. Inventory, gear, buffs, and hotlist
 
 | ID | Contract | Roll20 evidence | Foundry evidence | Status | Priority | Batch / next action |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | INV-01 | Inventory is the canonical item store; gear slots and accessories are derived views. | [`_inventory.pug`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/sections/_inventory.pug), [`inventory.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/inventory.test.js) | Owned Items plus [`rules/inventory.mjs`](../module/rules/inventory.mjs) | Native equivalent | - | Preserve. |
 | INV-02 | Gear slots are Head, Torso, Arms, Hands, Legs, Feet; Pack is unequipped. | [`_inventory.pug`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/sections/_inventory.pug) | [`config.mjs`](../module/config.mjs), [`templates/actor/pc/inventory.hbs`](../templates/actor/pc/inventory.hbs) | Aligned | - | No change. |
 | INV-03 | Accessories list active accessory items and caps display at 10. | [`inventory.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/inventory.test.js) | [`rules/inventory.mjs`](../module/rules/inventory.mjs) | Aligned | - | No change. |
-| INV-04 | Hotlist accepts items, skills/spells, and attacks, caps at 10, and dispatches the correct action/card. | [`inventory.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/inventory.test.js), [`spells.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/spells.test.js) | [`applications/sheet-rows.mjs`](../module/applications/sheet-rows.mjs), [`documents/actor.mjs`](../module/documents/actor.mjs) | Partial | P1 | B5: retest after linked Attack changes and passive cards. |
+| INV-04 | Hotlist accepts items, skills/spells, and attacks, caps at 10, and dispatches the correct action/card. | [`inventory.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/inventory.test.js), [`spells.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/spells.test.js) | [`applications/sheet-rows.mjs`](../module/applications/sheet-rows.mjs) groups canonical Attacks after inventory/skills/spells; [`documents/actor.mjs`](../module/documents/actor.mjs) dispatches each type to its current action/card. | Aligned | - | Completed 2026-11-09. |
 | INV-05 | Hotlist placement is stable: removals leave gaps and new entries fill the lowest gap. | [`inventory.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/inventory.test.js) | Foundry derives hotlist cells from current item order; no persistent slot ownership exists. | Divergent | P2 | B5: decide whether exact stable-cell behavior is required in Foundry, then implement or document native ordering. |
 | INV-06 | Hotlisted plain items post sanitized description cards. | [`spells.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/spells.test.js) | [`documents/actor.mjs`](../module/documents/actor.mjs), [`rules/card.mjs`](../module/rules/card.mjs) | Aligned | - | Preserve. |
 | INV-07 | Item, skill, and buff descriptions remain visible in collapsed summaries when populated. | [`collapse-ui.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/collapse-ui.test.js), [`_inventory.pug`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/sections/_inventory.pug) | Foundry uses item sheets/list rows rather than equivalent collapsible cards. | Partial | P2 | B5/B9: define Foundry-native summary affordance. |
@@ -192,7 +181,7 @@ made directly without migration hooks, aliases, or dual-read compatibility.
 ## 8. Mob rules and UI
 
 | ID | Contract | Roll20 evidence | Foundry evidence | Status | Priority | Batch / next action |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | MOB-01 | Mob attack To-Hit is editable `to_hit_base` + attack modifiers + Floor; blank seeds once from 10 + Stat Mod + Rank; zero is valid. | [`engine.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/engine.test.js), [`attackfields.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/attackfields.test.js) | Foundry derives 10 + normal attack To-Hit + Floor with no editable base. | Divergent | P0 | B1/B6: add nullable base, seed-on-create/drop behavior, and current formula. |
 | MOB-02 | Mob attack To-Hit may be `None`; modifiers do not resurrect it. | [`attackfields.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/attackfields.test.js) | No representation exists. | Missing | P0 | B1/B6: model optional/none state separately from numeric zero. |
 | MOB-03 | Mob attacks may explicitly be No Damage; blank die/flat/dice also derives no damage. | [`attackfields.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/attackfields.test.js) | Damage button is always rendered for an attack row. | Missing | P0 | B1/B6: add flag, derivation, and Mob action presentation. |
@@ -208,7 +197,7 @@ made directly without migration hooks, aliases, or dual-read compatibility.
 ## 9. Vehicle, Mount, and crew
 
 | ID | Contract | Roll20 evidence | Foundry evidence | Status | Priority | Batch / next action |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | VEH-01 | Vehicle/Mount Size 1-8 controls Health Bar slots; blank defaults to Medium/4. | [`_vehicle.pug`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/views/_vehicle.pug), [`vehicle.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/vehicle.test.js) | [`data/actor/vehicle.mjs`](../module/data/actor/vehicle.mjs), [`rules/derive.mjs`](../module/rules/derive.mjs) | Aligned | - | Preserve. |
 | VEH-02 | Vehicle Con Mod defaults to 5 but may be explicitly 0. | [`_vehicle.pug`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/views/_vehicle.pug), [`vehicle.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/vehicle.test.js) | Vehicle model enforces minimum 1 and documents the deviation. | Divergent | P1 | B1/B7: allow zero and update health guards/tests. |
 | VEH-03 | Speed derives Move, Cruise, and attack penalty; Mount Step is 10. | [`CONTEXT.md`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/CONTEXT.md), [`vehicle.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/vehicle.test.js) | [`rules/vehicle.mjs`](../module/rules/vehicle.mjs), [`rules/derive.mjs`](../module/rules/derive.mjs) | Aligned | - | Preserve. |
@@ -222,7 +211,7 @@ made directly without migration hooks, aliases, or dual-read compatibility.
 ## 10. GM Screen
 
 | ID | Contract | Roll20 evidence | Foundry evidence | Status | Priority | Batch / next action |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | GM-01 | A GM Screen maintains roster, safehouse state, and a floor-end counter. | [`CONTEXT.md`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/character-sheet/CONTEXT.md), [`gmscreen.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/gmscreen.test.js) | [`data/actor/gmscreen.mjs`](../module/data/actor/gmscreen.mjs), [`applications/gmscreen-sheet.mjs`](../module/applications/gmscreen-sheet.mjs) | Native equivalent | - | Preserve. |
 | GM-02 | Rostered Crawlers are gated on available floor ends and safehouse Level Up; unrostered Crawlers are not gated. | [`gm-advancement.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/gm-advancement.test.js) | [`rules/gm-screen.mjs`](../module/rules/gm-screen.mjs), [`documents/actor.mjs`](../module/documents/actor.mjs) | Aligned | - | Preserve while updating advancement comparison/passive rules. |
 | GM-03 | Floor ends stack, roster joins baseline the cursor, and epochs prevent stale Undo restoration. | [`gm-advancement.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/gm-advancement.test.js) | [`rules/gm-screen.mjs`](../module/rules/gm-screen.mjs), [`rules/advancement.mjs`](../module/rules/advancement.mjs) | Aligned | - | Preserve. |
@@ -232,7 +221,7 @@ made directly without migration hooks, aliases, or dual-read compatibility.
 ## 11. Compendium and content drops
 
 | ID | Contract | Roll20 evidence | Foundry evidence | Status | Priority | Batch / next action |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | CMP-01 | Skills and spells import all current authored fields, check types, opposed stat, modifiers, and optional linked attacks. | [`compendium.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/compendium.test.js), [`templates/skills.json`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/compendium/core-rulebook/templates/skills.json), [`templates/spells.json`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/compendium/core-rulebook/templates/spells.json) | Foundry accepts ordinary Item drops but has no conversion/compound-drop layer. | Missing | P1 | B8 after B1-B4 schemas stabilize. |
 | CMP-02 | Gear imports quantity/slot/active/accessory/hotlist, modifiers, linked skill/spell/attack chains, and descriptions. | [`compendium.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/compendium.test.js), [`templates/gear.json`](https://github.com/nextabletop/dungeon-crawler-carl/blob/main/compendium/core-rulebook/templates/gear.json) | Core Item drop creates only the dropped Item. | Missing | P1 | B8: publish complete Foundry Items or implement atomic compound creation. |
 | CMP-03 | Data-choice gear prompts for valid options, queues choices, shows slot conflicts, revalidates, and creates nothing on cancel. | [`dropchoice.test.js`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/__tests__/dropchoice.test.js) | No choice workflow exists. | Missing | P2 | B8: implement a Foundry dialog only for content that still requires runtime choices. |
@@ -244,7 +233,7 @@ made directly without migration hooks, aliases, or dual-read compatibility.
 ## 12. UI, accessibility, and Foundry integration
 
 | ID | Contract | Roll20 evidence | Foundry evidence | Status | Priority | Batch / next action |
-|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- |
 | UI-01 | Crawler layout retains recognizable header, abilities, vitals, combat, inventory, skills, bio, and hotlist organization. | [`DungeonCrawlerCarl.pug`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/DungeonCrawlerCarl.pug) | [`applications/pc-sheet.mjs`](../module/applications/pc-sheet.mjs), [`templates/actor/pc/`](../templates/actor/pc/) | Partial | P2 | B9 after behavioral batches; do not restyle unstable fields twice. |
 | UI-02 | Mob is a condensed stat-block workflow with current combat strip, optional sections, and Notes & Debuffs. | [`_combat.pug`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/sections/_combat.pug), [`_settings.pug`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/views/_settings.pug) | [`templates/actor/mob/body.hbs`](../templates/actor/mob/body.hbs) reflects the older layout. | Divergent | P1 | B6. |
 | UI-03 | Vehicle/Mount presents current formulas, rules chips, actions, attacks, crew, and Notes & Debuffs. | [`_vehicle.pug`](https://github.com/nextabletop/dungeon-crawler-carl/tree/main/character-sheet/source/views/_vehicle.pug) | [`templates/actor/vehicle/`](../templates/actor/vehicle/), [`applications/vehicle-sheet.mjs`](../module/applications/vehicle-sheet.mjs) | Partial | P2 | B7/B9 after shared attack changes. |
@@ -303,10 +292,8 @@ made directly without migration hooks, aliases, or dual-read compatibility.
    - Live permission checks
 
 8. **B8 - Compendium/content**
-   - Generate or convert complete Foundry Items and Actors only after schemas
-     are stable
-   - Add compound/choice services only where prebuilt documents cannot express
-     the workflow
+   - Generate or convert complete Foundry Items and Actors only after schemas are stable
+   - Add compound/choice services only where prebuilt documents cannot express the workflow
 
 9. **B9 - UI and regression**
    - Visual alignment

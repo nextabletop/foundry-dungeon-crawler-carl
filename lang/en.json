@@ -10,7 +10,8 @@
       "weapon": "Weapon",
       "skill": "Skill",
       "spell": "Spell",
-      "gear": "Gear"
+      "gear": "Gear",
+      "attack": "Attack"
     }
   },
   "DCC": {
@@ -43,6 +44,9 @@
         "onHotlist": {
           "label": "On Hotlist",
           "hint": "Show on the Crawler hotlist (first 10)."
+        },
+        "linkedItemIds": {
+          "label": "Linked Items"
         },
         "stat": {
           "label": "Ability"
@@ -96,6 +100,10 @@
           "label": "Enabled",
           "hint": "This item's modifiers apply."
         },
+        "isAttack": {
+          "label": "Attack",
+          "hint": "Create a linked Attack when this Skill or Spell is owned by an Actor."
+        },
         "checkType": {
           "label": "Check"
         },
@@ -147,10 +155,20 @@
       "Attack": "Attack",
       "Inventory": "Inventory",
       "VehicleWeapon": "Vehicle Weapon",
+      "VehicleAttack": "Vehicle Attack",
       "Skill": "Skill",
       "Spell": "Spell",
       "SpellAttack": "Spell Attack",
+      "SourceLink": "Granted By",
+      "Source": "Source Item",
+      "SourceHint": "Links this Attack to one owned item using stable Foundry Item IDs.",
+      "ApplySource": "Apply Link",
+      "LinkedRankHint": "Rank is supplied by the linked Skill or Spell. Renaming either item does not break the link.",
+      "StaleLinks": "Missing linked Item IDs: {ids}",
+      "AsymmetricLinks": "One-sided links need repair: {names}",
+      "UnownedAttack": "Add this Attack to an Actor before linking a source.",
       "NotesUpgrades": "Notes & Upgrades",
+      "NotesEffects": "Notes & Effects",
       "Flags": "Flags"
     },
     "Drop": {
@@ -361,7 +379,7 @@
       "SkillCheck": "Skill Check",
       "SkillCheckTooltip": "Roll 1d20 against base Rank; equal or higher succeeds",
       "RankEffectiveTooltip": "Effective rank (with modifiers)",
-      "NoAttacks": "No weapons or attack spells.",
+      "NoAttacks": "No attacks.",
       "NoSkills": "No skills.",
       "NoSpells": "No spells."
     },
@@ -460,9 +478,9 @@
       "Race": "Race / Chase",
       "DamageResistanceAbsorbed": "DR absorbed a hit (-1 slot)",
       "DamageResistanceAbsorbedTooltip": "The vehicle loses one Health Bar slot whenever its DR reduced damage to an occupant",
-      "Weapons": "Vehicle Weapons",
+      "Weapons": "Vehicle Attacks",
       "MountAttacks": "Mount Attacks",
-      "NoWeapons": "No weapons.",
+      "NoWeapons": "No attacks.",
       "Gunner": "Gunner",
       "GunnerSlot": {
         "1": "Gunner 1",
@@ -577,7 +595,8 @@
       "CellQuantity": "{name} ×{quantity} — {action}",
       "Use": {
         "spell": "Cast",
-        "weapon": "Roll to hit",
+        "attack": "Roll to hit",
+        "weapon": "Show in chat",
         "skill": "Roll check",
         "gear": "Show in chat"
       }

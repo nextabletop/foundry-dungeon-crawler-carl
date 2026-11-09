@@ -144,7 +144,7 @@ describe('resolveModifiers — field targets', () => {
 
 describe('resolveModifiers — item targets', () => {
   const items = [
-    { id: 'w1', type: 'weapon', name: 'Longsword', system: { stat: 'strength', damageType: 'slashing' } },
+    { id: 'w1', type: 'attack', name: 'Longsword', system: { stat: 'strength', damageType: 'slashing' } },
     { id: 's1', type: 'skill', name: 'Stealth', system: { stat: 'dexterity', class: 'rogue' } },
   ];
 
@@ -154,7 +154,7 @@ describe('resolveModifiers — item targets', () => {
   });
 
   it('applies to every item sharing the name', () => {
-    const dupItems = [...items, { id: 'w2', type: 'weapon', name: 'Longsword', system: {} }];
+    const dupItems = [...items, { id: 'w2', type: 'attack', name: 'Longsword', system: {} }];
     const result = resolveModifiers([{ target: 'item:Longsword:damage', value: '2' }], dupItems);
     expect(result.itemBonus).toEqual({ w1: { damage: 2 }, w2: { damage: 2 } });
   });
@@ -167,8 +167,17 @@ describe('resolveModifiers — item targets', () => {
     expect(result.itemBonus).toEqual({ w1: { to_hit: 1, damage: 2 } });
   });
 
+  it('keeps normalized damage dice in the roll-time itemDice bucket', () => {
+    const result = resolveModifiers([
+      { target: 'item:Longsword:damage', value: '1d4' },
+      { target: 'item:Longsword:damage', value: '- 2D6' },
+    ], items);
+    expect(result.itemBonus).toEqual({});
+    expect(result.itemDice).toEqual({ w1: { damage: '+1d4-2d6' } });
+  });
+
   it('falls back to _id when an item has no id (e.g. a raw Foundry Item document shape)', () => {
-    const underscoreIdItems = [{ _id: 'w9', type: 'weapon', name: 'Longsword', system: {} }];
+    const underscoreIdItems = [{ _id: 'w9', type: 'attack', name: 'Longsword', system: {} }];
     const result = resolveModifiers([{ target: 'item:Longsword:to_hit', value: '1' }], underscoreIdItems);
     expect(result.itemBonus).toEqual({ w9: { to_hit: 1 } });
   });
@@ -197,49 +206,48 @@ describe('resolveModifiers — item targets', () => {
   });
 
   it('an item name containing a colon still resolves', () => {
-    const colonItems = [{ id: 'w3', type: 'weapon', name: 'Sword: of Legends', system: {} }];
+    const colonItems = [{ id: 'w3', type: 'attack', name: 'Sword: of Legends', system: {} }];
     const result = resolveModifiers([{ target: 'item:Sword: of Legends:to_hit', value: '1' }], colonItems);
     expect(result.itemBonus).toEqual({ w3: { to_hit: 1 } });
   });
 });
 
-describe('resolveModifiers — item targets on spells with a linked attack row', () => {
-  const attackSpell = { id: 'sp1', type: 'spell', name: 'Firebolt', system: { stat: 'intelligence', class: 'wizard', rank: 2, attack: { enabled: true, damageType: 'fire' } } };
-  const nonAttackSpell = { id: 'sp2', type: 'spell', name: 'Heal', system: { stat: 'intelligence', class: 'wizard', rank: 1, attack: { enabled: false } } };
+describe('resolveModifiers — canonical Attack and Spell item targets', () => {
+  const attack = { id: 'a1', type: 'attack', name: 'Firebolt Attack', system: { stat: 'intelligence', damageType: 'fire' } };
+  const spell = { id: 'sp1', type: 'spell', name: 'Firebolt', system: { stat: 'intelligence', class: 'wizard', rank: 2 } };
 
-  it('to_hit/damage resolve for a spell whose attack.enabled is true', () => {
-    const toHit = resolveModifiers([{ target: 'item:Firebolt:to_hit', value: '1' }], [attackSpell]);
-    expect(toHit.itemBonus).toEqual({ sp1: { to_hit: 1 } });
-    const damage = resolveModifiers([{ target: 'item:Firebolt:damage', value: '2' }], [attackSpell]);
-    expect(damage.itemBonus).toEqual({ sp1: { damage: 2 } });
+  it('to_hit/damage resolve on the Attack Item', () => {
+    const toHit = resolveModifiers([{ target: 'item:Firebolt Attack:to_hit', value: '1' }], [attack]);
+    expect(toHit.itemBonus).toEqual({ a1: { to_hit: 1 } });
+    const damage = resolveModifiers([{ target: 'item:Firebolt Attack:damage', value: '2' }], [attack]);
+    expect(damage.itemBonus).toEqual({ a1: { damage: 2 } });
   });
 
-  it('a spell still resolves rank/mana_cost regardless of attack.enabled', () => {
-    const result = resolveModifiers([{ target: 'item:Firebolt:rank', value: '1' }], [attackSpell]);
+  it('a Spell independently resolves rank/mana_cost', () => {
+    const result = resolveModifiers([{ target: 'item:Firebolt:rank', value: '1' }], [spell]);
     expect(result.itemBonus).toEqual({ sp1: { rank: 1 } });
   });
 
-  it('to_hit/damage are unresolved (illegalAspect) for a spell whose attack.enabled is false', () => {
-    const toHit = resolveModifiers([{ target: 'item:Heal:to_hit', value: '1' }], [nonAttackSpell]);
+  it('to_hit/damage are unresolved for a Spell', () => {
+    const toHit = resolveModifiers([{ target: 'item:Firebolt:to_hit', value: '1' }], [spell]);
     expect(toHit.itemBonus).toEqual({});
-    expect(toHit.unresolved).toEqual([{ target: 'item:Heal:to_hit', reason: 'illegalAspect', modifier: { target: 'item:Heal:to_hit', value: '1' } }]);
-
-    const damage = resolveModifiers([{ target: 'item:Heal:damage', value: '1' }], [nonAttackSpell]);
-    expect(damage.itemBonus).toEqual({});
-    expect(damage.unresolved).toEqual([{ target: 'item:Heal:damage', reason: 'illegalAspect', modifier: { target: 'item:Heal:damage', value: '1' } }]);
+    expect(toHit.unresolved).toEqual([{
+      target: 'item:Firebolt:to_hit', reason: 'illegalAspect', modifier: { target: 'item:Firebolt:to_hit', value: '1' },
+    }]);
   });
 });
 
 describe('resolveModifiers — group targets', () => {
-  const weapon = { id: 'w1', type: 'weapon', name: 'Axe', system: { stat: 'strength', damageType: 'slashing' } };
-  const attackSpell = { id: 'sp1', type: 'spell', name: 'Firebolt', system: { stat: 'intelligence', class: 'wizard', attack: { enabled: true, damageType: 'fire' } } };
-  const nonAttackSpell = { id: 'sp2', type: 'spell', name: 'Heal', system: { stat: 'intelligence', class: 'wizard', attack: { enabled: false } } };
+  const axe = { id: 'a1', type: 'attack', name: 'Axe', system: { stat: 'strength', damageType: 'slashing' } };
+  const fire = { id: 'a2', type: 'attack', name: 'Firebolt Attack', system: { stat: 'intelligence', damageType: 'fire' } };
+  const attackSpell = { id: 'sp1', type: 'spell', name: 'Firebolt', system: { stat: 'intelligence', class: 'wizard' } };
+  const nonAttackSpell = { id: 'sp2', type: 'spell', name: 'Heal', system: { stat: 'intelligence', class: 'wizard' } };
   const skill = { id: 's1', type: 'skill', name: 'Stealth', system: { stat: 'dexterity', class: 'rogue' } };
-  const items = [weapon, attackSpell, nonAttackSpell, skill];
+  const items = [axe, fire, attackSpell, nonAttackSpell, skill];
 
-  it('group:attacks matches weapon-type items and spells with attack.enabled', () => {
+  it('group:attacks matches canonical Attack Items', () => {
     const result = resolveModifiers([{ target: 'group:attacks:to_hit', value: '1' }], items);
-    expect(result.itemBonus).toEqual({ w1: { to_hit: 1 }, sp1: { to_hit: 1 } });
+    expect(result.itemBonus).toEqual({ a1: { to_hit: 1 }, a2: { to_hit: 1 } });
   });
 
   it('group:skills matches skill and spell items', () => {
@@ -249,18 +257,17 @@ describe('resolveModifiers — group targets', () => {
 
   it('filters by attribute with a case-insensitive string equality compare', () => {
     const result = resolveModifiers([{ target: 'group:attacks:damage_type=SLASHING:damage', value: '2' }], items);
-    expect(result.itemBonus).toEqual({ w1: { damage: 2 } });
+    expect(result.itemBonus).toEqual({ a1: { damage: 2 } });
   });
 
-  it('damage_type on a spell reads its embedded attack row (system.attack.damageType), not system.damageType', () => {
+  it('filters a canonical Attack by damage type', () => {
     const result = resolveModifiers([{ target: 'group:attacks:damage_type=fire:damage', value: '2' }], items);
-    expect(result.itemBonus).toEqual({ sp1: { damage: 2 } });
+    expect(result.itemBonus).toEqual({ a2: { damage: 2 } });
   });
 
   it('!= against an item missing the attribute entirely treats the missing value as "" (so it matches a non-empty filter)', () => {
-    const noDamageType = { id: 'w4', type: 'weapon', name: 'Bare Fists', system: { stat: 'strength' } };
-    const result = resolveModifiers([{ target: 'group:attacks:damage_type!=slashing:to_hit', value: '1' }], [weapon, noDamageType]);
-    // weapon has damageType 'slashing' (excluded); noDamageType has none, reads as '' !== 'slashing', so it matches.
+    const noDamageType = { id: 'w4', type: 'attack', name: 'Bare Fists', system: { stat: 'strength' } };
+    const result = resolveModifiers([{ target: 'group:attacks:damage_type!=slashing:to_hit', value: '1' }], [axe, noDamageType]);
     expect(result.itemBonus).toEqual({ w4: { to_hit: 1 } });
   });
 
@@ -325,14 +332,15 @@ describe('resolveModifiers — group targets', () => {
       { target: 'item:Axe:to_hit', value: '1' },
       { target: 'group:attacks:to_hit', value: '2' },
     ], items);
-    expect(result.itemBonus).toEqual({ w1: { to_hit: 3 }, sp1: { to_hit: 2 } });
+    expect(result.itemBonus).toEqual({ a1: { to_hit: 3 }, a2: { to_hit: 2 } });
   });
 });
 
 describe('resolveModifiers — robustness', () => {
   it('tolerates null/undefined mods and items', () => {
-    expect(resolveModifiers(null, null)).toEqual({ bonus: {}, percent: {}, itemBonus: {}, itemPercent: {}, unresolved: [] });
-    expect(resolveModifiers(undefined, undefined)).toEqual({ bonus: {}, percent: {}, itemBonus: {}, itemPercent: {}, unresolved: [] });
+    const empty = { bonus: {}, percent: {}, itemBonus: {}, itemPercent: {}, dice: {}, itemDice: {}, unresolved: [] };
+    expect(resolveModifiers(null, null)).toEqual(empty);
+    expect(resolveModifiers(undefined, undefined)).toEqual(empty);
   });
 
   it('an undefined modifier.target is unresolved with reason "parse"', () => {
@@ -346,8 +354,8 @@ describe('resolveModifiers — robustness', () => {
 // Foundry spellings have no aliases, so a stale change key surfaces as Unresolved.
 describe('resolveModifiers — old Foundry spellings are not aliases', () => {
   const items = [
-    { id: 'w1', type: 'weapon', name: 'Longsword', system: { stat: 'strength', damageType: 'slashing' } },
-    { id: 'sp1', type: 'spell', name: 'Firebolt', system: { stat: 'intelligence', manaCost: 4, attack: { enabled: false } } },
+    { id: 'w1', type: 'attack', name: 'Longsword', system: { stat: 'strength', damageType: 'slashing' } },
+    { id: 'sp1', type: 'spell', name: 'Firebolt', system: { stat: 'intelligence', manaCost: 4 } },
   ];
 
   it.each([

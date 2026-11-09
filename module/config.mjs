@@ -6,7 +6,7 @@ export const GEAR_SLOTS = ['head', 'torso', 'arms', 'hands', 'legs', 'feet'];
 export const ITEM_SLOTS = ['pack', ...GEAR_SLOTS];
 export const CHECK_TYPES = ['opposed', 'unopposed', 'evade', 'passive'];
 export const FIELD_TARGETS = [...STATS, 'damage_resistance', 'evade', 'move', 'step', 'mana'];
-export const ITEM_ASPECTS = { weapon: ['to_hit', 'damage'], skill: ['rank', 'mana_cost'], spell: ['rank', 'mana_cost'] };
+export const ITEM_ASPECTS = { attack: ['to_hit', 'damage'], skill: ['rank', 'mana_cost'], spell: ['rank', 'mana_cost'] };
 export const GUNNER_SLOTS = ['driver', '1', '2', '3', '4'];
 /** Vehicle crew roles (VehicleModel.crew[].role): one Driver (Rider on a mount), one per Gunner slot, any number of passengers. */
 export const CREW_ROLES = ['driver', 'gunner1', 'gunner2', 'gunner3', 'gunner4', 'passenger'];
