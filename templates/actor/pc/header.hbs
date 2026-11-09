@@ -11,6 +11,7 @@
             on the button itself would never explain why it is disabled. A disabled End Floor /
             Level Up / Undo also points aria-describedby at a visually-hidden copy of that reason. --}}
       <div class="dcc-hdr-actions">
+        {{!--
         <span class="dcc-advancement" data-tooltip="{{localize 'DCC.Advance.EndSessionTooltip'}}">
           <button type="button" class="dcc-rollbtn" id="{{@root.rootId}}-advancement-endSession" data-action="advancementEndSession"
                   {{disabled (not advancement.canAct)}}>{{localize "DCC.Advance.EndSession"}}</button>
@@ -27,6 +28,8 @@
                   {{disabled (not advancement.canLevelUp)}}>{{localize "DCC.Advance.LevelUp"}}</button>
           {{#unless advancement.canLevelUp}}<span class="dcc-sr-only" id="{{@root.rootId}}-advancement-levelUp-why">{{localize advancement.levelUpTooltip}}</span>{{/unless}}
         </span>
+        --}}
+        {{!--
         <span class="dcc-advancement" data-tooltip="{{localize advancement.undoTooltip}}">
           <button type="button" class="dcc-rollbtn" id="{{@root.rootId}}-advancement-undo" data-action="advancementUndo"
                   {{#unless advancement.canUndo}}aria-describedby="{{@root.rootId}}-advancement-undo-why"{{/unless}}
@@ -41,11 +44,14 @@
           <span class="lbl">{{localize "DCC.Advance.StatPoints"}}</span>
           <span class="val">{{advancement.statPoints}}</span>
         </span>
+        --}}
+        {{!--
         {{#if advancement.safehouseBadge}}
         <span class="dcc-advancement-badge dcc-safehouse" data-tooltip="{{localize 'DCC.GmScreen.BadgeTooltip'}}">
           <span class="lbl">{{localize "DCC.GmScreen.Badge"}}</span>
         </span>
         {{/if}}
+        --}}
       </div>
     </div>
     <div class="dcc-headmain dcc-pcfields">

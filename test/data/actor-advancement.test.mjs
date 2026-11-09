@@ -79,7 +79,7 @@ describe('endSession', () => {
     const zap = makeItem('spell', 'Zap', { rank: 4, mark: true });             // due (spell), d20 3 <= 4 -> stays 4
     const idle = makeItem('skill', 'Idle', { rank: 1, mark: false });          // not marked
     const high = makeItem('skill', 'High', { rank: 7, mark: true });           // rank >= 5: floor only
-    const passive = makeItem('skill', 'Passive', { rank: 0, mark: true, passive: true });
+    const passive = makeItem('skill', 'Passive', { rank: 0, mark: true, checkType: 'passive' });
     const sword = makeItem('weapon', 'Sword', { rank: 0, mark: true });        // not a skill
     const actor = makeActor({ items: [knives, zap, idle, high, passive, sword], system: { pendingLevels: 1 } });
     FixedRoll.queue = [5, 3];

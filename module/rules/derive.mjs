@@ -14,7 +14,7 @@ import { resolveModifiers } from './modifiers.mjs';
 import { clampSlots, healthPointsFromHealthBar, maxHealthPointsFromConstitution } from './health.mjs';
 import { attackToHit, damageLabel, mobToHit, mobEvade } from './combat.mjs';
 import { vehicleMove, cruiseMph } from './vehicle.mjs';
-import { idOf, isAttackSpell, normName } from './items.mjs';
+import { idOf, isAttackSpell, isPassiveCheck, normName } from './items.mjs';
 
 // Entry sanitation. Accept any iterable (arrays, Sets, and Foundry's
 // EmbeddedCollection, which extends Map — for a Map, take its values, since
@@ -61,7 +61,7 @@ const deriveItemRow = (item, context) => {
 
   if (item.type === 'skill' || item.type === 'spell') {
     row.rankEffective = applyModifiers(+sys.rank || 0, itemBonus.rank || 0, itemPercent.rank || 0);
-    row.skillBonus = modifierFor(sys.stat) + row.rankEffective;
+    row.skillBonus = (isPassiveCheck(sys) ? 0 : modifierFor(sys.stat)) + row.rankEffective;
     if (item.type === 'spell') {
       row.manaCostEffective = applyModifiers(+sys.manaCost || 0, itemBonus.mana_cost || 0, itemPercent.mana_cost || 0);
     }

@@ -6,9 +6,11 @@
       {{formGroup systemFields.stat value=systemSource.stat options=selectOptions.stat rootId=rootId}}
       {{formGroup systemFields.rank value=systemSource.rank rootId=rootId}}
       {{formGroup systemFields.skill value=systemSource.skill rootId=rootId classes="dcc-item-wide"}}
-      {{formGroup systemFields.die value=systemSource.die rootId=rootId}}
-      {{formGroup systemFields.damageBonus value=systemSource.damageBonus rootId=rootId}}
-      {{formGroup systemFields.damageType value=systemSource.damageType options=selectOptions.damageType blank=false rootId=rootId}}
+      <div class="dcc-item-damage-grid">
+        {{formGroup systemFields.die value=systemSource.die rootId=rootId}}
+        {{formGroup systemFields.damageBonus value=systemSource.damageBonus rootId=rootId}}
+        {{formGroup systemFields.damageType value=systemSource.damageType rootId=rootId}}
+      </div>
     </div>
   </div>
   <div class="dcc-box dcc-item-section">

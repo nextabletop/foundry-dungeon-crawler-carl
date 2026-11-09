@@ -194,6 +194,19 @@ describe('deriveCreature — skills and spells', () => {
     expect(d.items.s1.manaCostEffective).toBeUndefined();
   });
 
+  it('a Passive skill or spell uses effective Rank only, without its Stat Mod', () => {
+    const d = deriveCreature(pc({
+      stats: stats({ dexterity: 50, intelligence: 100 }),
+      items: [
+        skill('s1', 'Powerful', { stat: 'dexterity', rank: 2, checkType: 'passive' }),
+        spell('sp1', 'Aura', { stat: 'intelligence', rank: 3, checkType: 'passive' }),
+      ],
+      modifiers: [{ target: 'group:skills:rank', value: '1' }],
+    }));
+    expect(d.items.s1).toMatchObject({ rankEffective: 3, skillBonus: 3 });
+    expect(d.items.sp1).toMatchObject({ rankEffective: 4, skillBonus: 4 });
+  });
+
   it('spell manaCost 10 with item:Fireball:mana_cost -50% -> 5', () => {
     const d = deriveCreature(pc({
       items: [spell('sp1', 'Fireball', { manaCost: 10 })],

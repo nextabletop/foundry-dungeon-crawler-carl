@@ -1712,6 +1712,12 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 8px 10px;
 }
+.dcc.sheet.item .dcc-item-damage-grid {
+  display: grid;
+  grid-template-columns: minmax(72px, 0.7fr) minmax(72px, 0.7fr) minmax(180px, 2fr);
+  gap: 8px 10px;
+}
+.dcc.sheet.item .dcc-item-grid > .dcc-item-damage-grid { grid-column: 1 / -1; }
 /* Label above its input (the R20 field look), hint under both. */
 .dcc.sheet.item .dcc-item-grid .form-group { flex-direction: column; align-items: stretch; gap: 3px; }
 .dcc.sheet.item .dcc-item-grid .form-group > label { flex: none; line-height: 1.2; }

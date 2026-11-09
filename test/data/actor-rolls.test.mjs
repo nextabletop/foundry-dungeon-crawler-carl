@@ -33,6 +33,22 @@ describe('rollSkill', () => {
     expect(fields).toEqual({ name: 'Knives', tag: 'DCC.CheckType.opposed' });
     expect(formulas).toEqual({ roll: '1d20 + 4' });
   });
+  it('an Opposed skill names the opposing stat in its tag', async () => {
+    const actor = makeActor();
+    await actor.rollSkill(own(actor, makeItem('skill', 'Persuade', {
+      checkType: 'opposed', opposedStat: 'charisma',
+    }, { skillBonus: 4 })));
+    expect(postCard.mock.calls[0][1].tag).toBe('CHA-DCC.CheckType.opposed');
+  });
+  it('a Passive skill posts its description without a d20', async () => {
+    const actor = makeActor();
+    await actor.rollSkill(own(actor, makeItem('skill', 'Powerful', {
+      checkType: 'passive', description: '<p>Multiply damage.</p><p>Rank 2: +1</p>',
+    }, { skillBonus: 2 })));
+    const [, fields, formulas] = postCard.mock.calls[0];
+    expect(fields).toEqual({ name: 'Powerful', tag: 'DCC.CheckType.passive', note: 'Multiply damage.\nRank 2: +1' });
+    expect(formulas).toEqual({});
+  });
   it('a spell routes to castSpell (spends mana)', async () => {
     const actor = makeActor();
     await actor.rollSkill(own(actor, makeItem('spell', 'Zap', { enabled: true }, { skillBonus: 1, manaCostEffective: 3 })));
@@ -109,6 +125,17 @@ describe('castSpell', () => {
     const spell = makeItem('spell', 'Zap', { enabled: true }, { skillBonus: 1, manaCostEffective: 1 });
     await actor.castSpell(own(actor, spell));
     expect(spell.update).not.toHaveBeenCalled();
+  });
+  it('a Passive spell spends mana and posts no d20', async () => {
+    const actor = makeActor();
+    const spell = makeItem('spell', 'Aura', {
+      enabled: true, checkType: 'passive',
+    }, { skillBonus: 2, manaCostEffective: 3 });
+    await actor.castSpell(own(actor, spell));
+    const [, fields, formulas] = postCard.mock.calls[0];
+    expect(fields).toEqual({ name: 'Aura', tag: 'DCC.CheckType.passive', cost: 3, insufficient: false });
+    expect(formulas).toEqual({});
+    expect(actor.update).toHaveBeenCalledWith({ 'system.mana.value': 2 });
   });
   it('not a spell -> nothing', async () => {
     const actor = makeActor();

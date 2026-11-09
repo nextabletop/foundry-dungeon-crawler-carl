@@ -3,7 +3,7 @@
 // No Foundry globals — see foundry/module/rules/ conventions.
 
 import { CREW_ROLES } from '../config.mjs';
-import { idOf, isAttackSpell } from './items.mjs';
+import { checkTypeLabel, idOf, isAttackSpell, isPassiveCheck } from './items.mjs';
 import { signedFormula, mobToHit } from './combat.mjs';
 import { joinNotes } from './card.mjs';
 
@@ -59,7 +59,8 @@ const num = (v) => (Number.isFinite(+v) ? +v : 0);
 
 /**
  * The crew cache (R20 crewPayload): `{ statModifiers, skills, attacks }`.
- * - skills: skills then spells (R20 spells are skill rows), `{ id, name, stat, bonus }`
+ * - skills: skills then spells (R20 spells are skill rows),
+ *   `{ id, name, stat, bonus, checkType, opposedStat, description }`
  * - attacks: weapons then attack-enabled spells, `{ id, name, toHit, die, damageBase, damageType }`;
  *   a spell's die / type come from `system.attack`
  * `items` are plain `{ id, type, name, system }` with `system.derived`.
@@ -68,7 +69,13 @@ export const crewCacheFrom = ({ statModifiers = {}, items = [] } = {}) => {
   const list = [...(items ?? [])];
   const of = type => list.filter(i => i?.type === type);
   const skills = [...of('skill'), ...of('spell')].map(i => ({
-    id: idOf(i), name: i.name, stat: i.system?.stat ?? '', bonus: num(i.system?.derived?.skillBonus),
+    id: idOf(i),
+    name: i.name,
+    stat: i.system?.stat ?? '',
+    bonus: num(i.system?.derived?.skillBonus),
+    checkType: i.system?.checkType ?? 'opposed',
+    opposedStat: i.system?.opposedStat ?? '',
+    description: i.system?.description ?? '',
   }));
   const attacks = [...of('weapon'), ...of('spell').filter(isAttackSpell)].map((i) => {
     const src = i.type === 'spell' ? (i.system.attack ?? {}) : (i.system ?? {});
@@ -115,9 +122,11 @@ export const crewSkillCard = ({ crewName, skill = {}, mob = false, vehicleName, 
   const vehicle = vehicleLabel(vehicleName, t);
   const fields = {
     name: t(`${CREW_CARD}.SkillName`, { crew: crewName, skill: skill.name }),
-    note: t(`${CREW_CARD}.Aboard`, { vehicle }),
+    tag: checkTypeLabel(skill.checkType, skill.opposedStat, key => t(key)),
+    note: joinNotes([t(`${CREW_CARD}.Aboard`, { vehicle }), skill.description]),
   };
   if (aboardPenalty) fields.penalty = t(`${CREW_CARD}.AboardPenalty`, { vehicle, penalty: aboardPenalty });
+  if (isPassiveCheck(skill)) return { fields };
   if (mob) return { fields: { ...fields, target: mobToHit(bonus + aboardPenalty, floor) } };
   return { fields, roll: withPenalty('1d20', bonus, aboardPenalty) };
 };

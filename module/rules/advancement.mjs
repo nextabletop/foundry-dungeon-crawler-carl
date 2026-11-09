@@ -6,6 +6,7 @@ import {
   UNDO_MAX, RANK_CAP, RANK_CAP_DEEP, RANK_CAP_DEEP_FLOOR, LEVEL_UP_MIN_FLOOR, ADVANCING_TYPES,
 } from '../config.mjs';
 import { isActive } from './engine.mjs';
+import { isPassiveCheck } from './items.mjs';
 
 // Advancement roll: a 1d20 that must EXCEED the current rank to raise it by 1.
 export const advancementRoll = (rank, d20) => {
@@ -40,17 +41,17 @@ export const undoPop = (stack) => {
 };
 
 // Is `skill` due to advance at `trigger`? A Foundry item, shaped like
-// inventory.mjs's items: { id, system: { rank, mark, passive } }. Due means
+// inventory.mjs's items: { id, system: { rank, mark, checkType } }. Due means
 // marked, not passive, and advancesAt(rank, trigger) holds.
 export const isDue = (skill, trigger) => {
   const system = skill?.system || {};
-  return isActive(system.mark) && !isActive(system.passive) && advancesAt(system.rank, trigger);
+  return isActive(system.mark) && !isPassiveCheck(system) && advancesAt(system.rank, trigger);
 };
 
 // New pure function replacing R20's processAdvancement worker
 // (character-sheet/source/sections/_skills.pug:169-181), re-expressed over
 // Foundry item shapes instead of attributes/sections.
-//   skills: [{ id, system: { rank, mark, passive } }]
+//   skills: [{ id, system: { rank, mark, checkType } }]
 //   rolls:  {[id]: d20}
 // Per R20: the mark is cleared on EVERY due row, even when the d20 roll fails
 // to exceed the current rank (advancementRoll then leaves rank unchanged, but

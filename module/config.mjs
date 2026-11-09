@@ -2,10 +2,9 @@ export const SYSTEM_ID = 'dungeon-crawler-carl';
 export const STATS = ['strength', 'intelligence', 'constitution', 'dexterity', 'charisma'];
 /** Roll-data short keys for stat mods (@str .. @cha); see CreatureModel#rollShortcuts. */
 export const ROLL_ABBR = { strength: 'str', intelligence: 'int', constitution: 'con', dexterity: 'dex', charisma: 'cha' };
-export const DAMAGE_TYPES = ['slashing', 'piercing', 'bludgeoning', 'fire', 'cold', 'lightning', 'poison', 'psychic', 'force', 'necrotic'];
 export const GEAR_SLOTS = ['head', 'torso', 'arms', 'hands', 'legs', 'feet'];
 export const ITEM_SLOTS = ['pack', ...GEAR_SLOTS];
-export const CHECK_TYPES = ['opposed', 'unopposed', 'generic'];
+export const CHECK_TYPES = ['opposed', 'unopposed', 'evade', 'passive'];
 export const FIELD_TARGETS = [...STATS, 'damage_resistance', 'evade', 'move', 'step', 'mana'];
 export const ITEM_ASPECTS = { weapon: ['to_hit', 'damage'], skill: ['rank', 'mana_cost'], spell: ['rank', 'mana_cost'] };
 export const GUNNER_SLOTS = ['driver', '1', '2', '3', '4'];

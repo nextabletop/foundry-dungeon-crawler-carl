@@ -84,21 +84,21 @@ describe('undo stack (~20 deep)', () => {
 // passive } } (like inventory.mjs's items), used by planAdvancement.
 describe('isDue (marked, not passive, and advancesAt holds)', () => {
   it('due when marked, active (non-passive), and advancesAt holds', () => {
-    expect(isDue({ id: 'a', system: { rank: 3, mark: true, passive: false } }, 'session')).toBe(true);
+    expect(isDue({ id: 'a', system: { rank: 3, mark: true, checkType: 'opposed' } }, 'session')).toBe(true);
   });
   it('not due when unmarked', () => {
-    expect(isDue({ id: 'a', system: { rank: 3, mark: false, passive: false } }, 'session')).toBe(false);
+    expect(isDue({ id: 'a', system: { rank: 3, mark: false, checkType: 'opposed' } }, 'session')).toBe(false);
   });
   it('not due when passive, even if marked', () => {
-    expect(isDue({ id: 'a', system: { rank: 3, mark: true, passive: true } }, 'session')).toBe(false);
+    expect(isDue({ id: 'a', system: { rank: 3, mark: true, checkType: 'passive' } }, 'session')).toBe(false);
   });
   it('not due at the wrong trigger for this rank', () => {
-    expect(isDue({ id: 'a', system: { rank: 3, mark: true, passive: false } }, 'floor')).toBe(false);
-    expect(isDue({ id: 'a', system: { rank: 5, mark: true, passive: false } }, 'session')).toBe(false);
+    expect(isDue({ id: 'a', system: { rank: 3, mark: true, checkType: 'opposed' } }, 'floor')).toBe(false);
+    expect(isDue({ id: 'a', system: { rank: 5, mark: true, checkType: 'opposed' } }, 'session')).toBe(false);
   });
-  it('accepts R20-style string flags via isActive ("1"/"0")', () => {
-    expect(isDue({ id: 'a', system: { rank: 3, mark: '1', passive: '0' } }, 'session')).toBe(true);
-    expect(isDue({ id: 'a', system: { rank: 3, mark: '0', passive: '0' } }, 'session')).toBe(false);
+  it('accepts R20-style string mark flags via isActive ("1"/"0")', () => {
+    expect(isDue({ id: 'a', system: { rank: 3, mark: '1', checkType: 'opposed' } }, 'session')).toBe(true);
+    expect(isDue({ id: 'a', system: { rank: 3, mark: '0', checkType: 'opposed' } }, 'session')).toBe(false);
   });
 });
 
@@ -107,7 +107,7 @@ describe('isDue (marked, not passive, and advancesAt holds)', () => {
 describe('planAdvancement', () => {
   it('advances a marked, non-passive, due skill and clears its mark', () => {
     const { updates } = planAdvancement({
-      skills: [{ id: 'a', system: { rank: 3, mark: true, passive: false } }],
+      skills: [{ id: 'a', system: { rank: 3, mark: true, checkType: 'opposed' } }],
       trigger: 'session',
       floor: 1,
       rolls: { a: 10 }, // exceeds rank 3
@@ -117,7 +117,7 @@ describe('planAdvancement', () => {
 
   it('clears the mark even when the d20 roll fails to advance the rank', () => {
     const { updates } = planAdvancement({
-      skills: [{ id: 'a', system: { rank: 3, mark: true, passive: false } }],
+      skills: [{ id: 'a', system: { rank: 3, mark: true, checkType: 'opposed' } }],
       trigger: 'session',
       floor: 1,
       rolls: { a: 1 }, // does not exceed rank 3
@@ -127,7 +127,7 @@ describe('planAdvancement', () => {
 
   it('skips unmarked rows', () => {
     const { updates } = planAdvancement({
-      skills: [{ id: 'a', system: { rank: 3, mark: false, passive: false } }],
+      skills: [{ id: 'a', system: { rank: 3, mark: false, checkType: 'opposed' } }],
       trigger: 'session',
       floor: 1,
       rolls: { a: 20 },
@@ -137,7 +137,7 @@ describe('planAdvancement', () => {
 
   it('skips passive rows, even when marked', () => {
     const { updates } = planAdvancement({
-      skills: [{ id: 'a', system: { rank: 3, mark: true, passive: true } }],
+      skills: [{ id: 'a', system: { rank: 3, mark: true, checkType: 'passive' } }],
       trigger: 'session',
       floor: 1,
       rolls: { a: 20 },
@@ -147,7 +147,7 @@ describe('planAdvancement', () => {
 
   it('skips rows not due at this trigger (rank <= 4 advances at session, not floor)', () => {
     const { updates } = planAdvancement({
-      skills: [{ id: 'a', system: { rank: 3, mark: true, passive: false } }],
+      skills: [{ id: 'a', system: { rank: 3, mark: true, checkType: 'opposed' } }],
       trigger: 'floor',
       floor: 1,
       rolls: { a: 20 },
@@ -157,7 +157,7 @@ describe('planAdvancement', () => {
 
   it('skips rows not due at this trigger (rank >= 5 advances at floor, not session)', () => {
     const { updates } = planAdvancement({
-      skills: [{ id: 'a', system: { rank: 5, mark: true, passive: false } }],
+      skills: [{ id: 'a', system: { rank: 5, mark: true, checkType: 'opposed' } }],
       trigger: 'session',
       floor: 1,
       rolls: { a: 20 },
@@ -168,8 +168,8 @@ describe('planAdvancement', () => {
   it('a floor-trigger pass advances only the floor-due row, clamped to the floor cap (the low-rank row is session-due, not floor-due)', () => {
     const { updates } = planAdvancement({
       skills: [
-        { id: 'a', system: { rank: 15, mark: true, passive: false } },
-        { id: 'b', system: { rank: 2, mark: true, passive: false } },
+        { id: 'a', system: { rank: 15, mark: true, checkType: 'opposed' } },
+        { id: 'b', system: { rank: 2, mark: true, checkType: 'opposed' } },
       ],
       trigger: 'floor', // rank 15 (>4) is only due at floor end; rank 2 (<=4) is session-due, so b is skipped here
       floor: 4,
@@ -183,8 +183,8 @@ describe('planAdvancement', () => {
   it('processes multiple due session-trigger rows independently', () => {
     const { updates } = planAdvancement({
       skills: [
-        { id: 'a', system: { rank: 4, mark: true, passive: false } },
-        { id: 'b', system: { rank: 2, mark: true, passive: false } },
+        { id: 'a', system: { rank: 4, mark: true, checkType: 'opposed' } },
+        { id: 'b', system: { rank: 2, mark: true, checkType: 'opposed' } },
       ],
       trigger: 'session',
       floor: 4,
@@ -202,7 +202,7 @@ describe('planAdvancement', () => {
   // throws, naming the offending id, instead of defaulting the roll to 0.
   it('throws, naming the id, when a due row has no roll', () => {
     expect(() => planAdvancement({
-      skills: [{ id: 'missing-roll', system: { rank: 3, mark: true, passive: false } }],
+      skills: [{ id: 'missing-roll', system: { rank: 3, mark: true, checkType: 'opposed' } }],
       trigger: 'session',
       floor: 1,
       rolls: {},
@@ -211,7 +211,7 @@ describe('planAdvancement', () => {
 
   it('does not throw for a due row with roll 0 (falsy but present)', () => {
     const { updates } = planAdvancement({
-      skills: [{ id: 'a', system: { rank: 3, mark: true, passive: false } }],
+      skills: [{ id: 'a', system: { rank: 3, mark: true, checkType: 'opposed' } }],
       trigger: 'session',
       floor: 1,
       rolls: { a: 0 },
@@ -221,7 +221,7 @@ describe('planAdvancement', () => {
 
   it('does not throw for a non-due row with no roll (never evaluated)', () => {
     const { updates } = planAdvancement({
-      skills: [{ id: 'a', system: { rank: 3, mark: false, passive: false } }],
+      skills: [{ id: 'a', system: { rank: 3, mark: false, checkType: 'opposed' } }],
       trigger: 'session',
       floor: 1,
       rolls: {},
@@ -233,7 +233,7 @@ describe('planAdvancement', () => {
   // must both throw the missing-roll error, not just an absent key.
   it('throws when rolls is null', () => {
     expect(() => planAdvancement({
-      skills: [{ id: 'a', system: { rank: 3, mark: true, passive: false } }],
+      skills: [{ id: 'a', system: { rank: 3, mark: true, checkType: 'opposed' } }],
       trigger: 'session',
       floor: 1,
       rolls: null,
@@ -242,7 +242,7 @@ describe('planAdvancement', () => {
 
   it('throws when the due row\'s roll is explicitly undefined', () => {
     expect(() => planAdvancement({
-      skills: [{ id: 'a', system: { rank: 3, mark: true, passive: false } }],
+      skills: [{ id: 'a', system: { rank: 3, mark: true, checkType: 'opposed' } }],
       trigger: 'session',
       floor: 1,
       rolls: { a: undefined },
@@ -253,7 +253,7 @@ describe('planAdvancement', () => {
 describe('snapshot (R20 snapshotState)', () => {
   const actorLike = {
     items: [
-      { id: 'k', type: 'skill', system: { rank: 3, mark: true, passive: false } },
+      { id: 'k', type: 'skill', system: { rank: 3, mark: true, checkType: 'opposed' } },
       { id: 's', type: 'spell', system: { rank: 6, mark: false } },
       { id: 'w', type: 'weapon', system: { rank: 2 } },
       { id: 'g', type: 'gear', system: {} },

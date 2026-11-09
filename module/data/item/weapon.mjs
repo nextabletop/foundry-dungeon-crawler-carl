@@ -1,5 +1,5 @@
 import BaseItemModel from './base-item.mjs';
-import { STATS, DAMAGE_TYPES, ITEM_SLOTS, GUNNER_SLOTS } from '../../config.mjs';
+import { STATS, ITEM_SLOTS, GUNNER_SLOTS } from '../../config.mjs';
 import { int, str, bool } from '../_fields.mjs';
 
 export default class WeaponModel extends BaseItemModel {
@@ -13,7 +13,7 @@ export default class WeaponModel extends BaseItemModel {
       skill: str(),
       die: str('1d6'),
       damageBonus: int(0),
-      damageType: str('bludgeoning', { choices: ['', ...DAMAGE_TYPES], blank: true }),
+      damageType: str('bludgeoning'),
       // Inventory
       quantity: int(1),
       slot: str('pack', { choices: ITEM_SLOTS }),

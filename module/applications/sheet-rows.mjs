@@ -91,6 +91,7 @@ const attackRow = (item) => {
 const skillRow = (item) => {
   const src = item.system._source ?? item.system;
   const d = item.system.derived ?? {};
+  const isPassive = src.checkType === 'passive';
   const row = {
     id: item.id,
     name: item.name,
@@ -102,8 +103,11 @@ const skillRow = (item) => {
     bonus: d.skillBonus,
     mark: src.mark,
     enabled: src.enabled,
-    passive: src.passive,
     checkType: src.checkType,
+    opposedStat: src.opposedStat,
+    isOpposed: src.checkType === 'opposed',
+    isPassive,
+    markable: !isPassive,
     onHotlist: src.onHotlist,
   };
   if (item.type === 'spell') {

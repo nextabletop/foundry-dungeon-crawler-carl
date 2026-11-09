@@ -7,6 +7,10 @@ import { crewingOf } from '../rules/crew.mjs';
 
 /** Check-type <select> choices: value -> label key. */
 const CHECK_TYPE_OPTIONS = Object.freeze(Object.fromEntries(CHECK_TYPES.map(t => [t, `DCC.CheckType.${t}`])));
+const OPPOSED_STAT_OPTIONS = Object.freeze({
+  '': 'DCC.None',
+  ...Object.fromEntries(STATS.map(stat => [stat, `DCC.Stat.${stat}`])),
+});
 
 /**
  * Creature layer (pc + mob): ability cards, the health bar context, and the
@@ -77,6 +81,7 @@ export default class DCCCreatureSheet extends DCCActorSheetBase {
       ...sheetItemLists(this.document.itemTypes),
       buffs: buffRows(this.document.effects.contents),
       checkTypes: CHECK_TYPE_OPTIONS,
+      opposedStats: OPPOSED_STAT_OPTIONS,
     };
   }
 

@@ -1,4 +1,4 @@
-import { SYSTEM_ID, STATS, CHECK_TYPES, ITEM_SLOTS, DAMAGE_TYPES, GUNNER_SLOTS, APP_CLASSES } from '../config.mjs';
+import { SYSTEM_ID, STATS, CHECK_TYPES, ITEM_SLOTS, GUNNER_SLOTS, APP_CLASSES } from '../config.mjs';
 import { itemModels } from '../data/item/_module.mjs';
 import { DCC_CHANGE_TYPE, describeChange } from '../effects/dcc-change.mjs';
 import { enableViewOnlyControls, isBlankHTML } from './sheet-rows.mjs';
@@ -15,8 +15,8 @@ const ITEM_PARTIALS = ['header', 'description'].map(p => `systems/${SYSTEM_ID}/t
 const OPTION_KEYS = Object.freeze({
   stat: STATS.map(v => ({ value: v, label: `DCC.Stat.${v}` })),
   checkType: CHECK_TYPES.map(v => ({ value: v, label: `DCC.CheckType.${v}` })),
+  opposedStat: ['', ...STATS].map(v => ({ value: v, label: v ? `DCC.Stat.${v}` : 'DCC.None' })),
   slot: ITEM_SLOTS.map(v => ({ value: v, label: `DCC.Slot.${v}` })),
-  damageType: ['', ...DAMAGE_TYPES].map(v => ({ value: v, label: `DCC.DamageType.${v || 'none'}` })),
   gunnerSlot: ['', ...GUNNER_SLOTS].map(v => ({ value: v, label: `DCC.Vehicle.GunnerSlot.${v || 'none'}` })),
 });
 

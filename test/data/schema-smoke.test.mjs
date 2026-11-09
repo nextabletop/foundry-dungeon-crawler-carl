@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { STATS } from '../../module/config.mjs';
+import { CHECK_TYPES, STATS } from '../../module/config.mjs';
 import { CreatureModel, PcModel, MobModel, VehicleModel, GmScreenModel, actorModels } from '../../module/data/actor/_module.mjs';
 import { WeaponModel, SkillModel, SpellModel, GearModel, itemModels } from '../../module/data/item/_module.mjs';
 import DCCEffectModel from '../../module/data/effect/effect-model.mjs';
@@ -89,17 +89,25 @@ describe('item schemas', () => {
   it('weapon', () => {
     expect(keys(WeaponModel)).toEqual(expect.arrayContaining([...base,
       'stat', 'rank', 'skill', 'die', 'damageBonus', 'damageType', 'quantity', 'slot', 'active', 'gunnerSlot', 'skillName']));
+    expect(WeaponModel.defineSchema().damageType.options.choices).toBeUndefined();
   });
 
   it('skill', () => {
     expect(keys(SkillModel)).toEqual(expect.arrayContaining([...base,
-      'stat', 'rank', 'mark', 'enabled', 'checkType', 'passive', 'class']));
+      'stat', 'rank', 'mark', 'enabled', 'checkType', 'opposedStat', 'class']));
+    const schema = SkillModel.defineSchema();
+    expect(schema.checkType.initial).toBe('opposed');
+    expect(schema.checkType.options.choices).toEqual(Object.fromEntries(CHECK_TYPES.map(type => [type, type])));
+    expect(schema.opposedStat.initial).toBe('');
+    expect(schema.opposedStat.options.choices).toEqual(Object.fromEntries(['', ...STATS].map(stat => [stat, stat])));
+    expect(keys(SkillModel)).not.toContain('passive');
   });
 
   it('spell is a skill plus manaCost and attack', () => {
     expect(keys(SpellModel)).toEqual(expect.arrayContaining([...keys(SkillModel), 'manaCost', 'attack']));
     const { attack } = SpellModel.defineSchema();
     expect(Object.keys(attack.fields)).toEqual(['enabled', 'die', 'damageBonus', 'damageType']);
+    expect(attack.fields.damageType.options.choices).toBeUndefined();
   });
 
   it('gear', () => {

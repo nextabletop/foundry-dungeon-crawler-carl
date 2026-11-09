@@ -11,8 +11,9 @@ import {
 import { ADVANCING_TYPES, UNDO_MAX, LEVEL_UP_STAT_POINTS } from '../config.mjs';
 import { gmLinkFor } from '../gm-link.mjs';
 import { floorEndBlocked } from '../rules/gm-screen.mjs';
+import { checkTypeLabel, isPassiveCheck } from '../rules/items.mjs';
 
-const checkTypeTag = type => (type ? game.i18n.localize(`DCC.CheckType.${type}`) : '');
+const checkTypeTag = system => checkTypeLabel(system?.checkType, system?.opposedStat, key => game.i18n.localize(key));
 
 export default class DCCActor extends foundry.documents.Actor {
   /**
@@ -103,9 +104,9 @@ export default class DCCActor extends foundry.documents.Actor {
   }
 
   /**
-   * Skill check: 1d20 + the item's derived skillBonus, tagged with its check
-   * type. A spell's roll IS a cast (R20 rollSkill -> doCast), so spells route
-   * to castSpell and always spend mana.
+   * Skill use: active checks roll 1d20 + the derived skillBonus; Passive
+   * skills post their description without a roll. A spell's use IS a cast
+   * (R20 rollSkill -> doCast), so spells route to castSpell and always spend mana.
    * @param {Item} item - a skill or spell owned by this actor
    * @param {object} [options] - postCard options (e.g. `speaker` for crew rolls)
    * @returns {Promise<object|null>} postCard's result, or null when nothing rolled
@@ -115,7 +116,9 @@ export default class DCCActor extends foundry.documents.Actor {
     if (item.type === 'spell') return this.castSpell(item, options);
     const bonus = item.system?.derived?.skillBonus;
     if (!Number.isFinite(bonus)) return null;
-    return postCard(this, { name: item.name, tag: checkTypeTag(item.system.checkType) }, { roll: checkFormula(bonus) }, options);
+    const fields = { name: item.name, tag: checkTypeTag(item.system) };
+    if (isPassiveCheck(item.system)) fields.note = htmlToText(item.system.description);
+    return postCard(this, fields, isPassiveCheck(item.system) ? {} : { roll: checkFormula(bonus) }, options);
   }
 
   /**
@@ -172,8 +175,9 @@ export default class DCCActor extends foundry.documents.Actor {
 
   /**
    * Cast a spell: spend the mana if affordable and auto-enable the spell (see
-   * castPlan; one update per document), then post the 1d20 + skillBonus check
-   * with the effective mana cost, flagged insufficient when it exceeded mana.
+   * castPlan; one update per document), then post the skill check, or a
+   * roll-less card for a Passive spell, with the effective mana cost and
+   * insufficient flag.
    *
    * Mana is spent BEFORE the card, reading the current mana, and a per-actor
    * re-entry guard drops any cast while another is in flight, so neither a
@@ -203,9 +207,9 @@ export default class DCCActor extends foundry.documents.Actor {
       const manaFields = hasMana ? { cost: d.manaCostEffective ?? 0, insufficient: plan.insufficient } : {};
       return await postCard(this, {
         name: item.name,
-        tag: checkTypeTag(item.system.checkType),
+        tag: checkTypeTag(item.system),
         ...manaFields,
-      }, { roll: checkFormula(d.skillBonus) }, options);
+      }, isPassiveCheck(item.system) ? {} : { roll: checkFormula(d.skillBonus) }, options);
     } finally {
       this.#casting = false;
     }

@@ -128,7 +128,7 @@ export default class PcSheet extends DCCCreatureSheet {
   /**
    * Run an advancement action (runGuarded) after saving pending input
    * (_flushForm): End Session / End Floor / Level Up read the Floor, Level and
-   * the skills' Mark / Rank / Passive, and Undo restores them (an in-flight
+   * the skills' Mark / Rank / Check Type, and Undo restores them (an in-flight
    * edit landing after the restore would win). An invalid form aborts it.
    * One flight for all four actions (singleFlight): the flush and End Floor's
    * confirm run before the actor's own guard, so without it a second click

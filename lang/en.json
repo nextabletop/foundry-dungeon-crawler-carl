@@ -14,6 +14,7 @@
     }
   },
   "DCC": {
+    "None": "—",
     "Sheet": {
       "pc": "DCC Crawler Sheet",
       "mob": "DCC Mob Sheet",
@@ -98,9 +99,9 @@
         "checkType": {
           "label": "Check"
         },
-        "passive": {
-          "label": "Passive",
-          "hint": "Never rolls to advance at End Session / End Floor."
+        "opposedStat": {
+          "label": "Opposed By",
+          "hint": "The antagonist stat used to set this Opposed check's difficulty."
         },
         "class": {
           "label": "Class"
@@ -135,19 +136,6 @@
       "Spell": "Spell",
       "SpellAttack": "Spell Attack",
       "Flags": "Flags"
-    },
-    "DamageType": {
-      "none": "—",
-      "slashing": "Slashing",
-      "piercing": "Piercing",
-      "bludgeoning": "Bludgeoning",
-      "fire": "Fire",
-      "cold": "Cold",
-      "lightning": "Lightning",
-      "poison": "Poison",
-      "psychic": "Psychic",
-      "force": "Force",
-      "necrotic": "Necrotic"
     },
     "Drop": {
       "Rejected": "A {actorType} cannot own a {type} item."
@@ -287,7 +275,8 @@
       "AbilityLabel": "Roll {stat} check",
       "ToHit": "To Hit",
       "Damage": "Damage",
-      "Cast": "Cast"
+      "Cast": "Cast",
+      "Post": "Post"
     },
     "Health": {
       "Bar": "Health Bar",
@@ -318,7 +307,8 @@
     "CheckType": {
       "opposed": "Opposed",
       "unopposed": "Unopposed",
-      "generic": "Generic"
+      "evade": "Evade",
+      "passive": "Passive"
     },
     "Items": {
       "New": "New {type}",
@@ -331,7 +321,7 @@
       "ManaCost": "Mana cost",
       "ManaChip": "{cost} MP",
       "CheckType": "Check",
-      "Passive": "Passive",
+      "OpposedStat": "Opposed by",
       "Enabled": "On",
       "EnabledTooltip": "Enabled: this item's modifiers apply",
       "Mark": "Mark",
@@ -339,17 +329,16 @@
       "Edit": "Edit Item",
       "Delete": "Delete Item",
       "RollTooltip": "Roll 1d20 + skill bonus",
+      "PostPassiveTooltip": "Post this Passive skill without rolling",
       "CastTooltip": "Cast: 1d20 + skill bonus, spends mana",
       "CastTooltipNoMana": "Cast: 1d20 + skill bonus",
+      "CastPassiveTooltip": "Cast this Passive spell without rolling, spends mana",
       "RankEffectiveTooltip": "Effective rank (with modifiers)",
       "NoAttacks": "No weapons or attack spells.",
       "NoSkills": "No skills.",
       "NoSpells": "No spells."
     },
     "Chip": {
-      "PassiveOn": "Passive",
-      "PassiveOff": "Passive",
-      "PassiveTooltip": "Passive: never rolls to advance at End Session / End Floor",
       "EnabledOn": "Enabled",
       "EnabledOff": "Enable",
       "HotlistOn": "On hotlist",

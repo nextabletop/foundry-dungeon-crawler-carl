@@ -10,6 +10,7 @@ import { drivingCheck, ram, race, ramAftermath } from '../rules/vehicle.mjs';
 import { crewPenalty, crewSkillCard, crewAttackCard, vehicleWeaponCard, crewCardName } from '../rules/crew.mjs';
 import { cardMessageMode, PUBLIC_MODES } from '../rules/engine.mjs';
 import { crewCache } from '../data/actor/vehicle.mjs';
+import { htmlToText } from '../rules/card.mjs';
 
 /** The card-text formatter the pure rules builders take. */
 const t = (key, data) => game.i18n.format(key, data);
@@ -107,7 +108,8 @@ export const crewSkillPost = (vehicle, crew, itemId, options) => {
   const s = vehicle.system;
   return () => {
     const { fields, roll } = crewSkillCard({
-      crewName: crew.name, skill, mob: crew.type === 'mob', vehicleName: vehicle.name,
+      crewName: crew.name, skill: { ...skill, description: htmlToText(skill.description) },
+      mob: crew.type === 'mob', vehicleName: vehicle.name,
       penalty: crewPenalty(s.penaltyInputs, skill.name), floor: s.floor,
     }, t);
     return postCard(crew, fields, { roll }, options);

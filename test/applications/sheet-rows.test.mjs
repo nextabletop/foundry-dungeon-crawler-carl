@@ -8,6 +8,25 @@ describe('inlineFieldValue', () => {
     expect(inlineFieldValue({ type: 'checkbox', checked: true, value: 'on' })).toBe(true);
     expect(inlineFieldValue({ type: 'checkbox', checked: false, value: 'on' })).toBe(false);
   });
+
+  describe('item damage field layout', () => {
+    const weapon = readFileSync(new URL('../../templates/item/weapon.hbs', import.meta.url), 'utf8');
+    const spell = readFileSync(new URL('../../templates/item/spell.hbs', import.meta.url), 'utf8');
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+
+    it('uses free-text Damage Type controls for weapons and spell attacks', () => {
+      expect(weapon).toContain('systemFields.damageType value=systemSource.damageType rootId=rootId');
+      expect(spell).toContain('systemFields.attack.fields.damageType value=systemSource.attack.damageType rootId=rootId');
+      expect(weapon).not.toContain('selectOptions.damageType');
+      expect(spell).not.toContain('selectOptions.damageType');
+    });
+
+    it('gives Damage Type a wider column than Damage Die and Damage Bonus', () => {
+      expect(weapon).toContain('class="dcc-item-damage-grid"');
+      expect(spell).toContain('class="dcc-item-grid dcc-item-damage-grid"');
+      expect(css).toContain('grid-template-columns: minmax(72px, 0.7fr) minmax(72px, 0.7fr) minmax(180px, 2fr);');
+    });
+  });
   it('number -> an integer (all inline number fields are int)', () => {
     expect(inlineFieldValue({ type: 'number', value: '3.7' })).toBe(3);
     expect(inlineFieldValue({ type: 'number', value: '3' })).toBe(3);
@@ -71,6 +90,20 @@ describe('sheetItemLists', () => {
     expect(lists.skills[1].rankModified).toBe(false);
     expect(lists.spells[1]).toMatchObject({ cost: 3, attack: true });
     expect(lists.skills[0].cost).toBeUndefined();
+  });
+  it('skill rows expose opposed/passive display state from checkType', () => {
+    const { skills } = sheetItemLists({
+      skill: [
+        it_('o', 'skill', 'Persuade', 0, { checkType: 'opposed', opposedStat: 'charisma', mark: true }),
+        it_('p', 'skill', 'Powerful', 1, { checkType: 'passive', mark: true }),
+      ],
+    });
+    expect(skills[0]).toMatchObject({
+      checkType: 'opposed', opposedStat: 'charisma', isOpposed: true, isPassive: false, markable: true,
+    });
+    expect(skills[1]).toMatchObject({
+      checkType: 'passive', isOpposed: false, isPassive: true, markable: false,
+    });
   });
   it('empty input -> empty lists', () => {
     expect(sheetItemLists()).toEqual({ attacks: [], skills: [], spells: [] });
