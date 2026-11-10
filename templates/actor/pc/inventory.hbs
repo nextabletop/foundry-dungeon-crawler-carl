@@ -53,7 +53,7 @@
         <span></span>
       </li>
       {{#each inventory}}
-      {{#> "systems/dungeon-crawler-carl/templates/actor/partials/item-row.hbs" idSuffix="-inv"}}
+      {{#> "systems/dungeon-crawler-carl/templates/actor/partials/item-row.hbs" idSuffix="-inv" inventoryNotes=true}}
         <span class="dcc-icell">
           <input class="dcc-iinput" type="number" step="1" id="{{@root.rootId}}-{{id}}-quantity" data-field="system.quantity" value="{{quantity}}"
                  aria-label="{{localize 'DCC.Inventory.Quantity'}}">

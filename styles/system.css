@@ -1560,7 +1560,7 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 }
 .dcc.sheet.actor .dcc-mob-attack-edit { grid-area: edit; }
 .dcc.sheet.actor .dcc-mob-attack-delete { grid-area: delete; }
-.dcc.sheet.actor .dcc-attack-notes {
+.dcc.sheet.actor :is(.dcc-attack-notes, .dcc-inventory-notes) {
   grid-area: notes;
   min-width: 0;
   padding: 1px 3px 2px;
@@ -1573,6 +1573,9 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 }
 .dcc.sheet.actor .dcc-ilist--attacks > .dcc-attack-row > .dcc-attack-notes {
   grid-area: auto;
+  grid-column: 1 / -1;
+}
+.dcc.sheet.actor .dcc-ilist--inventory > .dcc-inventory-row > .dcc-inventory-notes {
   grid-column: 1 / -1;
 }
 .dcc.sheet.actor .dcc-ilist--inventory.dcc-ilist--lean > li { grid-template-columns: minmax(0, 1fr) 48px 44px 44px; }

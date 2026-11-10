@@ -28,6 +28,10 @@ describe('inlineFieldValue', () => {
       expect(css).toContain('grid-template-columns: repeat(3, minmax(100px, 1fr));');
       expect(css).toContain('.dcc.sheet.item .dcc-item-damage-grid > .dcc-item-damage-type { grid-column: 1 / -1; }');
     });
+
+    it('allows a canonical Attack Ability of None', () => {
+      expect(attack).toContain('systemFields.stat value=systemSource.stat options=selectOptions.attackStat');
+    });
   });
   it('number -> an integer (all inline number fields are int)', () => {
     expect(inlineFieldValue({ type: 'number', value: '3.7' })).toBe(3);
@@ -653,6 +657,23 @@ describe('sheetItemLists', () => {
     expect(lists.attacks[1].isSpell).toBe(true);
   });
 
+  it('hides To Hit for a Crawler Attack with no Ability while retaining Rank and damage', () => {
+    const { attacks } = sheetItemLists({ attack: [
+      it_('a', 'attack', 'Iron Punch', 0, { stat: '' }, {
+        rank: 7, hasToHit: false, toHit: null, damageLabel: '1d2+1d6',
+      }),
+    ] });
+    expect(attacks[0]).toMatchObject({
+      stat: '',
+      rank: 7,
+      hasToHit: false,
+      toHit: null,
+      damageLabel: '1d2+1d6',
+    });
+    const list = readFileSync(new URL('../../templates/actor/partials/attack-list.hbs', import.meta.url), 'utf8');
+    expect(list).toMatch(/{{#if hasToHit}}\s*<button[^>]+data-roll="toHit"/);
+  });
+
   it('Attack templates author and roll alternate stable-ID Skill Uses', () => {
     const attack = readFileSync(new URL('../../templates/item/attack.hbs', import.meta.url), 'utf8');
     const list = readFileSync(new URL('../../templates/actor/partials/attack-list.hbs', import.meta.url), 'utf8');
@@ -727,7 +748,7 @@ describe('sheetItemLists', () => {
     expect(css).toMatch(/\.dcc-mob-attack-main \{[\s\S]*?grid-template-columns: 20px auto auto minmax\(110px, 160px\) minmax\(0, 1fr\);/);
     expect(css).toContain('.dcc-ilist--attacks.dcc-ilist--lean { --dcc-mob-attack-size: 11px; }');
     expect(css).toMatch(/\.dcc-mob-attack-main \.dcc-rollbtn--wide \{[^}]*display: block;[^}]*padding-inline: 4px;[^}]*font-size: var\(--dcc-mob-attack-size\);[^}]*text-overflow: ellipsis;[^}]*white-space: nowrap;/);
-    expect(css).toMatch(/\.dcc-attack-notes \{[^}]*grid-area: notes;[^}]*white-space: pre-line;/);
+    expect(css).toMatch(/:is\(\.dcc-attack-notes, \.dcc-inventory-notes\) \{[^}]*grid-area: notes;[^}]*white-space: pre-line;/);
   });
   it('skill rows: source rank, effective rank flag, cost for spells', () => {
     expect(lists.skills[0]).toMatchObject({ rank: 2, rankEffective: 3, rankModified: true, bonus: 4 });
@@ -866,9 +887,13 @@ describe('skill and spell authored metadata templates', () => {
 });
 
 describe('inventoryView', () => {
+  const inventoryTemplate = readFileSync(new URL('../../templates/actor/pc/inventory.hbs', import.meta.url), 'utf8');
+  const itemRowTemplate = readFileSync(new URL('../../templates/actor/partials/item-row.hbs', import.meta.url), 'utf8');
+  const itemSheet = readFileSync(new URL('../../module/applications/item-sheet.mjs', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
   const view = inventoryView({
     gear: [
-      item('g2', 'gear', 'Ring', 200, { quantity: 1, slot: 'pack', active: true, accessory: true, onHotlist: false }),
+      item('g2', 'gear', 'Ring', 200, { quantity: 1, slot: 'pack', active: true, accessory: true, onHotlist: false, description: '<p>Triggers after Evade.</p>' }),
       item('g1', 'gear', 'Helm', 100, { quantity: 1, slot: 'head', active: false, accessory: false, onHotlist: true }),
       item('g3', 'gear', 'Cap', 300, { quantity: 1, slot: 'head' }),
       item('g4', 'gear', 'Amulet', 400, { quantity: 3, slot: 'pack', active: false, accessory: true }),
@@ -883,6 +908,13 @@ describe('inventoryView', () => {
     expect(view.inventory[1]).toMatchObject({ accessory: true, worn: false });
     expect(view.inventory[4]).toMatchObject({ isWeapon: true, quantity: 2, slot: 'hands', worn: true });
     expect(view.inventory[4].accessory).toBeUndefined();
+    expect(view.inventory[1].notes).toBe('Triggers after Evade.');
+  });
+  it('labels inventory descriptions as Notes and displays them below inventory rows', () => {
+    expect(itemSheet).toContain("['skill', 'spell', 'gear', 'weapon'].includes(this.document.type)");
+    expect(inventoryTemplate).toContain('inventoryNotes=true');
+    expect(itemRowTemplate).toMatch(/{{#if inventoryNotes}}[\s\S]*class="dcc-inventory-notes">{{notes}}/);
+    expect(css).toMatch(/\.dcc-ilist--inventory > \.dcc-inventory-row > \.dcc-inventory-notes \{[^}]*grid-column: 1 \/ -1;/);
   });
   it('paper doll: every gear slot in order, the first item (gear before weapons) per slot', () => {
     expect(view.gearSlots.map(s => s.slot)).toEqual(['head', 'torso', 'arms', 'hands', 'legs', 'feet']);

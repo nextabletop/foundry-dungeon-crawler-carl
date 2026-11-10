@@ -115,6 +115,15 @@ describe('rollAttack', () => {
     expect(fields).toEqual({ name: 'Dagger', tag: 'DCC.Roll.ToHit' });
     expect(formulas).toEqual({ roll: '1d20 + 4' });
   });
+  it('does not roll a Crawler Attack with no To-Hit', async () => {
+    const actor = makeActor();
+    const attack = own(actor, makeItem('attack', 'Iron Punch', {}, {
+      hasToHit: false, toHit: null, damageBase: 0, damageDice: '1d2+1d6',
+    }));
+    expect(await actor.rollAttack(attack, 'toHit')).toBeNull();
+    expect(await actor.useHotlistItem(attack)).toBeNull();
+    expect(postCard).not.toHaveBeenCalled();
+  });
   it('damage: die + damageBase with the damage type', async () => {
     const actor = makeActor();
     await actor.rollAttack(own(actor, makeItem('attack', 'Dagger', { die: '1d4', damageType: 'piercing' }, { toHit: 4, damageBase: 2, damageDice: '1d4' })), 'damage');

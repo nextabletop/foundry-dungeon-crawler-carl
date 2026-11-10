@@ -178,10 +178,11 @@ export default class DCCActor extends foundry.documents.Actor {
     if ((this.type === 'vehicle') && this.system.rollsWithGunner(which)) {
       return this.#vehicleGuard(() => rollVehicleWeapon(this, item, cardOptions));
     }
-    const source = attackSource(item, this.items);
-    if (!use && (source?.type === 'spell') && (which !== 'damage')) return this.castSpell(source, cardOptions);
     const d = item.system?.derived ?? {};
     const rollData = use ?? d;
+    if (which !== 'damage' && !Number.isFinite(rollData.toHit)) return null;
+    const source = attackSource(item, this.items);
+    if (!use && (source?.type === 'spell') && (which !== 'damage')) return this.castSpell(source, cardOptions);
     const name = use?.label ? `${item.name} (${use.label})` : item.name;
     const extras = attackCardExtras(this.system, item.system, use ? use.range : item.system.range);
     if (which === 'damage') {
@@ -190,7 +191,6 @@ export default class DCCActor extends foundry.documents.Actor {
         name, tag: game.i18n.localize('DCC.Roll.Damage'), type: item.system.damageType ?? '', ...extras,
       }, { damage: damageFormula(d.damageDice, d.damageBase) }, cardOptions);
     }
-    if (!Number.isFinite(rollData.toHit)) return null;
     return postCard(this, {
       name,
       tag: game.i18n.localize('DCC.Roll.ToHit'),

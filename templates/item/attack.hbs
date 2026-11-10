@@ -3,7 +3,7 @@
   <div class="dcc-box dcc-item-section">
     <div class="dcc-bar">{{localize "DCC.ItemSheet.Attack"}}</div>
     <div class="dcc-item-grid">
-      {{formGroup systemFields.stat value=systemSource.stat options=selectOptions.stat rootId=rootId}}
+      {{formGroup systemFields.stat value=systemSource.stat options=selectOptions.attackStat rootId=rootId}}
       {{formGroup systemFields.rank value=attackLink.rank disabled=attackLink.rankLinked rootId=rootId}}
       {{#if showMobToHit}}
       <div class="form-group">

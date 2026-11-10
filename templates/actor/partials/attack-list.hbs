@@ -57,8 +57,10 @@
       <span class="dcc-icell">{{#if stat}}{{localize stat}}{{/if}}{{#if isSpell}} <i class="fa-solid fa-wand-sparkles dcc-ispell" role="img" aria-label="{{localize 'TYPES.Item.spell'}}" data-tooltip="{{localize 'TYPES.Item.spell'}}"></i>{{/if}}</span>
       <span class="dcc-icell">{{rank}}</span>
       <span class="dcc-icell">
+        {{#if hasToHit}}
         <button type="button" class="dcc-rollbtn" id="{{@root.rootId}}-{{id}}-rollAttack-toHit" data-action="rollAttack" data-roll="toHit"
                 data-tooltip="{{#if skillMissing}}{{localize 'DCC.ItemSheet.MissingPrimarySkill'}}{{else}}{{#if isSpell}}{{localize 'DCC.Items.CastTooltip'}}{{else}}{{skillName}}{{/if}}{{/if}}">{{numberFormat toHit sign=true}}</button>
+        {{/if}}
       </span>
       <span class="dcc-icell dcc-c-dmg">
         {{#if noDamage}}
@@ -84,8 +86,10 @@
       <span class="dcc-icell">{{#if stat}}{{localize stat}}{{/if}}</span>
       <span class="dcc-icell">{{rank}}</span>
       <span class="dcc-icell">
+        {{#if hasToHit}}
         <button type="button" class="dcc-rollbtn" id="{{@root.rootId}}-{{attackId}}-use-{{index}}-toHit" data-action="rollAttack" data-roll="toHit"
                 data-skill-use-index="{{index}}" data-tooltip="{{#if missing}}{{localize 'DCC.ItemSheet.MissingSkill'}}{{else}}{{skillName}}{{/if}}">{{numberFormat toHit sign=true}}</button>
+        {{/if}}
       </span>
       {{/if}}
       <span class="dcc-icell dcc-c-dmg">

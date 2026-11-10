@@ -171,6 +171,9 @@ describe('item schemas', () => {
     expect(schema.mobToHitNone.initial).toBe(false);
     expect(schema.mobNoDamage).toBeInstanceOf(foundry.data.fields.BooleanField);
     expect(schema.mobNoDamage.initial).toBe(false);
+    expect(schema.stat.initial).toBe('strength');
+    expect(schema.stat.options.choices)
+      .toEqual(Object.fromEntries(['', ...STATS].map(stat => [stat, stat])));
     expect(schema.damageStat.initial).toBe('');
     expect(schema.damageStat.options.choices)
       .toEqual(Object.fromEntries(['', ...STATS].map(stat => [stat, stat])));

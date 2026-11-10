@@ -286,6 +286,19 @@ describe('deriveCreature — Attacks', () => {
     expect(d2.items.w1.toHit).toBe(1 + 4);
   });
 
+  it('a Crawler Attack with no Ability has no To-Hit but retains Rank and damage', () => {
+    const d = deriveCreature(pc({
+      items: [attack('a', 'Iron Punch', { stat: '', rank: 7, die: '1d2+1d6' })],
+      modifiers: [{ target: 'group:attacks:to_hit', value: '5' }],
+    })).items.a;
+    expect(d).toMatchObject({
+      rank: 7,
+      hasToHit: false,
+      toHit: null,
+      damageDice: '1d2+1d6',
+    });
+  });
+
   it('exposes the rank the attack used (linked skill base rank, else its own)', () => {
     const items = [
       attack('w1', 'Dagger', { stat: 'dexterity', rank: 0, linkedItemIds: ['s1'] }),

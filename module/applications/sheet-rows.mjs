@@ -95,6 +95,7 @@ const attackRow = (item, items) => {
     skillMissing: Boolean(d.primarySkillMissing),
     stat: statAbbr(item.system.stat),
     rank: d.rank,
+    hasToHit: d.hasToHit !== false && Number.isFinite(d.toHit),
     toHit: d.toHit,
     mobToHit: d.mobToHit,
     mobToHitNone: d.mobToHitNone,
@@ -107,6 +108,7 @@ const attackRow = (item, items) => {
       attackId: item.id,
       name: use.label ? `${item.name} (${use.label})` : item.name,
       stat: statAbbr(use.stat),
+      hasToHit: use.hasToHit !== false && Number.isFinite(use.toHit),
       damageLabel: String(use.damageLabel ?? '').trim(),
     })),
   };
@@ -258,6 +260,7 @@ const inventoryRow = (item, occupants) => {
     slot: src.slot,
     active: src.active,
     onHotlist: src.onHotlist,
+    notes: htmlToText(src.description),
     worn,
     slotConflict: worn && (occupants[src.slot]?.id !== item.id),
   };

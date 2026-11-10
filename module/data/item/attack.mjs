@@ -19,7 +19,7 @@ export default class AttackModel extends BaseItemModel {
     const { ArrayField, SchemaField } = foundry.data.fields;
     return {
       ...super.defineSchema(),
-      stat: str('strength', { choices: STATS }),
+      stat: str('strength', { choices: ['', ...STATS], blank: true }),
       rank: int(0),
       mobToHitBase: int(null, { nullable: true }),
       mobToHitNone: bool(false),

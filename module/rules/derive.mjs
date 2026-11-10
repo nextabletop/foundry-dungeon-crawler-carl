@@ -34,17 +34,19 @@ const itemById = items => new Map(items.map(item => [idOf(item), item]));
 // the modifier aspect vocabulary (`to_hit`, `damage`); the output is camelCase.
 const attackRow = ({
   statModifier, damageStatModifier = 0, rank, itemBonus, itemPercent, damageModifierDice, die, damageBonus, damageType, floor,
-  mob = false, mobToHitBase, mobToHitNone = false, mobNoDamage = false,
+  hasToHit = true, mob = false, mobToHitBase, mobToHitNone = false, mobNoDamage = false,
 }) => {
   const base = mob && mobToHitBase != null ? mobToHitBase - 10 : attackToHit(statModifier, rank, 0);
-  const toHit = mob && mobToHitNone ? 0 : applyModifiers(base, itemBonus.to_hit || 0, itemPercent.to_hit || 0);
+  const toHit = hasToHit
+    ? (mob && mobToHitNone ? 0 : applyModifiers(base, itemBonus.to_hit || 0, itemPercent.to_hit || 0))
+    : null;
   const damageBase = (+damageStatModifier || 0) + (+damageBonus || 0) + (itemBonus.damage || 0); // damage stays flat
   const noDamageDie = /^(none|no damage|-|—)?$/i.test(String(die ?? '').trim());
   const baseDie = noDamageDie ? '' : (die || '');
   const damageDice = `${baseDie}${damageModifierDice || ''}`;
   const noDamage = (mob && mobNoDamage) || (noDamageDie && damageBase === 0 && !damageModifierDice);
   return {
-    rank, toHit, damageBase, damageModifierDice, damageDice, noDamage,
+    rank, hasToHit, toHit, damageBase, damageModifierDice, damageDice, noDamage,
     damageLabel: noDamage ? '' : damageLabel(damageDice, damageBase, damageType),
     mobToHit: mob && mobToHitNone ? null : mobToHit(toHit, floor),
     mobToHitNone: mob && mobToHitNone,
@@ -77,6 +79,7 @@ const deriveItemRow = (item, context) => {
       : (sys.primarySkillId ? 0 : (+sys.rank || 0));
     Object.assign(row, attackRow({
       statModifier: modifierFor(sys.stat), rank, itemBonus, itemPercent,
+      hasToHit: type !== 'pc' || sys.stat !== '',
       damageStatModifier: type === 'pc' && STATS.includes(sys.damageStat) ? modifierFor(sys.damageStat) : 0,
       damageModifierDice: itemDice[id]?.damage || '',
       die: sys.die, damageBonus: sys.damageBonus, damageType: sys.damageType, floor,
@@ -96,6 +99,7 @@ const deriveItemRow = (item, context) => {
       const useStat = STATS.includes(use.stat) ? use.stat : sys.stat;
       const derived = attackRow({
         statModifier: modifierFor(useStat), rank: useRank, itemBonus, itemPercent,
+        hasToHit: type !== 'pc' || useStat !== '',
         damageStatModifier: type === 'pc' && STATS.includes(sys.damageStat) ? modifierFor(sys.damageStat) : 0,
         damageModifierDice: itemDice[id]?.damage || '',
         die: sys.die, damageBonus: sys.damageBonus, damageType: sys.damageType, floor,
