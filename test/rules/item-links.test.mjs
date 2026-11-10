@@ -168,7 +168,7 @@ describe('granted Attacks', () => {
     expect(actor.createEmbeddedDocuments).toHaveBeenCalledWith('Item', [{
       type: 'attack',
       name: 'Magic Missile',
-      img: 'missile.svg',
+      img: 'icons/svg/combat.svg',
       system: { stat: 'intelligence', rank: 3, primarySkillId: 'spell' },
     }]);
     expect(grantedAttack(source, actor.items.contents)).toBe(attack);

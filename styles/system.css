@@ -305,10 +305,11 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 .dcc.sheet.actor.pc .window-content {
   display: grid;
   grid-template-columns: 140px minmax(0, 1fr);
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto auto minmax(0, 1fr) auto;
   grid-template-areas:
     "header  header"
     "abil    vitals"
+    "abil    combat"
     "abil    nav"
     "abil    body"
     "hotlist hotlist";
@@ -316,6 +317,7 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 .dcc.sheet.actor.pc .dcc-header { grid-area: header; }
 .dcc.sheet.actor.pc .dcc-a-abil { grid-area: abil; align-self: stretch; contain: size; overflow-y: auto; border: none; }
 .dcc.sheet.actor.pc .dcc-vitals { grid-area: vitals; }
+.dcc.sheet.actor.pc .dcc-pc-combat { grid-area: combat; }
 .dcc.sheet.actor.pc nav.sheet-tabs { grid-area: nav; border-top: none; }
 .dcc.sheet.actor.pc .dcc-tab { grid-area: body; height: 100%; }
 .dcc.sheet.actor.pc .dcc-a-hotlist { grid-area: hotlist; }
@@ -956,7 +958,7 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 .dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-irow { border-bottom: 1px solid var(--d-line-soft); }
 .dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-irow:last-child { border-bottom: none; }
 .dcc.sheet.actor .dcc-irow--off { opacity: 0.55; }
-.dcc.sheet.actor .dcc-ilist--attacks > li { grid-template-columns: minmax(0, 1fr) 44px 40px 56px minmax(96px, auto) 44px; }
+.dcc.sheet.actor .dcc-ilist--attacks > li { grid-template-columns: minmax(0, 1fr) 44px 40px 56px 128px 44px; }
 .dcc.sheet.actor .dcc-ilist--attacks .dcc-ihead > span:nth-child(2) { text-align: center; }
 .dcc.sheet.actor .dcc-attack-use { background: color-mix(in srgb, var(--d-panel) 75%, transparent); }
 .dcc.sheet.actor .dcc-attack-use .dcc-iname { padding-left: 18px; font-style: italic; }
@@ -994,11 +996,6 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 }
 .dcc.sheet.actor .dcc-skill-summary-field { overflow-wrap: anywhere; }
 .dcc.sheet.actor .dcc-skill-summary-field strong { color: var(--d-ink); }
-.dcc.sheet.actor .dcc-skill-summary-notes {
-  overflow: hidden;
-  color: var(--d-ink);
-  white-space: pre-line;
-}
 .dcc.sheet.actor .dcc-ilist--inventory > li { grid-template-columns: minmax(0, 1fr) 48px 84px 44px 36px 36px 44px; }
 .dcc.sheet.actor .dcc-ilist--buffs > li { grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1.4fr) 44px; }
 .dcc:is(.sheet.actor, .sheet.item, .sheet.effect, .dcc-app) .dcc-ilist > .dcc-iempty {
@@ -1501,14 +1498,70 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 
 /* Lean item lists (mob): no mark / stat+rank (attacks) / check / passive / hotlist columns. */
 .dcc.sheet.actor .dcc-ilist--attacks.dcc-ilist--lean { --dcc-mob-attack-size: 11px; }
-.dcc.sheet.actor .dcc-ilist--attacks.dcc-ilist--lean > li { grid-template-columns: minmax(0, 1fr) 60px clamp(90px, 23%, 126px) 44px; }
-.dcc.sheet.actor .dcc-ilist--attacks.dcc-ilist--lean .dcc-icell { font-size: var(--dcc-mob-attack-size); }
-.dcc.sheet.actor .dcc-ilist--attacks.dcc-ilist--lean .dcc-target { min-width: 0; border: 0; background: none; color: var(--d-ink); font-size: var(--dcc-mob-attack-size); }
-.dcc.sheet.actor .dcc-ilist--attacks.dcc-ilist--lean .dcc-c-dmg .dcc-rollbtn--wide { display: block; box-sizing: border-box; overflow: hidden; padding-inline: 4px; font-size: var(--dcc-mob-attack-size); letter-spacing: normal; text-overflow: ellipsis; white-space: nowrap; overflow-wrap: normal; }
-.dcc.sheet.actor .dcc-ilist--attacks.dcc-ilist--lean .dcc-icontrols { grid-column: 4; grid-row: 1; }
+.dcc.sheet.actor .dcc-ilist--attacks.dcc-ilist--lean > .dcc-mob-attack-row {
+  grid-template-columns: minmax(0, 1fr) 12px 12px;
+  grid-template-areas:
+    "main edit delete"
+    "notes notes notes";
+}
+.dcc.sheet.actor .dcc-mob-attack-main {
+  grid-area: main;
+  display: grid;
+  grid-template-columns: 20px auto auto minmax(110px, 160px) minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.dcc.sheet.actor .dcc-mob-attack-main > * { min-width: 0; }
+.dcc.sheet.actor .dcc-mob-attack-icon {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 2px;
+  background: var(--d-art-bg);
+}
+.dcc.sheet.actor .dcc-mob-attack-name {
+  display: block;
+  max-width: 160px;
+  overflow: hidden;
+}
+.dcc.sheet.actor .dcc-mob-attack-to-hit,
+.dcc.sheet.actor .dcc-mob-attack-range,
+.dcc.sheet.actor .dcc-mob-attack-main .dcc-c-dmg {
+  overflow: hidden;
+  font-family: var(--d-cond);
+  font-size: var(--dcc-mob-attack-size);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dcc.sheet.actor .dcc-mob-attack-to-hit { max-width: 72px; }
+.dcc.sheet.actor .dcc-mob-attack-main .dcc-c-dmg { max-width: 160px; }
+.dcc.sheet.actor .dcc-mob-attack-range { max-width: none; }
+.dcc.sheet.actor .dcc-mob-attack-main .dcc-rollbtn--wide {
+  display: block;
+  box-sizing: border-box;
+  width: auto;
+  max-width: 100%;
+  overflow: hidden;
+  padding-inline: 4px;
+  font-size: var(--dcc-mob-attack-size);
+  letter-spacing: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+.dcc.sheet.actor .dcc-irow > .dcc-mob-attack-edit,
+.dcc.sheet.actor .dcc-irow > .dcc-mob-attack-delete {
+  width: 12px;
+  min-width: 12px;
+  padding: 0;
+  font-size: 11px;
+}
+.dcc.sheet.actor .dcc-mob-attack-edit { grid-area: edit; }
+.dcc.sheet.actor .dcc-mob-attack-delete { grid-area: delete; }
 .dcc.sheet.actor .dcc-attack-notes {
-  grid-column: 1 / -1;
-  grid-row: 2;
+  grid-area: notes;
   min-width: 0;
   padding: 1px 3px 2px;
   color: var(--d-ink);
@@ -1517,6 +1570,10 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
   line-height: 1.25;
   overflow-wrap: anywhere;
   white-space: pre-line;
+}
+.dcc.sheet.actor .dcc-ilist--attacks > .dcc-attack-row > .dcc-attack-notes {
+  grid-area: auto;
+  grid-column: 1 / -1;
 }
 .dcc.sheet.actor .dcc-ilist--inventory.dcc-ilist--lean > li { grid-template-columns: minmax(0, 1fr) 48px 44px 44px; }
 .dcc.sheet.actor :is(.dcc-ilist--skills, .dcc-ilist--spells).dcc-ilist--lean > li {
@@ -1967,9 +2024,10 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 .dcc.sheet.item .dcc-skill-use-row .notification { margin: 2px 0 0; padding: 2px 4px; font-size: 10px; }
 .dcc.sheet.item .dcc-item-damage-grid {
   display: grid;
-  grid-template-columns: minmax(72px, 0.7fr) minmax(72px, 0.7fr) minmax(180px, 2fr);
+  grid-template-columns: repeat(3, minmax(100px, 1fr));
   gap: 8px 10px;
 }
+.dcc.sheet.item .dcc-item-damage-grid > .dcc-item-damage-type { grid-column: 1 / -1; }
 .dcc.sheet.item .dcc-item-grid > .dcc-item-damage-grid { grid-column: 1 / -1; }
 /* Label above its input (the R20 field look), hint under both. */
 .dcc.sheet.item .dcc-item-grid .form-group { flex-direction: column; align-items: stretch; gap: 3px; }

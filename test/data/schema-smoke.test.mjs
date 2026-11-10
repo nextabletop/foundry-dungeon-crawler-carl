@@ -162,7 +162,7 @@ describe('item schemas', () => {
   it('attack is the canonical offensive-action record', () => {
     expect(keys(AttackModel)).toEqual([
       ...base, 'stat', 'rank', 'mobToHitBase', 'mobToHitNone', 'mobNoDamage', 'primarySkillId', 'skillUses',
-      'die', 'damageBonus', 'damageType', 'range', 'gunnerSlot', 'skillName',
+      'die', 'damageStat', 'damageBonus', 'damageType', 'range', 'gunnerSlot', 'skillName',
     ]);
     const schema = AttackModel.defineSchema();
     expect(schema.linkedItemIds.initial).toEqual([]);
@@ -171,6 +171,9 @@ describe('item schemas', () => {
     expect(schema.mobToHitNone.initial).toBe(false);
     expect(schema.mobNoDamage).toBeInstanceOf(foundry.data.fields.BooleanField);
     expect(schema.mobNoDamage.initial).toBe(false);
+    expect(schema.damageStat.initial).toBe('');
+    expect(schema.damageStat.options.choices)
+      .toEqual(Object.fromEntries(['', ...STATS].map(stat => [stat, stat])));
     expect(schema.skillUses.initial).toEqual([]);
     expect(schema.skillUses.element.fields).toHaveProperty('skillId');
     expect(schema.skillUses.element.fields.stat.options.choices)

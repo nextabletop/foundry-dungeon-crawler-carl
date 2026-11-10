@@ -8,7 +8,7 @@
       don't collide with the same spell's Spells-list row, and are not draggable (sorting is
       per item type). An item listed on two tabs passes `idSuffix` (e.g. idSuffix="-inv" for a
       weapon's Inventory row, also listed under Attacks) so its row ids stay unique. --}}
-<li class="dcc-irow{{#unless isSpell}} draggable{{/unless}}" data-item-id="{{id}}">
+<li class="dcc-irow{{#unless isSpell}} draggable{{/unless}}{{#if attackNotes}} dcc-attack-row{{/if}}" data-item-id="{{id}}">
   <button type="button" class="dcc-iname" id="{{@root.rootId}}-{{id}}{{#if isSpell}}-attack{{/if}}{{idSuffix}}-name" data-action="editItem" data-view-only data-tooltip="{{localize 'DCC.Items.Edit'}}">
     <img src="{{img}}" alt="" width="20" height="20">
     <span>{{name}}</span>
@@ -22,4 +22,9 @@
             data-tooltip aria-label="{{localize 'DCC.Items.Delete'}}"></button>
     {{/if}}
   </span>
+  {{#if attackNotes}}
+  {{#if notes}}
+  <span class="dcc-attack-notes">{{notes}}</span>
+  {{/if}}
+  {{/if}}
 </li>

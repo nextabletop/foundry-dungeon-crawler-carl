@@ -32,6 +32,7 @@ export default class AttackModel extends BaseItemModel {
         range: str(),
       }), { required: true, nullable: false, initial: [] }),
       die: str(),
+      damageStat: str('', { choices: ['', ...STATS], blank: true }),
       damageBonus: int(0),
       damageType: str(),
       range: str(),

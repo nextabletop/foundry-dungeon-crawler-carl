@@ -20,9 +20,13 @@ describe('inlineFieldValue', () => {
       expect(attack).not.toContain('selectOptions.damageType');
     });
 
-    it('gives Damage Type a wider column than Damage Die and Damage Bonus', () => {
+    it('shows a Crawler Damage Ability and places Damage Type on a full-width second row', () => {
       expect(attack).toContain('class="dcc-item-damage-grid"');
-      expect(css).toContain('grid-template-columns: minmax(72px, 0.7fr) minmax(72px, 0.7fr) minmax(180px, 2fr);');
+      expect(attack).toContain('{{#if showDamageStat}}');
+      expect(attack).toContain('systemFields.damageStat value=systemSource.damageStat options=selectOptions.damageStat');
+      expect(attack).toContain('systemFields.damageType value=systemSource.damageType rootId=rootId classes="dcc-item-damage-type"');
+      expect(css).toContain('grid-template-columns: repeat(3, minmax(100px, 1fr));');
+      expect(css).toContain('.dcc.sheet.item .dcc-item-damage-grid > .dcc-item-damage-type { grid-column: 1 / -1; }');
     });
   });
   it('number -> an integer (all inline number fields are int)', () => {
@@ -96,9 +100,23 @@ describe('Health Bar UI', () => {
       const defenses = readFileSync(new URL('../../templates/actor/partials/defenses.hbs', import.meta.url), 'utf8');
       const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
 
-      it('uses separate themed boxes for Combat and Attacks with standard list spacing', () => {
+      it('keeps Combat above tabs and separates Attacks and Buffs into the first two tabs', () => {
+        const pcSheet = readFileSync(new URL('../../module/applications/pc-sheet.mjs', import.meta.url), 'utf8');
+        const attackTab = readFileSync(new URL('../../templates/actor/pc/attacks.hbs', import.meta.url), 'utf8');
+        const buffTab = readFileSync(new URL('../../templates/actor/pc/buffs.hbs', import.meta.url), 'utf8');
         const attacks = readFileSync(new URL('../../templates/actor/partials/attack-list.hbs', import.meta.url), 'utf8');
-        expect(combat).toMatch(/class="dcc-box dcc-pc-combat"[\s\S]*actor\/partials\/defenses\.hbs[\s\S]*actor\/partials\/unresolved\.hbs"[^}]*}}\s*<\/div>\s*{{> "systems\/dungeon-crawler-carl\/templates\/actor\/partials\/attack-list\.hbs"/);
+        expect(combat).toMatch(/class="dcc-box dcc-pc-combat"[\s\S]*actor\/partials\/defenses\.hbs[\s\S]*actor\/partials\/unresolved\.hbs/);
+        expect(combat).not.toContain('class="tab');
+        expect(combat).not.toContain('attack-list.hbs');
+        expect(combat).not.toContain('buff-list.hbs');
+        expect(attackTab).toContain('data-tab="attacks"');
+        expect(attackTab).toContain('attack-list.hbs');
+        expect(buffTab).toContain('data-tab="buffs"');
+        expect(buffTab).toContain('buff-list.hbs');
+        expect(pcSheet.indexOf('const TAB_PARTS = {\n  attacks:')).toBeLessThan(pcSheet.indexOf('\n  buffs:'));
+        expect(pcSheet.indexOf('\n  buffs:')).toBeLessThan(pcSheet.indexOf('\n  inventory:'));
+        expect(pcSheet).toContain("initial: 'attacks'");
+        expect(css).toMatch(/grid-template-areas:\s*"header  header"\s*"abil    vitals"\s*"abil    combat"\s*"abil    nav"\s*"abil    body"/);
         expect(attacks).toContain('class="dcc-box dcc-list dcc-list--attacks"');
         expect(css).toMatch(/\.dcc-box \{\s*overflow: hidden;\s*padding: 8px;\s*border: 1px solid var\(--d-line\);[^}]*background: var\(--d-field\);/);
         expect(css).toContain('.dcc-list { margin-top: 8px; }');
@@ -604,7 +622,7 @@ describe('sheetItemLists', () => {
   const lists = sheetItemLists({
     attack: [
       it_('a2', 'attack', 'Zap Attack', 200, { stat: 'intelligence', linkedItemIds: ['p2'] }, { rank: 2, toHit: 3, damageLabel: '1d6+2 fire' }),
-      it_('a1', 'attack', 'Axe', 100, { stat: 'strength', primarySkillId: 's1' }, {
+      it_('a1', 'attack', 'Axe', 100, { stat: 'strength', primarySkillId: 's1', range: '30ft range' }, {
         rank: 1,
         toHit: 2,
         damageLabel: '1d6+1 slashing',
@@ -623,7 +641,7 @@ describe('sheetItemLists', () => {
   it('attack rows: derived values, spell flag, trimmed label', () => {
     expect(lists.attacks[0]).toMatchObject({
       stat: 'DCC.StatAbbr.strength', rank: 1, toHit: 2, damageLabel: '1d6+1 slashing',
-      isSpell: false, skillName: 'Axes', skillMissing: false,
+      isSpell: false, skillName: 'Axes', skillMissing: false, range: '30ft range',
     });
     expect(lists.attacks[0].skillUses[0]).toMatchObject({
       attackId: 'a1',
@@ -653,12 +671,18 @@ describe('sheetItemLists', () => {
     expect(attacks[0].noDamage).toBe(true);
     expect(attacks[0].skillUses[0].noDamage).toBe(true);
     const list = readFileSync(new URL('../../templates/actor/partials/attack-list.hbs', import.meta.url), 'utf8');
-    expect(list.match(/{{#if noDamage}}/g)).toHaveLength(2);
-    expect(list.match(/<span class="dcc-no-damage">{{localize "DCC\.Roll\.NoDamage"}}<\/span>/g)).toHaveLength(2);
+    expect(list.match(/{{#if noDamage}}/g)).toHaveLength(3);
+    expect(list.match(/<span class="dcc-no-damage">{{localize "DCC\.Roll\.NoDamage"}}<\/span>/g)).toHaveLength(3);
     expect(list).not.toContain('data-action="postAttackNotes"');
     const vehicle = readFileSync(new URL('../../templates/actor/partials/vehicle-weapon-list.hbs', import.meta.url), 'utf8');
     expect(vehicle).toContain('<span class="dcc-no-damage">{{localize "DCC.Roll.NoDamage"}}</span>');
     expect(vehicle).not.toContain('data-action="postAttackNotes"');
+  });
+  it('keeps Crawler attack headers aligned for damage buttons and No Damage rows', () => {
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    expect(css).toContain(
+      '.dcc.sheet.actor .dcc-ilist--attacks > li { grid-template-columns: minmax(0, 1fr) 44px 40px 56px 128px 44px; }',
+    );
   });
   it('attack rows carry the mob static To-Hit target (derived.mobToHit)', () => {
     const { attacks } = sheetItemLists({
@@ -680,19 +704,30 @@ describe('sheetItemLists', () => {
       ],
     });
     expect(attacks.map(r => r.notes)).toEqual(['First & second\nline\n<b>literal</b>', '']);
+    const list = readFileSync(new URL('../../templates/actor/partials/attack-list.hbs', import.meta.url), 'utf8');
+    const itemRow = readFileSync(new URL('../../templates/actor/partials/item-row.hbs', import.meta.url), 'utf8');
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    expect(list).toContain('attackNotes=true');
+    expect(itemRow).toMatch(/{{#if attackNotes}}[\s\S]*{{#if notes}}[\s\S]*class="dcc-attack-notes">{{notes}}/);
+    expect(css).toMatch(/\.dcc-ilist--attacks > \.dcc-attack-row > \.dcc-attack-notes \{[^}]*grid-area: auto;[^}]*grid-column: 1 \/ -1;/);
   });
-  it('renders notes once for Mob attacks and uses Mob-only target and damage styling', () => {
+  it('renders book-style Mob attack rows without a subheader', () => {
     const list = readFileSync(new URL('../../templates/actor/partials/attack-list.hbs', import.meta.url), 'utf8');
     const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
-    expect(list).toMatch(/{{#if mob}}{{#if notes}}\s*<span class="dcc-attack-notes">{{notes}}<\/span>\s*{{\/if}}{{\/if}}/);
+    expect(list).toMatch(/{{#unless mob}}\s*<li class="dcc-ihead">[\s\S]*?{{\/unless}}/);
+    expect(list).toContain('class="dcc-irow draggable dcc-mob-attack-row"');
+    expect(list).toContain('class="dcc-mob-attack-icon"');
+    expect(list).toContain('class="dcc-iname dcc-mob-attack-name"');
+    expect(list).toContain('{{localize "DCC.Mob.ToHitLabel" target=mobToHit}}');
+    expect(list).toContain('<span class="dcc-mob-attack-range" data-tooltip="{{range}}">{{range}}</span>');
+    expect(list).toMatch(/{{#if notes}}\s*<span class="dcc-attack-notes">{{notes}}<\/span>\s*{{\/if}}/);
     expect(list.indexOf('dcc-attack-notes')).toBeLessThan(list.indexOf('{{#each skillUses}}'));
-    expect(list).toContain('data-tooltip="{{#if mob}}{{damageLabel}}{{else}}{{localize \'DCC.Roll.Damage\'}}{{/if}}"');
     expect(list).toContain('data-tooltip="{{#if ../../mob}}{{damageLabel}}{{else}}{{localize \'DCC.Roll.Damage\'}}{{/if}}"');
-    expect(css).toMatch(/\.dcc-ilist--attacks\.dcc-ilist--lean > li \{ grid-template-columns: minmax\(0, 1fr\) 60px clamp\(90px, 23%, 126px\) 44px; \}/);
+    expect(css).toMatch(/\.dcc-ilist--attacks\.dcc-ilist--lean > \.dcc-mob-attack-row \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) 12px 12px;/);
+    expect(css).toMatch(/\.dcc-mob-attack-main \{[\s\S]*?grid-template-columns: 20px auto auto minmax\(110px, 160px\) minmax\(0, 1fr\);/);
     expect(css).toContain('.dcc-ilist--attacks.dcc-ilist--lean { --dcc-mob-attack-size: 11px; }');
-    expect(css).toMatch(/\.dcc-ilist--attacks\.dcc-ilist--lean \.dcc-target \{[^}]*border: 0;[^}]*color: var\(--d-ink\);[^}]*font-size: var\(--dcc-mob-attack-size\);/);
-    expect(css).toMatch(/\.dcc-ilist--attacks\.dcc-ilist--lean \.dcc-c-dmg \.dcc-rollbtn--wide \{[^}]*display: block;[^}]*padding-inline: 4px;[^}]*font-size: var\(--dcc-mob-attack-size\);[^}]*letter-spacing: normal;[^}]*text-overflow: ellipsis;[^}]*white-space: nowrap;/);
-    expect(css).toMatch(/\.dcc-attack-notes \{[^}]*grid-column: 1 \/ -1;[^}]*white-space: pre-line;/);
+    expect(css).toMatch(/\.dcc-mob-attack-main \.dcc-rollbtn--wide \{[^}]*display: block;[^}]*padding-inline: 4px;[^}]*font-size: var\(--dcc-mob-attack-size\);[^}]*text-overflow: ellipsis;[^}]*white-space: nowrap;/);
+    expect(css).toMatch(/\.dcc-attack-notes \{[^}]*grid-area: notes;[^}]*white-space: pre-line;/);
   });
   it('skill rows: source rank, effective rank flag, cost for spells', () => {
     expect(lists.skills[0]).toMatchObject({ rank: 2, rankEffective: 3, rankModified: true, bonus: 4 });
@@ -715,7 +750,7 @@ describe('sheetItemLists', () => {
       checkType: 'passive', isOpposed: false, isPassive: true, markable: false,
     });
   });
-  it('skill rows expose populated authored metadata and plain-text Notes & Upgrades', () => {
+  it('skill rows expose populated authored metadata without Notes', () => {
     const { skills, spells } = sheetItemLists({
       skill: [it_('s', 'skill', 'Crossbow', 0, {
         range: '50 feet', cooldown: 'Once per round', limitations: 'Needs bolts',
@@ -731,9 +766,10 @@ describe('sheetItemLists', () => {
         { label: 'DCC.Items.Range', value: '50 feet' },
         { label: 'DCC.Items.Cooldown', value: 'Once per round' },
       ],
-      notes: 'Rank 5: ignores cover.',
       hasSummary: true,
     });
+    expect(skills[0]).not.toHaveProperty('notes');
+    expect(spells[0]).not.toHaveProperty('notes');
     expect(skills[0].summary.some(field => field.value === 'Needs bolts')).toBe(false);
     expect(spells[0].summary).toEqual([
       { label: 'DCC.Items.Range', value: '30 feet' },
@@ -747,8 +783,8 @@ describe('sheetItemLists', () => {
       skill: [it_('s', 'skill', 'Blank', 0, { range: ' ', cooldown: '', description: '<p></p>' })],
       spell: [it_('p', 'spell', 'Free', 0, { attack: {} }, { manaCostEffective: 0 })],
     });
-    expect(skills[0]).toMatchObject({ summary: [], notes: '', hasSummary: false });
-    expect(spells[0]).toMatchObject({ summary: [], notes: '', hasSummary: false });
+    expect(skills[0]).toMatchObject({ summary: [], hasSummary: false });
+    expect(spells[0]).toMatchObject({ summary: [], hasSummary: false });
   });
   it('empty input -> empty lists', () => {
     expect(sheetItemLists()).toEqual({ attacks: [], skills: [], spells: [] });
@@ -801,7 +837,8 @@ describe('skill and spell authored metadata templates', () => {
   it('renders populated actor summaries and uses the context-specific description label', () => {
     expect(list).toContain('{{#if hasSummary}}');
     expect(list).toContain('{{#each summary}}');
-    expect(list).toContain('dcc-skill-summary-notes');
+    expect(list).not.toContain('dcc-skill-summary-notes');
+    expect(list).not.toContain('{{notes}}');
     expect(description).toContain('{{descriptionLabel}}');
     expect(upgrades).toContain('systemFields.upgrades value=systemSource.upgrades');
     expect(list).not.toContain('upgrades');

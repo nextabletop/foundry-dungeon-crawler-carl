@@ -1,3 +1,5 @@
+import { DEFAULT_ITEM_ICONS } from '../config.mjs';
+
 const LINKABLE_TYPES = new Set(['attack', 'gear', 'skill', 'spell', 'weapon']);
 const RANK_SOURCE_TYPES = new Set(['skill', 'spell']);
 
@@ -127,7 +129,7 @@ export async function createGrantedAttack(source) {
   const [attack] = await actor.createEmbeddedDocuments('Item', [{
     type: 'attack',
     name: source.name,
-    img: source.img,
+    img: DEFAULT_ITEM_ICONS.attack,
     system: {
       stat: source.system?.stat ?? 'strength',
       rank: Number(source.system?.rank) || 0,

@@ -14,7 +14,7 @@ const pc = (over = {}) => ({
 
 const attack = (id, name, system = {}) => ({
   id, type: 'attack', name,
-  system: { stat: 'strength', rank: 0, die: '1d6', damageBonus: 0, damageType: 'slashing', linkedItemIds: [], ...system },
+  system: { stat: 'strength', rank: 0, die: '1d6', damageStat: '', damageBonus: 0, damageType: 'slashing', linkedItemIds: [], ...system },
 });
 const skill = (id, name, system = {}) => ({
   id, type: 'skill', name, system: { stat: 'dexterity', rank: 0, enabled: true, class: '', ...system },
@@ -151,6 +151,36 @@ describe('deriveCreature — Attacks', () => {
     expect(d.items.w1.damageBase).toBe(1);
     expect(d.items.w1.damageLabel).toBe('1d4+1 piercing');
     expect(d.items.w1.mobToHit).toBe(10 + 6 + 1);
+  });
+
+  it('uses independent Crawler abilities for to hit and damage', () => {
+    const d = deriveCreature(pc({
+      stats: stats({ dexterity: 10, strength: 6 }),
+      items: [
+        attack('mixed', 'Thrown', {
+          stat: 'dexterity', damageStat: 'strength', rank: 2, damageBonus: 1,
+        }),
+        attack('same', 'Maul', {
+          stat: 'strength', damageStat: 'strength', rank: 2, damageBonus: 1,
+        }),
+      ],
+    }));
+    expect(d.items.mixed).toMatchObject({ toHit: 6, damageBase: 4, damageLabel: '1d6+4 slashing' });
+    expect(d.items.same).toMatchObject({ toHit: 5, damageBase: 4, damageLabel: '1d6+4 slashing' });
+  });
+
+  it('does not add a damage ability to Mobs or blank Crawler damage abilities', () => {
+    const crawler = deriveCreature(pc({
+      stats: stats({ strength: 10 }),
+      items: [attack('crawler', 'Flat', { damageBonus: 2 })],
+    }));
+    const mob = deriveCreature(pc({
+      type: 'mob',
+      stats: stats({ strength: 10 }),
+      items: [attack('mob', 'Flat', { damageStat: 'strength', damageBonus: 2 })],
+    }));
+    expect(crawler.items.crawler.damageBase).toBe(2);
+    expect(mob.items.mob.damageBase).toBe(2);
   });
 
   it('item:Dagger:to_hit 1 -> 7', () => {

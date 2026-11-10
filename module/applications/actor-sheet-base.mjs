@@ -1,5 +1,5 @@
 import { itemModels } from '../data/item/_module.mjs';
-import { SYSTEM_ID, APP_CLASSES } from '../config.mjs';
+import { SYSTEM_ID, APP_CLASSES, DEFAULT_ITEM_ICONS } from '../config.mjs';
 import DCCSheetConfig from './sheet-config.mjs';
 import { slotClickTarget, slotView, isDying } from '../rules/health.mjs';
 import { inlineFieldValue, inlineEditTarget, isBlankHTML, richTextFieldNames, enableViewOnlyControls } from './sheet-rows.mjs';
@@ -382,8 +382,13 @@ export default class DCCActorSheetBase extends HandlebarsApplicationMixin(foundr
     if (!this.isEditable) return;
     if (!this.constructor.ALLOWED_ITEM_TYPES.includes(type)) return;
     const typeLabel = game.i18n.localize(`TYPES.Item.${type}`);
+    const itemData = {
+      type,
+      name: game.i18n.format('DCC.Items.New', { type: typeLabel }),
+    };
+    if (DEFAULT_ITEM_ICONS[type]) itemData.img = DEFAULT_ITEM_ICONS[type];
     const [item] = await this.document.createEmbeddedDocuments('Item', [{
-      type, name: game.i18n.format('DCC.Items.New', { type: typeLabel }),
+      ...itemData,
     }]);
     item?.sheet.render(true);
   }

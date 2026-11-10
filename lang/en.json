@@ -89,6 +89,9 @@
           "label": "Damage Die",
           "placeholder": "1d6"
         },
+        "damageStat": {
+          "label": "Damage Ability"
+        },
         "damageBonus": {
           "label": "Damage Bonus"
         },
@@ -287,6 +290,8 @@
     },
     "Tab": {
       "combat": "Combat",
+      "attacks": "Attacks",
+      "buffs": "Buffs & Debuffs",
       "inventory": "Inventory",
       "skills": "Skills",
       "bio": "Bio",
@@ -486,7 +491,8 @@
       "ShowBuffs": "Show Buffs & Debuffs",
       "ShowSectionsHint": "Hidden sections keep their items and active effects.",
       "EvadeTooltip": "Static Evade target: base + modifiers + Floor",
-      "StaticToHitTooltip": "Static To-Hit target: attack base + modifiers + Floor"
+      "StaticToHitTooltip": "Static To-Hit target: attack base + modifiers + Floor",
+      "ToHitLabel": "{target} to hit"
     },
     "Vehicle": {
       "StatBlock": "Vehicle / Mount",

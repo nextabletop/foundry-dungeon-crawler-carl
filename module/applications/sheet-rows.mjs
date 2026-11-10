@@ -100,6 +100,7 @@ const attackRow = (item, items) => {
     mobToHitNone: d.mobToHitNone,
     noDamage: d.noDamage,
     damageLabel: String(d.damageLabel ?? '').trim(),
+    range: String(item.system.range ?? '').trim(),
     notes: htmlToText((item.system._source ?? item.system).description),
     skillUses: (d.skillUses ?? []).map(use => ({
       ...use,
@@ -143,7 +144,6 @@ const skillRow = (item) => {
     isPassive,
     markable: !isPassive,
     onHotlist: src.onHotlist,
-    notes: htmlToText(src.description),
   };
   if (item.type === 'spell') {
     row.cost = d.manaCostEffective;
@@ -155,7 +155,7 @@ const skillRow = (item) => {
   row.summary = summary
     .filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== '')
     .map(([label, value]) => ({ label, value }));
-  row.hasSummary = !!(row.summary.length || row.notes);
+  row.hasSummary = row.summary.length > 0;
   return row;
 };
 

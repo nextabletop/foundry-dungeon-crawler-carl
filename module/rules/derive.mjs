@@ -33,12 +33,12 @@ const itemById = items => new Map(items.map(item => [idOf(item), item]));
 // `itemBonus`/`itemPercent` are this item's resolveModifiers buckets, keyed by
 // the modifier aspect vocabulary (`to_hit`, `damage`); the output is camelCase.
 const attackRow = ({
-  statModifier, rank, itemBonus, itemPercent, damageModifierDice, die, damageBonus, damageType, floor,
+  statModifier, damageStatModifier = 0, rank, itemBonus, itemPercent, damageModifierDice, die, damageBonus, damageType, floor,
   mob = false, mobToHitBase, mobToHitNone = false, mobNoDamage = false,
 }) => {
   const base = mob && mobToHitBase != null ? mobToHitBase - 10 : attackToHit(statModifier, rank, 0);
   const toHit = mob && mobToHitNone ? 0 : applyModifiers(base, itemBonus.to_hit || 0, itemPercent.to_hit || 0);
-  const damageBase = (+damageBonus || 0) + (itemBonus.damage || 0); // damage stays flat
+  const damageBase = (+damageStatModifier || 0) + (+damageBonus || 0) + (itemBonus.damage || 0); // damage stays flat
   const noDamageDie = /^(none|no damage|-|—)?$/i.test(String(die ?? '').trim());
   const baseDie = noDamageDie ? '' : (die || '');
   const damageDice = `${baseDie}${damageModifierDice || ''}`;
@@ -77,6 +77,7 @@ const deriveItemRow = (item, context) => {
       : (sys.primarySkillId ? 0 : (+sys.rank || 0));
     Object.assign(row, attackRow({
       statModifier: modifierFor(sys.stat), rank, itemBonus, itemPercent,
+      damageStatModifier: type === 'pc' && STATS.includes(sys.damageStat) ? modifierFor(sys.damageStat) : 0,
       damageModifierDice: itemDice[id]?.damage || '',
       die: sys.die, damageBonus: sys.damageBonus, damageType: sys.damageType, floor,
       mob: type === 'mob', mobToHitBase: sys.mobToHitBase, mobToHitNone: sys.mobToHitNone, mobNoDamage: sys.mobNoDamage,
@@ -95,6 +96,7 @@ const deriveItemRow = (item, context) => {
       const useStat = STATS.includes(use.stat) ? use.stat : sys.stat;
       const derived = attackRow({
         statModifier: modifierFor(useStat), rank: useRank, itemBonus, itemPercent,
+        damageStatModifier: type === 'pc' && STATS.includes(sys.damageStat) ? modifierFor(sys.damageStat) : 0,
         damageModifierDice: itemDice[id]?.damage || '',
         die: sys.die, damageBonus: sys.damageBonus, damageType: sys.damageType, floor,
         mob: type === 'mob', mobToHitBase: sys.mobToHitBase, mobToHitNone: sys.mobToHitNone, mobNoDamage: sys.mobNoDamage,

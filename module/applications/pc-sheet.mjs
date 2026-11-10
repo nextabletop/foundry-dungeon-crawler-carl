@@ -19,19 +19,22 @@ const BIO_FIELDS = Object.freeze([
   { key: 'notes', label: 'DCC.Bio.Notes', wide: true },
 ]);
 
+const COMBAT_PART = {
+  template: path('actor/pc/combat.hbs'),
+  templates: [ACTOR_PARTIALS.defenses, ACTOR_PARTIALS.unresolved],
+};
+
 /**
  * The tab parts, in tab order. Single source for both TABS (the nav) and the
  * matching PARTS entries; the base sheet hands each part its `context.tab`.
  */
 const TAB_PARTS = {
-  combat: {
-    template: path('actor/pc/combat.hbs'),
-    templates: [
-      ACTOR_PARTIALS.defenses, ACTOR_PARTIALS.unresolved, ACTOR_PARTIALS.attackList, ACTOR_PARTIALS.crewing,
-      ACTOR_PARTIALS.buffList, ACTOR_PARTIALS.itemRow,
-    ],
+  attacks: {
+    template: path('actor/pc/attacks.hbs'),
+    templates: [ACTOR_PARTIALS.attackList, ACTOR_PARTIALS.crewing, ACTOR_PARTIALS.itemRow],
     scrollable: [''],
   },
+  buffs: { template: path('actor/pc/buffs.hbs'), templates: [ACTOR_PARTIALS.buffList, ACTOR_PARTIALS.itemRow], scrollable: [''] },
   inventory: { template: path('actor/pc/inventory.hbs'), templates: [ACTOR_PARTIALS.itemRow], scrollable: [''] },
   skills: { template: path('actor/pc/skills.hbs'), templates: [ACTOR_PARTIALS.skillList, ACTOR_PARTIALS.itemRow], scrollable: [''] },
   bio: { template: path('actor/pc/bio.hbs'), templates: [ACTOR_PARTIALS.richFields], scrollable: [''] },
@@ -56,7 +59,7 @@ export default class PcSheet extends DCCCreatureSheet {
   static TABS = {
     primary: {
       tabs: Object.keys(TAB_PARTS).map(id => ({ id })),
-      initial: 'combat',
+      initial: 'attacks',
       labelPrefix: 'DCC.Tab',
     },
   };
@@ -70,6 +73,7 @@ export default class PcSheet extends DCCCreatureSheet {
     header: { template: path('actor/pc/header.hbs') },
     abilities: { template: path('actor/pc/abilities.hbs') },
     vitals: { template: path('actor/pc/vitals.hbs'), templates: [ACTOR_PARTIALS.healthBar] },
+    combat: COMBAT_PART,
     tabs: { template: 'templates/generic/tab-navigation.hbs' },
     ...TAB_PARTS,
     hotlist: { template: path('actor/pc/hotlist.hbs') },

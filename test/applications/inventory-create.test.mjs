@@ -47,7 +47,11 @@ describe('Crawler inventory item creation', () => {
     expect(dialog.buttons.map(button => button.label)).toEqual(['TYPES.Item.gear', 'TYPES.Item.weapon', 'DCC.Inventory.Cancel']);
     expect(dialog.modal).toBe(true);
     expect(dialog.rejectClose).toBe(false);
-    expect(sheet.document.createEmbeddedDocuments).toHaveBeenCalledWith('Item', [{ type, name: 'DCC.Items.New' }]);
+    expect(sheet.document.createEmbeddedDocuments).toHaveBeenCalledWith('Item', [{
+      type,
+      name: 'DCC.Items.New',
+      ...(type === 'gear' ? { img: 'icons/svg/chest.svg' } : {}),
+    }]);
     expect(render).toHaveBeenCalledWith(true);
   });
 
@@ -99,11 +103,30 @@ describe('Crawler inventory item creation', () => {
     const render = vi.fn();
     sheet.document.createEmbeddedDocuments.mockResolvedValue([{ sheet: { render } }]);
     await createItem.call(sheet, null, { dataset: { type: 'attack' } });
-    expect(sheet.document.createEmbeddedDocuments).toHaveBeenCalledWith('Item', [{ type: 'attack', name: 'DCC.Items.New' }]);
+    expect(sheet.document.createEmbeddedDocuments).toHaveBeenCalledWith('Item', [{
+      type: 'attack',
+      name: 'DCC.Items.New',
+      img: 'icons/svg/combat.svg',
+    }]);
     expect(render).toHaveBeenCalledWith(true);
     sheet.document.createEmbeddedDocuments.mockClear();
     await createItem.call(sheet, null, { dataset: { type: 'unknown' } });
     expect(sheet.document.createEmbeddedDocuments).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['skill', 'icons/svg/book.svg'],
+    ['spell', 'icons/svg/daze.svg'],
+    ['gear', 'icons/svg/chest.svg'],
+  ])('uses the default %s icon for shared item creation', async (type, img) => {
+    const sheet = makeSheet();
+    sheet.document.createEmbeddedDocuments.mockResolvedValue([{ sheet: { render: vi.fn() } }]);
+    await createItem.call(sheet, null, { dataset: { type } });
+    expect(sheet.document.createEmbeddedDocuments).toHaveBeenCalledWith('Item', [{
+      type,
+      name: 'DCC.Items.New',
+      img,
+    }]);
   });
 
   it('respects the allowed-type check after a choice', async () => {

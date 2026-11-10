@@ -1,4 +1,10 @@
 export const SYSTEM_ID = 'dungeon-crawler-carl';
+export const DEFAULT_ITEM_ICONS = Object.freeze({
+  attack: 'icons/svg/combat.svg',
+  skill: 'icons/svg/book.svg',
+  spell: 'icons/svg/daze.svg',
+  gear: 'icons/svg/chest.svg',
+});
 export const STATS = ['strength', 'intelligence', 'constitution', 'dexterity', 'charisma'];
 /** Roll-data short keys for stat mods (@str .. @cha); see CreatureModel#rollShortcuts. */
 export const ROLL_ABBR = { strength: 'str', intelligence: 'int', constitution: 'con', dexterity: 'dex', charisma: 'cha' };

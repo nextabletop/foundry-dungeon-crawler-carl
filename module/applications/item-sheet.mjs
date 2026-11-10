@@ -15,6 +15,7 @@ const ITEM_PARTIALS = ['header', 'description'].map(p => `systems/${SYSTEM_ID}/t
  */
 const OPTION_KEYS = Object.freeze({
   stat: STATS.map(v => ({ value: v, label: `DCC.Stat.${v}` })),
+  damageStat: ['', ...STATS].map(v => ({ value: v, label: v ? `DCC.Stat.${v}` : 'DCC.None' })),
   checkType: CHECK_TYPES.map(v => ({ value: v, label: `DCC.CheckType.${v}` })),
   opposedStat: ['', ...STATS].map(v => ({ value: v, label: v ? `DCC.Stat.${v}` : 'DCC.None' })),
   slot: ITEM_SLOTS.map(v => ({ value: v, label: `DCC.Slot.${v}` })),
@@ -136,6 +137,7 @@ export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.app
       systemFields,
       selectOptions,
       showMobToHit: this.document.type === 'attack' && (!this.document.parent || this.document.parent.type === 'mob'),
+      showDamageStat: this.document.type === 'attack' && (!this.document.parent || this.document.parent.type === 'pc'),
       typeLabel: game.i18n.localize(CONFIG.Item.typeLabels[this.document.type] ?? this.document.type),
       descriptionLabel: game.i18n.localize(
         ['skill', 'spell'].includes(this.document.type)

@@ -21,8 +21,11 @@
       {{/if}}
       <div class="dcc-item-damage-grid">
         {{formGroup systemFields.die value=systemSource.die rootId=rootId}}
+        {{#if showDamageStat}}
+        {{formGroup systemFields.damageStat value=systemSource.damageStat options=selectOptions.damageStat rootId=rootId}}
+        {{/if}}
         {{formGroup systemFields.damageBonus value=systemSource.damageBonus rootId=rootId}}
-        {{formGroup systemFields.damageType value=systemSource.damageType rootId=rootId}}
+        {{formGroup systemFields.damageType value=systemSource.damageType rootId=rootId classes="dcc-item-damage-type"}}
       </div>
       {{formGroup systemFields.range value=systemSource.range rootId=rootId classes="dcc-item-wide"}}
     </div>
