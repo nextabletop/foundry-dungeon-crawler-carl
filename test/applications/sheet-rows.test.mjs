@@ -786,6 +786,7 @@ describe('skill and spell authored metadata templates', () => {
   const list = readFileSync(new URL('../../templates/actor/partials/skill-list.hbs', import.meta.url), 'utf8');
   const row = readFileSync(new URL('../../templates/actor/partials/item-row.hbs', import.meta.url), 'utf8');
   const description = readFileSync(new URL('../../templates/item/partials/description.hbs', import.meta.url), 'utf8');
+  const upgrades = readFileSync(new URL('../../templates/item/upgrades.hbs', import.meta.url), 'utf8');
 
   it('edits Range, Cooldown, and Limitations on skills and spells, with spell-only Duration', () => {
     for (const template of [skill, spell]) {
@@ -802,6 +803,8 @@ describe('skill and spell authored metadata templates', () => {
     expect(list).toContain('{{#each summary}}');
     expect(list).toContain('dcc-skill-summary-notes');
     expect(description).toContain('{{descriptionLabel}}');
+    expect(upgrades).toContain('systemFields.upgrades value=systemSource.upgrades');
+    expect(list).not.toContain('upgrades');
   });
 
   it('keeps hotlist editing on item sheets and removes Skill Check controls', () => {

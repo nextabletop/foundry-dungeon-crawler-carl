@@ -2022,6 +2022,7 @@ body.theme-dark .dcc:is(.sheet, .dcc-app):not(.theme-light),
 .dcc.sheet.item .dcc-item-empty { color: var(--d-ink-faint); }
 /* Modifiers list (the actor Buffs list layout): name, changes, inactive badge, controls. */
 .dcc.sheet.item .dcc-item-effects { flex: none; }
+.dcc.sheet.item .dcc-item-upgrades { flex: none; }
 .dcc.sheet.item .dcc-item-effects .dcc-list { margin-top: 0; }
 .dcc.sheet.item .dcc-ilist--effects > li { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto 44px; }
 .dcc.sheet.item .dcc-irow--off { opacity: 0.55; }

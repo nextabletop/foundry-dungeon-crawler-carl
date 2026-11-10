@@ -23,7 +23,8 @@ const OPTION_KEYS = Object.freeze({
 
 /**
  * Item sheet: one part per item type (its fields in DCC boxes; labels, hints and placeholders
- * come from DCC.Item.FIELDS via BaseItemModel.LOCALIZATION_PREFIXES) plus a shared modifiers list.
+ * come from DCC.Item.FIELDS via BaseItemModel.LOCALIZATION_PREFIXES), a shared modifiers list,
+ * and a Skill/Spell-only Upgrades editor.
  */
 export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.applications.sheets.ItemSheet) {
   static DEFAULT_OPTIONS = {
@@ -46,14 +47,16 @@ export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.app
       template: `systems/${SYSTEM_ID}/templates/item/${type}.hbs`, templates: ITEM_PARTIALS, scrollable: [''],
     }])),
     effects: { template: `systems/${SYSTEM_ID}/templates/item/effects.hbs` },
+    upgrades: { template: `systems/${SYSTEM_ID}/templates/item/upgrades.hbs` },
   };
 
-  /** Render only the part for this item's type, plus the shared effects part. */
+  /** Render the current item type, shared effects, and Skill/Spell-only Upgrades parts. */
   _configureRenderParts(options) {
     const parts = super._configureRenderParts(options);
     for (const id of Object.keys(parts)) {
-      if ((id !== this.document.type) && (id !== 'effects')) delete parts[id];
+      if ((id !== this.document.type) && (id !== 'effects') && (id !== 'upgrades')) delete parts[id];
     }
+    if (!['skill', 'spell'].includes(this.document.type)) delete parts.upgrades;
     return parts;
   }
 
@@ -68,6 +71,10 @@ export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.app
       options.map(({ value, label }) => ({ value, label: game.i18n.localize(label) }))]));
     const description = systemSource.description ?? '';
     const descriptionHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(description, {
+      relativeTo: this.document, secrets: this.document.isOwner, rollData: this.document.getRollData(),
+    });
+    const upgrades = systemSource.upgrades ?? '';
+    const upgradesHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(upgrades, {
       relativeTo: this.document, secrets: this.document.isOwner, rollData: this.document.getRollData(),
     });
     const ownedItems = this.document.parent?.items?.contents ?? [];
@@ -132,11 +139,13 @@ export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.app
       typeLabel: game.i18n.localize(CONFIG.Item.typeLabels[this.document.type] ?? this.document.type),
       descriptionLabel: game.i18n.localize(
         ['skill', 'spell'].includes(this.document.type)
-          ? 'DCC.ItemSheet.NotesUpgrades'
+          ? 'DCC.ItemSheet.Notes'
           : (this.document.type === 'attack' ? 'DCC.ItemSheet.NotesEffects' : 'DCC.Item.FIELDS.description.label'),
       ),
       descriptionHTML,
       descriptionEmpty: isBlankHTML(description),
+      upgradesHTML,
+      upgradesEmpty: isBlankHTML(upgrades),
       effects,
       attackLink,
       config: CONFIG.DCC,
@@ -152,9 +161,11 @@ export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.app
   async _onRender(context, options) {
     await super._onRender(context, options);
     if (!this.isEditable) enableViewOnlyControls(this.element);
-    // Name the description editor by its bar (templates/item/partials/description.hbs).
-    const label = this.element.querySelector('.dcc-item-desc > .dcc-bar');
-    this.element.querySelector('.dcc-item-desc prose-mirror')?.setAttribute('aria-labelledby', label?.id ?? '');
+    for (const field of ['description', 'upgrades']) {
+      const section = this.element.querySelector(`.dcc-item-${field}`);
+      const label = section?.querySelector('.dcc-bar');
+      section?.querySelector('prose-mirror')?.setAttribute('aria-labelledby', label?.id ?? '');
+    }
   }
 
   /**
@@ -167,7 +178,7 @@ export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.app
   async _onFirstRender(context, options) {
     await super._onFirstRender(context, options);
     this.element.addEventListener('close', event => {
-      if (event.target.matches?.('.dcc-item-desc prose-mirror')) this.render();
+      if (event.target.matches?.('.dcc-item-description prose-mirror, .dcc-item-upgrades prose-mirror')) this.render();
     });
   }
 
@@ -195,6 +206,7 @@ export default class DCCItemSheet extends HandlebarsApplicationMixin(foundry.app
     try {
       const formData = new foundry.applications.ux.FormDataExtended(this.form);
       delete formData.object['system.description'];
+      delete formData.object['system.upgrades'];
       const submitData = this._prepareSubmitData(null, this.form, formData);
       await this._processSubmitData(null, this.form, submitData);
       return true;

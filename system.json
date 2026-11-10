@@ -26,8 +26,8 @@
     },
     "Item": {
       "weapon": { "htmlFields": ["description"] },
-      "skill": { "htmlFields": ["description"] },
-      "spell": { "htmlFields": ["description"] },
+      "skill": { "htmlFields": ["description", "upgrades"] },
+      "spell": { "htmlFields": ["description", "upgrades"] },
       "gear": { "htmlFields": ["description"] },
       "attack": { "htmlFields": ["description"] }
     }

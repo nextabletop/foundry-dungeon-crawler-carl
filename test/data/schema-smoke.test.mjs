@@ -141,8 +141,9 @@ describe('item schemas', () => {
   it('skill', () => {
     expect(keys(SkillModel)).toEqual(expect.arrayContaining([...base,
       'stat', 'rank', 'mark', 'enabled', 'isAttack', 'checkType', 'opposedStat', 'class',
-      'range', 'cooldown', 'limitations']));
+      'range', 'cooldown', 'limitations', 'upgrades']));
     const schema = SkillModel.defineSchema();
+    expect(schema.upgrades).toBeInstanceOf(foundry.data.fields.HTMLField);
     expect(schema.checkType.initial).toBe('opposed');
     expect(schema.checkType.options.choices).toEqual(Object.fromEntries(CHECK_TYPES.map(type => [type, type])));
     expect(schema.opposedStat.initial).toBe('');

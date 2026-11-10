@@ -52,6 +52,9 @@
         "description": {
           "label": "Description"
         },
+        "upgrades": {
+          "label": "Upgrades"
+        },
         "onHotlist": {
           "label": "On Hotlist",
           "hint": "Show on the Crawler hotlist (first 10)."
@@ -202,7 +205,8 @@
       "StaleLinks": "Missing linked Item IDs: {ids}",
       "AsymmetricLinks": "One-sided links need repair: {names}",
       "UnownedAttack": "Add this Attack to an Actor before linking a source.",
-      "NotesUpgrades": "Notes & Upgrades",
+      "Notes": "Notes",
+      "Upgrades": "Upgrades",
       "NotesEffects": "Notes & Effects",
       "Flags": "Flags"
     },

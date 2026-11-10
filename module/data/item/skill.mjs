@@ -1,6 +1,6 @@
 import BaseItemModel from './base-item.mjs';
 import { STATS, CHECK_TYPES } from '../../config.mjs';
-import { int, str, bool } from '../_fields.mjs';
+import { int, str, bool, html } from '../_fields.mjs';
 
 export default class SkillModel extends BaseItemModel {
   static defineSchema() {
@@ -17,6 +17,7 @@ export default class SkillModel extends BaseItemModel {
       range: str(),
       cooldown: str(),
       limitations: str(),
+      upgrades: html(),
     };
   }
 }
