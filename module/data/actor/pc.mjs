@@ -14,6 +14,8 @@ export default class PcModel extends CreatureModel {
       class: str(),
       crawlerNumber: str(),
       aiFavor: int(0),
+      pcCombatEdit: bool(false),
+      pcAbilitiesEdit: bool(false),
       pendingLevels: int(0),
       statPoints: int(0),
       undoStack: new fields.ArrayField(new fields.ObjectField(), { required: true, initial: [] }),

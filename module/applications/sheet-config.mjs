@@ -8,8 +8,8 @@ const STAT_OPTIONS = Object.freeze(Object.fromEntries(STATS.map(s => [s, `DCC.St
 /**
  * Configure Sheet dialog with the actor's sheet settings (the R20 Settings
  * view) above core's sheet / theme choices. The settings fieldset renders
- * only for actor types that have settings (pc: mana ability, auto-enable on
- * cast; mob: public rolls). Submit writes the `system.*` fields to the actor,
+ * for pc, mob and vehicle actors (chat extras, plus PC or Mob-specific settings).
+ * Submit writes the `system.*` fields to the actor,
  * then runs core's own handler for the sheet / theme fields.
  */
 export default class DCCSheetConfig extends CoreSheetConfig {

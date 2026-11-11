@@ -1,17 +1,6 @@
 <section class="dcc-item-body">
   {{> "systems/dungeon-crawler-carl/templates/item/partials/header.hbs"}}
   <div class="dcc-box dcc-item-section">
-    <div class="dcc-bar">{{localize "DCC.ItemSheet.Attack"}}</div>
-    <div class="dcc-item-grid">
-      {{formGroup systemFields.stat value=systemSource.stat options=selectOptions.stat rootId=rootId}}
-      {{formGroup systemFields.rank value=systemSource.rank rootId=rootId}}
-      {{formGroup systemFields.skill value=systemSource.skill rootId=rootId classes="dcc-item-wide"}}
-      {{formGroup systemFields.die value=systemSource.die rootId=rootId}}
-      {{formGroup systemFields.damageBonus value=systemSource.damageBonus rootId=rootId}}
-      {{formGroup systemFields.damageType value=systemSource.damageType options=selectOptions.damageType blank=false rootId=rootId}}
-    </div>
-  </div>
-  <div class="dcc-box dcc-item-section">
     <div class="dcc-bar">{{localize "DCC.ItemSheet.Inventory"}}</div>
     <div class="dcc-item-grid">
       {{formGroup systemFields.quantity value=systemSource.quantity rootId=rootId}}
@@ -20,13 +9,6 @@
     <div class="dcc-item-flags">
       {{formGroup systemFields.active value=systemSource.active rootId=rootId}}
       {{formGroup systemFields.onHotlist value=systemSource.onHotlist rootId=rootId}}
-    </div>
-  </div>
-  <div class="dcc-box dcc-item-section">
-    <div class="dcc-bar">{{localize "DCC.ItemSheet.VehicleWeapon"}}</div>
-    <div class="dcc-item-grid">
-      {{formGroup systemFields.gunnerSlot value=systemSource.gunnerSlot options=selectOptions.gunnerSlot blank=false rootId=rootId}}
-      {{formGroup systemFields.skillName value=systemSource.skillName rootId=rootId}}
     </div>
   </div>
   {{> "systems/dungeon-crawler-carl/templates/item/partials/description.hbs"}}

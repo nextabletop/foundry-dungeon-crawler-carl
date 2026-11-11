@@ -26,7 +26,7 @@ const GUNNER_OPTIONS = Object.freeze(Object.fromEntries(['', ...GUNNER_SLOTS].ma
  * cards add the Driver's drive-skill bonus (VehicleModel#resolveDriver), a
  * vehicle weapon's to-hit adds its gunner's skill bonus, and a crew row's
  * quick-roll selects roll that member's skills / attacks from the vehicle.
- * Owned item types: weapons only.
+ * Owned item types: Attacks only.
  */
 export default class VehicleSheet extends DCCActorSheetBase {
   static DEFAULT_OPTIONS = {
@@ -43,7 +43,7 @@ export default class VehicleSheet extends DCCActorSheetBase {
     },
   };
 
-  static ALLOWED_ITEM_TYPES = ['weapon'];
+  static ALLOWED_ITEM_TYPES = ['attack'];
 
   static RICH_TEXT_PARTS = {
     notes: [{ key: 'notes', label: 'DCC.Bio.Notes', wide: true }],
@@ -71,7 +71,7 @@ export default class VehicleSheet extends DCCActorSheetBase {
       advantageOptions: ADVANTAGE_OPTIONS,
       gunnerSlots: GUNNER_OPTIONS,
       ...this._healthContext(),
-      attacks: vehicleWeaponRows(this.document.itemTypes.weapon),
+      attacks: vehicleWeaponRows(this.document.itemTypes.attack),
       crew: crewRows(system._source.crew, VehicleSheet.#resolveCrew, system.kind),
     });
   }

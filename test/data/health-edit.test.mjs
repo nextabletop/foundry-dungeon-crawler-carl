@@ -48,6 +48,66 @@ describe('model _preUpdate: healthPoints edits become slot changes', () => {
     expect(c.system).not.toHaveProperty('healthPoints');
   });
 
+  describe('slot count changes', () => {
+    it.each([PcModel, MobModel])('fills only newly added slots for a wounded %s', async (Model) => {
+      const m = prepare(Model, creatureSource({ level: 10, healthBar: 6, mana: { value: 0, max: 0 } }));
+      const c = changes({ 'system.healthBarSlotsCustom': 25 });
+      await m._preUpdate(c, {}, {});
+      expect(c.system).toEqual({ healthBarSlotsCustom: 25, healthBar: 21 });
+    });
+
+    it('shrinks and clamps the stored bar, without healing a wounded bar below the new cap', async () => {
+      for (const [healthBar, expected] of [[20, 8], [5, 5]]) {
+        const m = prepare(PcModel, pcSource({ healthBarSlotsCustom: 25, healthBar }));
+        const c = changes({ 'system.healthBarSlotsCustom': 8 });
+        await m._preUpdate(c, {}, {});
+        expect(c.system.healthBar).toBe(expected);
+      }
+    });
+
+    it('clearing an override restores auto count and fills new slots', async () => {
+      const m = prepare(MobModel, creatureSource({ level: 8, healthBarSlotsCustom: 3, healthBar: 2 }));
+      const c = changes({ 'system.healthBarSlotsCustom': null });
+      await m._preUpdate(c, {}, {});
+      expect(c.system).toEqual({ healthBarSlotsCustom: null, healthBar: 7 });
+    });
+
+    it('level and vehicle size changes fill growth and clamp shrinkage', async () => {
+      const mob = prepare(MobModel, creatureSource({ level: 3, healthBar: 2 }));
+      const grow = changes({ 'system.level': 5 });
+      await mob._preUpdate(grow, {}, {});
+      expect(grow.system.healthBar).toBe(4);
+      const vehicle = prepare(VehicleModel, vehicleSource({ size: 4, healthBar: 4 }));
+      const shrink = changes({ 'system.size': 2 });
+      await vehicle._preUpdate(shrink, {}, {});
+      expect(shrink.system.healthBar).toBe(2);
+    });
+
+    it('does not refill when the effective count is unchanged', async () => {
+      const mob = prepare(MobModel, creatureSource({ level: 3, healthBarSlotsCustom: 5, healthBar: 2 }));
+      const c = changes({ 'system.level': 8 });
+      await mob._preUpdate(c, {}, {});
+      expect(c.system).toEqual({ level: 8 });
+    });
+
+    it('preserves an explicit healthBar update when the count changes, clamped to the new cap', async () => {
+      const m = prepare(PcModel, pcSource({ healthBar: 6 }));
+      const c = changes({ 'system.healthBarSlotsCustom': 25, 'system.healthBar': 3 });
+      await m._preUpdate(c, {}, {});
+      expect(c.system.healthBar).toBe(3);
+      const shrink = changes({ 'system.healthBarSlotsCustom': 4, 'system.healthBar': 8 });
+      await m._preUpdate(shrink, {}, {});
+      expect(shrink.system.healthBar).toBe(4);
+    });
+
+    it('applies a simultaneous HP edit before adding newly gained slots', async () => {
+      const m = pc(1, 6);
+      const c = changes({ 'system.healthBarSlotsCustom': 15, 'system.healthPoints.value': 4 });
+      await m._preUpdate(c, {}, {});
+      expect(c.system).toEqual({ healthBarSlotsCustom: 15, healthBar: 9 });
+    });
+  });
+
   it('con mod 3, healthBar 10 (healthPoints 30), entered 25 -> healthBar 9 (healthPoints 27)', async () => {
     const m = pc(6, 10);
     expect(m.stats.constitution.modifier).toBe(3);
@@ -151,6 +211,14 @@ describe('model _preUpdate: healthPoints edits become slot changes', () => {
     expect(c.system).not.toHaveProperty('healthPoints');
   });
 
+  it.each(['vehicle', 'mount'])('ignores HP edits at zero Constitution Modifier for a %s', async (kind) => {
+    const v = prepare(VehicleModel, vehicleSource({ kind, constitutionModifier: 0, healthBar: 3 }));
+    const c = changes({ 'system.healthPoints.value': 10 });
+    await v._preUpdate(c, {}, {});
+    expect(c.system).not.toHaveProperty('healthBar');
+    expect(c.system).not.toHaveProperty('healthPoints');
+  });
+
   it('creature healthConstitutionModifier is the constitution stat mod', () => {
     expect(pc(6, 10).healthConstitutionModifier).toBe(3);
   });
@@ -178,6 +246,16 @@ describe('DCCActor health methods', () => {
     expect(a.update).toHaveBeenCalledWith({ 'system.healthBar': 2 });
   });
 
+  it.each(['vehicle', 'mount'])('zero Constitution Modifier prevents damage from changing %s slots, but allows manual slot edits', async (kind) => {
+    const a = actorFor(prepare(VehicleModel, vehicleSource({ kind, constitutionModifier: 0, healthBar: 3 })));
+    await a.applyDamage(100);
+    expect(a.update).not.toHaveBeenCalled();
+    await a.setSlots(2);
+    expect(a.update).toHaveBeenCalledWith({ 'system.healthBar': 2 });
+    await a.healSlots();
+    expect(a.update).toHaveBeenLastCalledWith({ 'system.healthBar': 4 });
+  });
+
   it('healSlots defaults to 1 and clamps at healthBarSlots', async () => {
     const a = actorFor(pc(1, 8));
     await a.healSlots();
@@ -185,6 +263,19 @@ describe('DCCActor health methods', () => {
     await a.healSlots(5);
     expect(a.update).toHaveBeenLastCalledWith({ 'system.healthBar': 10 });
     expect(a.update).toHaveBeenCalledTimes(2);
+  });
+
+  it('custom bars use their maximum for damage, healing, and slot edits', async () => {
+    const a = actorFor(prepare(PcModel, pcSource({ healthBarSlotsCustom: 25, healthBar: 20 })));
+    await a.applyDamage(3);
+    expect(a.update).toHaveBeenLastCalledWith({ 'system.healthBar': 17 });
+    await a.healSlots(10);
+    expect(a.update).toHaveBeenLastCalledWith({ 'system.healthBar': 25 });
+    await a.setSlots(30);
+    expect(a.update).toHaveBeenLastCalledWith({ 'system.healthBar': 25 });
+    const c = changes({ 'system.healthPoints.value': 24 });
+    await a.system._preUpdate(c, {}, {});
+    expect(c.system.healthBar).toBe(24);
   });
 
   it('setSlots clamps to [0, healthBarSlots]', async () => {

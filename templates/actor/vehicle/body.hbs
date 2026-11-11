@@ -16,11 +16,7 @@
             <span class="dcc-flabel">{{localize "DCC.Sheet.Name"}}</span>
             <input class="dcc-fline" type="text" name="name" value="{{document.name}}">
           </label>
-          <div class="dcc-field dcc-field--num dcc-grow-2">
-            <span class="dcc-flabel">{{localize "DCC.Header.Type"}}</span>
-            <span class="dcc-type-badge">{{localize (concat "TYPES.Actor." document.type)}}</span>
-          </div>
-          <label class="dcc-field dcc-field--num dcc-grow-2">
+          <label class="dcc-field dcc-field--num dcc-grow-2 dcc-vehicle-floor">
             <span class="dcc-flabel">{{localize "DCC.Header.Floor"}}</span>
             <input class="dcc-fline" type="number" step="1" name="system.floor" value="{{systemSource.floor}}">
           </label>
@@ -34,6 +30,7 @@
       <div class="dcc-bar">
         <span>{{localize "DCC.Health.Bar"}}</span>
         {{#if health.dying}}<span class="dcc-dying">{{localize "DCC.Health.Dying"}}</span>{{/if}}
+        <button type="button" class="dcc-addbtn" data-action="healSlot">{{localize "DCC.Health.HealSlot"}}</button>
       </div>
       {{> "systems/dungeon-crawler-carl/templates/actor/partials/health-bar.hbs"}}
     </div>
@@ -64,7 +61,7 @@
       </label>
       <label class="dcc-field dcc-field--num" data-tooltip="{{localize 'DCC.Vehicle.ConstitutionModifierTooltip'}}">
         <span class="dcc-flabel">{{localize "DCC.Vehicle.ConstitutionModifier"}}</span>
-        <input class="dcc-fline" type="number" step="1" min="1" name="system.constitutionModifier" value="{{systemSource.constitutionModifier}}" placeholder="5">
+        <input class="dcc-fline" type="number" step="1" min="0" name="system.constitutionModifier" value="{{systemSource.constitutionModifier}}" placeholder="5">
       </label>
       <label class="dcc-field dcc-field--num">
         <span class="dcc-flabel">{{localize "DCC.Vehicle.Passengers"}}</span>

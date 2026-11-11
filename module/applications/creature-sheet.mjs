@@ -1,12 +1,10 @@
 import DCCActorSheetBase from './actor-sheet-base.mjs';
-import { STATS, ROLL_ABBR, CHECK_TYPES, APP_CLASSES } from '../config.mjs';
-import { sheetItemLists, buffRows } from './sheet-rows.mjs';
+import { ROLL_ABBR, APP_CLASSES } from '../config.mjs';
+import { abilityRows, sheetItemLists, buffRows } from './sheet-rows.mjs';
 import { postCard } from '../rolls/card.mjs';
 import { DCC_CHANGE_TYPE } from '../effects/dcc-change.mjs';
 import { crewingOf } from '../rules/crew.mjs';
-
-/** Check-type <select> choices: value -> label key. */
-const CHECK_TYPE_OPTIONS = Object.freeze(Object.fromEntries(CHECK_TYPES.map(t => [t, `DCC.CheckType.${t}`])));
+import { checkFormula } from '../rules/combat.mjs';
 
 /**
  * Creature layer (pc + mob): ability cards, the health bar context, and the
@@ -33,14 +31,7 @@ export default class DCCCreatureSheet extends DCCActorSheetBase {
     const system = this.document.system;
     const source = system._source;
     return Object.assign(context, {
-      stats: STATS.map(key => ({
-        key,
-        label: `DCC.Stat.${key}`,
-        abbr: `DCC.StatAbbr.${key}`,
-        base: source.stats?.[key]?.base,
-        enhancement: system.stats?.[key]?.enhancement,
-        modifier: system.stats?.[key]?.modifier,
-      })),
+      stats: abilityRows(system, source),
       ...this._healthContext(),
       ...this._prepareItemLists(),
       crewing: this.#crewing(),
@@ -69,14 +60,13 @@ export default class DCCCreatureSheet extends DCCActorSheetBase {
   }
 
   /**
-   * Item and buff lists: `attacks` (weapons + attack-enabled spells),
-   * `skills`, `spells`, actor-level `buffs`, and the check-type choices.
+   * Item and buff lists: canonical `attacks`,
+   * `skills`, `spells`, and actor-level `buffs`.
    */
   _prepareItemLists() {
     return {
       ...sheetItemLists(this.document.itemTypes),
-      buffs: buffRows(this.document.effects.contents),
-      checkTypes: CHECK_TYPE_OPTIONS,
+      buffs: buffRows(this.document.effects.contents, this.document.items.contents),
     };
   }
 
@@ -113,18 +103,17 @@ export default class DCCCreatureSheet extends DCCActorSheetBase {
   }
 
   /**
-   * Reactive Evade roll: 1d20 + Dex mod + Int mod (the displayed Evade is the
-   * static target, 10 + Dex mod + buffs).
+   * Reactive Evade roll: 1d20 plus the derived Evade bonus and modifier dice.
    * @this {DCCCreatureSheet}
    */
   static async #onRollEvade() {
     if (!(await this._flushForm())) return;
-    const stats = this.document.system.stats;
-    if (!Number.isFinite(stats?.dexterity?.modifier) || !Number.isFinite(stats?.intelligence?.modifier)) return;
+    const { evade, evadeDice } = this.document.system;
+    if (!Number.isFinite(evade)) return;
     await postCard(this.document, {
       name: game.i18n.localize('DCC.Defense.Evade'),
       tag: game.i18n.localize('DCC.Roll.Defense'),
-    }, { roll: `1d20 + @${ROLL_ABBR.dexterity} + @${ROLL_ABBR.intelligence}` });
+    }, { roll: `${checkFormula(evade)}${evadeDice ?? ''}` });
   }
 
   /** Skill check (a spell casts). @this {DCCCreatureSheet} */

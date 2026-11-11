@@ -1,7 +1,7 @@
 {{!-- Inventory & Gear. The paper doll and Accessories are derived from the item list
       (buildGear / buildAccessories); the list's inline controls carry data-field and no
-      name, so the sheet's _onChangeForm updates the item. Weapons are also listed under
-      Attacks, so their rows here use idSuffix="-inv". --}}
+      name, so the sheet's _onChangeForm updates the item. Inventory rows use
+      idSuffix="-inv" to distinguish their controls from other item views. --}}
 <section class="tab dcc-tab {{tab.cssClass}}" data-group="primary" data-tab="inventory">
   <div class="dcc-invtop">
     <div class="dcc-box dcc-doll-box">
@@ -37,14 +37,9 @@
     <div class="dcc-bar dcc-bar--list">
       <span>{{localize "DCC.Inventory.Header"}}</span>
       {{#if editable}}
-      <span class="dcc-addbtns">
-        <button type="button" class="dcc-addbtn" id="{{@root.rootId}}-inv-add-gear" data-action="createItem" data-type="gear">
-          <i class="fa-solid fa-plus" inert></i> {{localize "TYPES.Item.gear"}}
-        </button>
-        <button type="button" class="dcc-addbtn" id="{{@root.rootId}}-inv-add-weapon" data-action="createItem" data-type="weapon">
-          <i class="fa-solid fa-plus" inert></i> {{localize "TYPES.Item.weapon"}}
-        </button>
-      </span>
+      <button type="button" class="dcc-addbtn" id="{{@root.rootId}}-inv-add-item" data-action="createInventoryItem">
+        <i class="fa-solid fa-plus" inert></i> {{localize "DCC.Inventory.AddItem"}}
+      </button>
       {{/if}}
     </div>
     <ol class="dcc-ilist dcc-ilist--inventory">
@@ -58,7 +53,7 @@
         <span></span>
       </li>
       {{#each inventory}}
-      {{#> "systems/dungeon-crawler-carl/templates/actor/partials/item-row.hbs" idSuffix="-inv"}}
+      {{#> "systems/dungeon-crawler-carl/templates/actor/partials/item-row.hbs" idSuffix="-inv" inventoryNotes=true}}
         <span class="dcc-icell">
           <input class="dcc-iinput" type="number" step="1" id="{{@root.rootId}}-{{id}}-quantity" data-field="system.quantity" value="{{quantity}}"
                  aria-label="{{localize 'DCC.Inventory.Quantity'}}">

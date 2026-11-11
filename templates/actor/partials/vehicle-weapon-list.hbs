@@ -8,8 +8,8 @@
   <div class="dcc-bar dcc-bar--list">
     <span>{{#if mount}}{{localize "DCC.Vehicle.MountAttacks"}}{{else}}{{localize "DCC.Vehicle.Weapons"}}{{/if}}</span>
     {{#if @root.editable}}
-    <button type="button" class="dcc-addbtn" id="{{@root.rootId}}-add-weapon" data-action="createItem" data-type="weapon">
-      <i class="fa-solid fa-plus" inert></i> {{localize "TYPES.Item.weapon"}}
+    <button type="button" class="dcc-addbtn" id="{{@root.rootId}}-add-attack" data-action="createItem" data-type="attack">
+      <i class="fa-solid fa-plus" inert></i> {{localize "TYPES.Item.attack"}}
     </button>
     {{/if}}
   </div>
@@ -41,12 +41,16 @@
       {{/unless}}
       <span class="dcc-icell dcc-c-rank">{{rank}}</span>
       <span class="dcc-icell dcc-c-tohit">
-        <button type="button" class="dcc-rollbtn" id="{{@root.rootId}}-{{id}}-rollWeapon-toHit" data-action="rollWeapon" data-roll="toHit"
+        <button type="button" class="dcc-rollbtn" id="{{@root.rootId}}-{{id}}-rollAttack-toHit" data-action="rollAttack" data-roll="toHit"
                 data-tooltip="{{localize 'DCC.Roll.ToHit'}}">{{numberFormat toHit sign=true}}</button>
       </span>
       <span class="dcc-icell dcc-c-dmg">
-        <button type="button" class="dcc-rollbtn dcc-rollbtn--wide" id="{{@root.rootId}}-{{id}}-rollWeapon-damage" data-action="rollWeapon" data-roll="damage"
+        {{#if noDamage}}
+        <span class="dcc-no-damage">{{localize "DCC.Roll.NoDamage"}}</span>
+        {{else}}
+        <button type="button" class="dcc-rollbtn dcc-rollbtn--wide" id="{{@root.rootId}}-{{id}}-rollAttack-damage" data-action="rollAttack" data-roll="damage"
                 data-tooltip="{{localize 'DCC.Roll.Damage'}}">{{damageLabel}}</button>
+        {{/if}}
       </span>
     {{/"systems/dungeon-crawler-carl/templates/actor/partials/item-row.hbs"}}
     {{else}}

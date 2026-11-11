@@ -2,9 +2,9 @@ import { VEHICLE_SIZE_MAX, VEHICLE_CONSTITUTION_MODIFIER_DEFAULT, CREW_ROLES, ST
 import { int, str, bool, html, pool } from '../_fields.mjs';
 import { deriveVehicle } from '../../rules/derive.mjs';
 import { crewCacheFrom, crewSkillBonus, crewSlotRole } from '../../rules/crew.mjs';
-import { resetModifiers, ownedItems, engineItems, assignItemDerived, assignHealth, rewriteHealthPointsEdit } from './_derive-wiring.mjs';
+import { resetModifiers, ownedItems, engineItems, assignItemDerived, assignHealth, rewriteHealthPointsEdit, rewriteHealthBarSlotCount } from './_derive-wiring.mjs';
 
-const DERIVED_ITEM_TYPES = new Set(['weapon']);
+const DERIVED_ITEM_TYPES = new Set(['attack']);
 
 /**
  * A crew actor's roll-time cache (R20 crewPayload, read live instead of
@@ -25,8 +25,8 @@ export default class VehicleModel extends foundry.abstract.TypeDataModel {
       size: int(4, { min: 1, max: VEHICLE_SIZE_MAX }),
       speed: int(0),
       speedMax: int(4),
-      // null means the default (5). Deliberate deviation: R20 allows 0; minimum here is 1.
-      constitutionModifier: new fields.NumberField({ required: true, nullable: true, integer: true, min: 1, initial: VEHICLE_CONSTITUTION_MODIFIER_DEFAULT }),
+      // null means the default (5); zero is an explicit value.
+      constitutionModifier: new fields.NumberField({ required: true, nullable: true, integer: true, min: 0, initial: VEHICLE_CONSTITUTION_MODIFIER_DEFAULT }),
       passengers: int(1),
       driveSkill: str('Driving'),
       armor: int(0),
@@ -40,6 +40,8 @@ export default class VehicleModel extends foundry.abstract.TypeDataModel {
       ramTargetLarger: bool(false),
       ramDamageDealt: int(0),
       raceAhead: int(0),
+      showRangeInChat: bool(true),
+      showNotesInChat: bool(true),
       // Crew: world PC / Mob actors (never unlinked token actors), one role each.
       // Linked by dropping an actor on the sheet; role rules in rules/crew.mjs.
       crew: new fields.ArrayField(new fields.SchemaField({
@@ -99,7 +101,9 @@ export default class VehicleModel extends foundry.abstract.TypeDataModel {
    * @override
    */
   async _preUpdate(changes, options, user) {
+    const explicitHealthBar = Object.hasOwn(changes.system ?? {}, 'healthBar');
     rewriteHealthPointsEdit(this, changes);
+    rewriteHealthBarSlotCount(this, changes, 'vehicle', explicitHealthBar);
     return super._preUpdate(changes, options, user);
   }
 

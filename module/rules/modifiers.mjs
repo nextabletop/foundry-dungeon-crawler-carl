@@ -14,7 +14,8 @@
 //
 // Target grammar:
 //   'strength'                         -> field target (must be in FIELD_TARGETS)
-//   'item:<Name>:<aspect>'             -> one item, matched by name
+//   'item-id:<ID>:<aspect>'            -> one owned item, matched by stable ID
+//   'item:<Name>:<aspect>'             -> legacy name target, matches every item with that name
 //   'group:<attacks|skills>[:<attribute>(=|!=)<value>]:<aspect>' -> a filtered set of items
 // e.g. 'damage_resistance', 'item:Longsword:to_hit',
 //      'group:attacks:damage_type=slashing:to_hit', 'group:skills:class!=bard:mana_cost'.
@@ -24,7 +25,7 @@
 // same on both platforms (shared compendium):
 //   fields      strength, intelligence, constitution, dexterity, charisma,
 //               damage_resistance, evade, move, step, mana
-//   sections    attacks (weapons + attack-enabled spells), skills (skills + spells)
+//   sections    attacks (canonical Attack Items), skills (skills + spells)
 //   aspects     attacks: to_hit, damage; skills: rank, mana_cost
 //   attributes  attacks: stat, damage_type; skills: stat, class
 // There are no aliases for the old Foundry spellings (dr, tohit, manaCost,
@@ -40,9 +41,7 @@
 // A group attribute reads its item schema path through ATTRIBUTE_PATHS
 // (`damage_type` -> `system.damageType`).
 //
-// The `item:` / `group:` prefixes are case-insensitive (like fields,
-// sections, attributes and aspects); an item name keeps its casing (names
-// match case-insensitively at resolve time anyway).
+// Prefixes are case-insensitive; stable IDs remain case-sensitive.
 //
 // A predicate whose value is empty or whitespace (`stat=`, `stat!=`) is
 // dropped, so the target is a bare, unfiltered group. This mirrors R20's group
@@ -62,7 +61,7 @@
 
 import { FIELD_TARGETS, ITEM_ASPECTS } from '../config.mjs';
 import { parseModifierValue } from './engine.mjs';
-import { idOf, isAttackSpell, normName } from './items.mjs';
+import { idOf, normName } from './items.mjs';
 
 const GROUP_ASPECTS = { attacks: ['to_hit', 'damage'], skills: ['rank', 'mana_cost'] };
 // Attributes a group predicate may filter on, per section (attacks: stat,
@@ -98,13 +97,17 @@ export const parseTarget = (target) => {
 
   const prefix = trimmed.slice(0, trimmed.indexOf(':') + 1).toLowerCase();
 
-  if (prefix === 'item:') {
+  if (prefix === 'item:' || prefix === 'item-id:') {
     const rest = trimmed.slice(prefix.length);
     const idx = rest.lastIndexOf(':');
     if (idx === -1) return null;
     const name = rest.slice(0, idx).trim();
     const aspectRaw = rest.slice(idx + 1).trim();
     if (!name || !aspectRaw) return null;
+    if (prefix === 'item-id:') {
+      if (!/^[a-z0-9_-]+$/i.test(name)) return null;
+      return { kind: 'itemId', id: name, aspect: canonicalAspect(aspectRaw) ?? aspectRaw };
+    }
     return { kind: 'item', name, aspect: canonicalAspect(aspectRaw) ?? aspectRaw };
   }
 
@@ -151,38 +154,24 @@ export const parseTarget = (target) => {
   return null;
 };
 
-// Aspects an item can be targeted on by name. Normally this is just
-// ITEM_ASPECTS[item.type], but an attack-enabled spell also exposes its
-// linked attack row (R20's spell-as-attack: the spell's own attack row was
-// individually targetable by to_hit/damage, same as a weapon's).
-const legalAspectsFor = (item) => {
-  const base = ITEM_ASPECTS[item.type] || [];
-  if (isAttackSpell(item)) {
-    return [...base, ...(ITEM_ASPECTS.weapon || [])];
-  }
-  return base;
-};
+const legalAspectsFor = item => ITEM_ASPECTS[item.type] || [];
 
 // Is `item` a member of the group's section?
 const inSection = (item, section) => {
-  if (section === 'attacks') return item.type === 'weapon' || isAttackSpell(item);
+  if (section === 'attacks') return item.type === 'attack';
   if (section === 'skills') return item.type === 'skill' || item.type === 'spell';
   return false;
 };
 
-// Where an attribute's value lives on an item (see ATTRIBUTE_PATHS). A spell's
-// damage type lives under its embedded attack row (system.attack.damageType),
-// not system.damageType.
 const attributeValue = (item, attribute) => {
   const path = ATTRIBUTE_PATHS[attribute];
   if (!path) return undefined;
-  if (attribute === 'damage_type' && item.type === 'spell') return item.system?.attack?.[path];
   return item.system?.[path];
 };
 
 // String compare, case-insensitive, per the group predicate's operator. An
 // item that lacks the attribute entirely reads as '' — so `!=` against a value
-// matches it (a weapon with no damageType set is not the excluded type). An
+// matches it (an Attack with no damageType set is not the excluded type). An
 // empty value never gets here: parseTarget drops it to a bare group.
 const matchesAttribute = (item, attribute, operator, value) => {
   if (!attribute) return true;
@@ -196,6 +185,11 @@ const addTo = (bucket, id, aspect, amount) => {
   bucket[id][aspect] = (bucket[id][aspect] || 0) + amount;
 };
 
+const addDiceTo = (bucket, id, aspect, dice) => {
+  bucket[id] = bucket[id] || {};
+  bucket[id][aspect] = (bucket[id][aspect] || '') + dice;
+};
+
 const pushUnresolved = (unresolved, modifier, reason) => {
   unresolved.push({ target: modifier.target, reason, modifier });
 };
@@ -205,6 +199,8 @@ export const resolveModifiers = (modifiers, items) => {
   const percent = {};
   const itemBonus = {};
   const itemPercent = {};
+  const dice = {};
+  const itemDice = {};
   const unresolved = [];
 
   for (const modifier of modifiers || []) {
@@ -213,17 +209,22 @@ export const resolveModifiers = (modifiers, items) => {
       pushUnresolved(unresolved, modifier, 'parse');
       continue;
     }
-    const { kind: valueKind, value: amount } = parseModifierValue(modifier.value);
+    const { kind: valueKind, value: amount, dice: modifierDice = '' } = parseModifierValue(modifier.value);
 
     if (parsed.kind === 'field') {
+      if (valueKind === 'dice') {
+        dice[parsed.field] = (dice[parsed.field] || '') + modifierDice;
+        continue;
+      }
       const target = valueKind === 'percent' ? percent : bonus;
       target[parsed.field] = (target[parsed.field] || 0) + amount;
       continue;
     }
 
-    if (parsed.kind === 'item') {
-      const key = normName(parsed.name);
-      const matches = (items || []).filter((i) => normName(i.name) === key);
+    if (parsed.kind === 'item' || parsed.kind === 'itemId') {
+      const matches = parsed.kind === 'itemId'
+        ? (items || []).filter(i => idOf(i) === parsed.id)
+        : (items || []).filter(i => normName(i.name) === normName(parsed.name));
       if (matches.length === 0) {
         pushUnresolved(unresolved, modifier, 'noItem');
         continue;
@@ -235,6 +236,10 @@ export const resolveModifiers = (modifiers, items) => {
       }
       if (parsed.aspect === 'damage' && valueKind === 'percent') {
         pushUnresolved(unresolved, modifier, 'percentDamage');
+        continue;
+      }
+      if (valueKind === 'dice') {
+        for (const item of legal) addDiceTo(itemDice, idOf(item), parsed.aspect, modifierDice);
         continue;
       }
       const bucket = valueKind === 'percent' ? itemPercent : itemBonus;
@@ -259,13 +264,17 @@ export const resolveModifiers = (modifiers, items) => {
       pushUnresolved(unresolved, modifier, 'percentDamage');
       continue;
     }
-    const bucket = valueKind === 'percent' ? itemPercent : itemBonus;
     const matched = (items || []).filter((i) => inSection(i, parsed.section)
       && matchesAttribute(i, parsed.attribute, parsed.operator, parsed.value));
     // A group matching no items is a legitimate empty result, not an error —
-    // e.g. a "while raging" buff on a weapon-less caster's attacks group.
-    for (const item of matched) addTo(bucket, idOf(item), parsed.aspect, amount);
+    // e.g. a "while raging" buff on a Crawler without Attacks.
+    if (valueKind === 'dice') {
+      for (const item of matched) addDiceTo(itemDice, idOf(item), parsed.aspect, modifierDice);
+    } else {
+      const bucket = valueKind === 'percent' ? itemPercent : itemBonus;
+      for (const item of matched) addTo(bucket, idOf(item), parsed.aspect, amount);
+    }
   }
 
-  return { bonus, percent, itemBonus, itemPercent, unresolved };
+  return { bonus, percent, itemBonus, itemPercent, dice, itemDice, unresolved };
 };

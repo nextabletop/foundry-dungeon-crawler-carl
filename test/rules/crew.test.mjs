@@ -312,25 +312,26 @@ describe('crewEvent (the crewRenderTargets event for an actor)', () => {
 
 describe('crewCacheFrom (roll-time cache from a live crew actor)', () => {
   const items = [
-    { id: 's1', type: 'skill', name: 'Driving', system: { stat: 'dexterity', derived: { skillBonus: 8 } } },
-    { id: 'p1', type: 'spell', name: 'Magic Missile', system: { stat: 'intelligence', attack: { enabled: true, die: '1d10', damageType: 'force' }, derived: { skillBonus: 4, toHit: 5, damageBase: 2 } } },
-    { id: 'w1', type: 'weapon', name: 'Spear', system: { stat: 'strength', die: '1d8', damageType: 'piercing', derived: { toHit: 9, damageBase: 4 } } },
+    { id: 's1', type: 'skill', name: 'Driving', system: { stat: 'dexterity', checkType: 'unopposed', derived: { skillBonus: 8 } } },
+    { id: 'p1', type: 'spell', name: 'Magic Missile', system: { stat: 'intelligence', checkType: 'opposed', opposedStat: 'dexterity', derived: { skillBonus: 4 } } },
+    { id: 'a1', type: 'attack', name: 'Spear', system: { stat: 'strength', die: '1d8', damageType: 'piercing', derived: { toHit: 9, damageBase: 4, damageDice: '1d8' } } },
+    { id: 'a2', type: 'attack', name: 'Magic Missile Attack', system: { stat: 'intelligence', die: '1d10', damageType: 'force', derived: { toHit: 5, damageBase: 2, damageDice: '1d10' } } },
     { id: 'g1', type: 'gear', name: 'Rope', system: {} },
-    { id: 'p2', type: 'spell', name: 'Heal', system: { stat: 'charisma', attack: { enabled: false }, derived: { skillBonus: 1 } } },
+    { id: 'p2', type: 'spell', name: 'Heal', system: { stat: 'charisma', checkType: 'passive', description: '<p>Restore health.</p>', attack: { enabled: false }, derived: { skillBonus: 1 } } },
   ];
   it('skills are skills then spells (R20 spells are skill rows), by id, with the derived bonus', () => {
     const c = crewCacheFrom({ statModifiers: { dexterity: 5 }, items });
     expect(c.statModifiers).toEqual({ dexterity: 5 });
     expect(c.skills).toEqual([
-      { id: 's1', name: 'Driving', stat: 'dexterity', bonus: 8 },
-      { id: 'p1', name: 'Magic Missile', stat: 'intelligence', bonus: 4 },
-      { id: 'p2', name: 'Heal', stat: 'charisma', bonus: 1 },
+      { id: 's1', name: 'Driving', stat: 'dexterity', bonus: 8, checkType: 'unopposed', opposedStat: '', description: '' },
+      { id: 'p1', name: 'Magic Missile', stat: 'intelligence', bonus: 4, checkType: 'opposed', opposedStat: 'dexterity', description: '' },
+      { id: 'p2', name: 'Heal', stat: 'charisma', bonus: 1, checkType: 'passive', opposedStat: '', description: '<p>Restore health.</p>' },
     ]);
   });
-  it('attacks are weapons then attack spells; a spell reads die / type from system.attack', () => {
+  it('attacks are canonical Attack Items with derived damage dice', () => {
     expect(crewCacheFrom({ items }).attacks).toEqual([
-      { id: 'w1', name: 'Spear', toHit: 9, die: '1d8', damageBase: 4, damageType: 'piercing' },
-      { id: 'p1', name: 'Magic Missile', toHit: 5, die: '1d10', damageBase: 2, damageType: 'force' },
+      { id: 'a1', name: 'Spear', toHit: 9, die: '1d8', damageBase: 4, damageType: 'piercing', range: '', description: '' },
+      { id: 'a2', name: 'Magic Missile Attack', toHit: 5, die: '1d10', damageBase: 2, damageType: 'force', range: '', description: '' },
     ]);
   });
   it('tolerates no input', () => {
@@ -379,6 +380,20 @@ describe('crewSkillCard (R20 crewSkillRollFields)', () => {
     expect(r.fields.penalty).toBe('aboard Warthog: -4');
     expect(r.fields.target).toBeUndefined();
   });
+  it('Passive crew skill posts its description without a roll or Mob target', () => {
+    const r = crewSkillCard({
+      crewName: 'Carl',
+      skill: { name: 'Aura', bonus: 3, checkType: 'passive', description: 'Always active.' },
+      mob: true,
+      vehicleName: 'Warthog',
+      penalty: -4,
+      floor: 2,
+    }, t);
+    expect(r.roll).toBeUndefined();
+    expect(r.fields.target).toBeUndefined();
+    expect(r.fields.tag).toBe('Passive');
+    expect(r.fields.note).toBe('aboard Warthog · Always active.');
+  });
   it('exempt skill: plain roll, no penalty line', () => {
     const r = crewSkillCard({ crewName: 'Carl', skill: { name: 'Driving', bonus: 8 }, mob: false, vehicleName: 'Warthog', penalty: 0 }, t);
     expect(r.roll).toBe('1d20 + 8');
@@ -419,6 +434,44 @@ describe('crewAttackCard (R20 crewAttackRollFields)', () => {
     expect(r.roll).toBeUndefined();
     expect(r.fields.advantage).toBeUndefined();
     expect(r.damage).toBe('1d8 + 4');
+  });
+  it('does not recreate a None target for a Mob crew attack', () => {
+    const items = [{ id: 'a', type: 'attack', name: 'Aura', system: {
+      die: '1d6', derived: { toHit: 0, mobToHitNone: true, damageBase: 1 },
+    } }];
+    const attack = crewCacheFrom({ items }).attacks[0];
+    const result = crewAttackCard({ crewName: 'Goblin', attack, mob: true, penalty: -2, floor: 3 }, t);
+    expect(attack.mobToHitNone).toBe(true);
+    expect(result.fields.target).toBeUndefined();
+    expect(result.roll).toBeUndefined();
+    expect(result.damage).toBe('1d6 + 1');
+  });
+  it('carries No Damage into Mob crew cards without suppressing their target', () => {
+    const items = [{ id: 'a', type: 'attack', name: 'Aura', system: {
+      die: '1d6', damageType: 'fire',
+      derived: { toHit: 2, noDamage: true, damageBase: 1, damageDice: '1d6' },
+    } }];
+    const attack = crewCacheFrom({ items }).attacks[0];
+    const result = crewAttackCard({ crewName: 'Goblin', attack, mob: true, floor: 3, speed: 4 }, t);
+    expect(attack.noDamage).toBe(true);
+    expect(result.fields.target).toBe(15);
+    expect(result.fields.type).toBe('');
+    expect(result.fields.note).not.toContain('Speed die');
+    expect(result.damage).toBeUndefined();
+    const crawler = crewAttackCard({ crewName: 'Carl', attack, mob: false, speed: 4 }, t);
+    expect(crawler.roll).toBeDefined();
+    expect(crawler.fields.type).toBe('');
+    expect(crawler.fields.note).not.toContain('Speed die');
+    expect(crawler.damage).toBeUndefined();
+  });
+  it('uses valid formulas for normalized sentinel dice and modifier-only damage', () => {
+    const items = [
+      { id: 'a', type: 'attack', name: 'Flat', system: { die: 'none', derived: { damageDice: '', damageBase: 2 } } },
+      { id: 'b', type: 'attack', name: 'Dice', system: { die: 'none', derived: { damageDice: '+1d4', damageBase: 0 } } },
+    ];
+    const [flat, dice] = crewCacheFrom({ items }).attacks;
+    expect(crewAttackCard({ attack: flat, mob: true }, t).damage).toBe('2');
+    expect(crewAttackCard({ attack: dice, mob: true }, t).damage).toBe('0+1d4');
   });
   it('no penalty and not driving: no penalty line', () => {
     expect(crewAttackCard({ crewName: 'Carl', attack: spear, penalty: 0 }, t).fields.penalty).toBeUndefined();

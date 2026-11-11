@@ -1,12 +1,37 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
-import { inlineFieldValue, inlineEditTarget, sheetItemLists, buffRows, inventoryView, hotlistCells, advancementView, isBlankHTML, vehicleWeaponRows, richTextFieldNames, crewRows, gmRosterRows, undoFloorView, isViewOnlyControl, enableViewOnlyControls, singleFlight, VIEW_ONLY_ACTIONS } from '../../module/applications/sheet-rows.mjs';
+import { abilityRows, inlineFieldValue, inlineEditTarget, sheetItemLists, buffRows, inventoryView, hotlistCells, advancementView, isBlankHTML, vehicleWeaponRows, richTextFieldNames, crewRows, gmRosterRows, undoFloorView, isViewOnlyControl, enableViewOnlyControls, singleFlight, VIEW_ONLY_ACTIONS } from '../../module/applications/sheet-rows.mjs';
+import { STATS } from '../../module/config.mjs';
+import { deriveCreature } from '../../module/rules/derive.mjs';
 
 // Inline item edits on the actor sheet: the value to write from a changed control.
 describe('inlineFieldValue', () => {
   it('checkbox -> its checked state', () => {
     expect(inlineFieldValue({ type: 'checkbox', checked: true, value: 'on' })).toBe(true);
     expect(inlineFieldValue({ type: 'checkbox', checked: false, value: 'on' })).toBe(false);
+  });
+
+  describe('item damage field layout', () => {
+    const attack = readFileSync(new URL('../../templates/item/attack.hbs', import.meta.url), 'utf8');
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+
+    it('uses a free-text Damage Type control for canonical Attacks', () => {
+      expect(attack).toContain('systemFields.damageType value=systemSource.damageType rootId=rootId');
+      expect(attack).not.toContain('selectOptions.damageType');
+    });
+
+    it('shows a Crawler Damage Ability and places Damage Type on a full-width second row', () => {
+      expect(attack).toContain('class="dcc-item-damage-grid"');
+      expect(attack).toContain('{{#if showDamageStat}}');
+      expect(attack).toContain('systemFields.damageStat value=systemSource.damageStat options=selectOptions.damageStat');
+      expect(attack).toContain('systemFields.damageType value=systemSource.damageType rootId=rootId classes="dcc-item-damage-type"');
+      expect(css).toContain('grid-template-columns: repeat(3, minmax(100px, 1fr));');
+      expect(css).toContain('.dcc.sheet.item .dcc-item-damage-grid > .dcc-item-damage-type { grid-column: 1 / -1; }');
+    });
+
+    it('allows a canonical Attack Ability of None', () => {
+      expect(attack).toContain('systemFields.stat value=systemSource.stat options=selectOptions.attackStat');
+    });
   });
   it('number -> an integer (all inline number fields are int)', () => {
     expect(inlineFieldValue({ type: 'number', value: '3.7' })).toBe(3);
@@ -21,6 +46,561 @@ describe('inlineFieldValue', () => {
   it('select / text -> the raw value', () => {
     expect(inlineFieldValue({ type: 'select-one', value: 'opposed' })).toBe('opposed');
     expect(inlineFieldValue({ type: 'text', value: 'x' })).toBe('x');
+  });
+});
+
+describe('chat settings UI', () => {
+  it('exposes independent chat settings for creatures and vehicles, not the GM Screen', () => {
+    const template = readFileSync(new URL('../../templates/actor/sheet-config.hbs', import.meta.url), 'utf8');
+    expect(template).toContain('{{#unless (eq dccType "gmscreen")}}');
+    expect(template).toContain('name="system.showRangeInChat"');
+    expect(template).toContain('name="system.showNotesInChat"');
+    expect(template).toContain('{{checked systemSource.showRangeInChat}}');
+    expect(template).toContain('{{checked systemSource.showNotesInChat}}');
+  });
+
+  it('offers an opt-in Mob whisper control', () => {
+    const template = readFileSync(new URL('../../templates/actor/sheet-config.hbs', import.meta.url), 'utf8');
+    expect(template).toContain('{{else if (eq dccType "mob")}}');
+    expect(template).toContain('name="system.mobWhisper"');
+    expect(template).toContain('{{checked systemSource.mobWhisper}}');
+    expect(template).not.toContain('system.mobPublic');
+  });
+
+  it('outlines unchecked settings checkboxes and preserves a distinct keyboard focus', () => {
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    expect(css).toMatch(/\.dcc\.dcc-app\.dcc-sheet-config input\[type="checkbox"\]:not\(:checked\)::before\s*\{\s*outline: 1px solid var\(--d-ink-dim\);/);
+    expect(css).toMatch(/\.dcc\.dcc-app\.dcc-sheet-config input\[type="checkbox"\]:focus-visible::before\s*\{\s*outline: 2px solid var\(--d-accent\);/);
+  });
+});
+
+describe('Health Bar UI', () => {
+  it('exposes a nullable override to PCs and Mobs only', () => {
+    const template = readFileSync(new URL('../../templates/actor/sheet-config.hbs', import.meta.url), 'utf8');
+    expect(template).toContain('{{#if (or (eq dccType "pc") (eq dccType "mob"))}}');
+    expect(template).toContain('name="system.healthBarSlotsCustom"');
+    expect(template).toContain('value="{{systemSource.healthBarSlotsCustom}}" min="1" max="100" step="1"');
+  });
+
+  describe('movement controls', () => {
+    it('edits source bases on both creature sheets', () => {
+      const template = readFileSync(new URL('../../templates/actor/partials/defenses.hbs', import.meta.url), 'utf8');
+      const mob = readFileSync(new URL('../../templates/actor/mob/body.hbs', import.meta.url), 'utf8');
+      const pc = readFileSync(new URL('../../templates/actor/pc/combat.hbs', import.meta.url), 'utf8');
+      expect(template).toContain('name="system.moveBase" value="{{systemSource.moveBase}}"');
+      expect(template).toContain('name="system.stepBase" value="{{systemSource.stepBase}}"');
+      expect(template).toContain('>{{system.move}}</span>');
+      expect(template).toContain('>{{system.step}}</span>');
+      expect(template).not.toContain('name="dcc.move"');
+      expect(template).not.toContain('name="dcc.step"');
+      expect(pc).toContain('actor/partials/defenses.hbs');
+      expect(mob).toContain('name="system.moveBase" value="{{systemSource.moveBase}}"');
+      expect(mob).toContain('name="system.stepBase" value="{{systemSource.stepBase}}"');
+      expect(mob).toContain('{{system.mobMove}}');
+    });
+
+    describe('Crawler combat strip', () => {
+      const combat = readFileSync(new URL('../../templates/actor/pc/combat.hbs', import.meta.url), 'utf8');
+      const defenses = readFileSync(new URL('../../templates/actor/partials/defenses.hbs', import.meta.url), 'utf8');
+      const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+
+      it('keeps Combat above tabs and separates Attacks and Buffs into the first two tabs', () => {
+        const pcSheet = readFileSync(new URL('../../module/applications/pc-sheet.mjs', import.meta.url), 'utf8');
+        const attackTab = readFileSync(new URL('../../templates/actor/pc/attacks.hbs', import.meta.url), 'utf8');
+        const buffTab = readFileSync(new URL('../../templates/actor/pc/buffs.hbs', import.meta.url), 'utf8');
+        const attacks = readFileSync(new URL('../../templates/actor/partials/attack-list.hbs', import.meta.url), 'utf8');
+        expect(combat).toMatch(/class="dcc-box dcc-pc-combat"[\s\S]*actor\/partials\/defenses\.hbs[\s\S]*actor\/partials\/unresolved\.hbs/);
+        expect(combat).not.toContain('class="tab');
+        expect(combat).not.toContain('attack-list.hbs');
+        expect(combat).not.toContain('buff-list.hbs');
+        expect(attackTab).toContain('data-tab="attacks"');
+        expect(attackTab).toContain('attack-list.hbs');
+        expect(buffTab).toContain('data-tab="buffs"');
+        expect(buffTab).toContain('buff-list.hbs');
+        expect(pcSheet.indexOf('const TAB_PARTS = {\n  attacks:')).toBeLessThan(pcSheet.indexOf('\n  buffs:'));
+        expect(pcSheet.indexOf('\n  buffs:')).toBeLessThan(pcSheet.indexOf('\n  inventory:'));
+        expect(pcSheet).toContain("initial: 'attacks'");
+        expect(css).toMatch(/grid-template-areas:\s*"header  header"\s*"abil    vitals"\s*"abil    combat"\s*"abil    nav"\s*"abil    body"/);
+        expect(attacks).toContain('class="dcc-box dcc-list dcc-list--attacks"');
+        expect(css).toMatch(/\.dcc-box \{\s*overflow: hidden;\s*padding: 8px;\s*border: 1px solid var\(--d-line\);[^}]*background: var\(--d-field\);/);
+        expect(css).toContain('.dcc-list { margin-top: 8px; }');
+        expect(css).not.toContain('.dcc-pc-combat-panel');
+      });
+
+      it('orders the paper-sheet fields in two rows and retains the Evade roll', () => {
+        const grid = defenses.slice(defenses.indexOf('dcc-pc-defense-grid'));
+        const fields = [
+          'DCC.Defense.Evade"', 'system.stats.dexterity.modifier', 'system.evadeBuffLabel',
+          'data-action="rollEvade"', 'system.move}}', 'system.step}}',
+          'DCC.Defense.DamageResistance"', 'systemSource.armor}}', 'system.damageResistanceBonus',
+          'system.damageResistance}}', 'systemSource.aiFavor}}', 'systemSource.size}}', 'DCC.Mana.Label',
+        ];
+        const positions = fields.map(field => grid.indexOf(field));
+        expect(positions.every(position => position >= 0)).toBe(true);
+        expect(positions).toEqual([...positions].sort((a, b) => a - b));
+        expect(grid).toContain('{{system.evadeRollLabel}}');
+        expect(grid.match(/class="bx dcc-pc-defense-buff"/g)).toHaveLength(2);
+        expect(defenses).not.toContain('dcc-buffline');
+        expect(css).toMatch(/\.dcc-pc-defense-grid \.dcc-pc-defense-buff\s*\{[^}]*border: none;[^}]*background: transparent;/s);
+        expect(css).toMatch(/\.dcc-pc-defense-grid \.dcc-fbox \.bx\s*\{[^}]*overflow-wrap: anywhere;/s);
+        expect(css).toMatch(/\.dcc-pc-defense-grid \{[^}]*grid-template-columns: minmax\(62px, calc\(50% - 163px\)\) 38px 10px 40px 10px 54px repeat\(2, minmax\(45px, 1fr\)\) 130px;[^}]*gap: 10px 2px;[^}]*min-width: 450px;/s);
+        expect(defenses.match(/class="dcc-fbox dcc-pc-pair-start"/g)).toHaveLength(2);
+        expect(defenses.match(/class="dcc-fbox dcc-pc-pair-end"/g)).toHaveLength(2);
+        expect(css).toContain('.dcc-pc-defense-grid :is(.dcc-pc-pair-start, .dcc-pc-pair-end) { width: 45px; max-width: 100%; }');
+        expect(css).toContain('.dcc-pc-defense-grid .dcc-pc-pair-start { justify-self: end; }');
+        expect(css).toContain('.dcc-pc-defense-grid .dcc-pc-pair-end { justify-self: start; }');
+        expect(defenses).toContain('<span class="dcc-pc-evade-die">d20 +</span>');
+        expect(defenses).toContain('class="dcc-pc-defense-name dcc-pc-evade-name"');
+        expect(css).toMatch(/\.dcc-pc-evade-name \{[^}]*display: flex; align-items: center;[^}]*white-space: nowrap;/);
+      });
+
+      it('offers owners a persisted edit toggle for all five source fields', () => {
+        expect(combat).toMatch(/{{#if editable}}[\s\S]*name="system\.pcCombatEdit" {{checked systemSource\.pcCombatEdit}}[\s\S]*{{\/if}}/);
+        for (const field of ['armor', 'moveBase', 'stepBase', 'aiFavor', 'size']) {
+          expect(defenses).toContain(`name="system.${field}" value="{{systemSource.${field}}}"`);
+        }
+        for (const field of ['armor', 'aiFavor', 'size']) {
+          expect(defenses).toContain(`class="bx dcc-pc-view-only">{{systemSource.${field}}}`);
+        }
+        expect(css).toContain('.dcc-pc-combat .dcc-pc-edit-only { display: none; }');
+        expect(css).toContain(':has(.dcc-pc-combat-edit input:checked) .dcc-pc-edit-only { display: flex; }');
+        expect(css).toContain(':has(.dcc-pc-combat-edit input:checked) .dcc-pc-view-only { display: none; }');
+        expect(css).toContain('.dcc-pc-defense-viewport { overflow-x: auto; }');
+      });
+
+      it('underlines Combat inputs and gives boxed displays consistent themed borders and text', () => {
+        expect(css).toMatch(/\.dcc\.sheet\.actor\.pc \.dcc-pc-defense-grid \.dcc-fbox :is\(span, button\)\.bx:not\(\.dcc-pc-defense-buff\) \{\s*border: 1px solid var\(--d-line\);\s*color: var\(--d-ink\);/);
+        expect(css).toMatch(/\.dcc\.sheet\.actor\.pc \.dcc-pc-defense-grid \.dcc-fbox input\.bx \{\s*border: none;\s*border-bottom: 1px solid var\(--d-line\);\s*border-radius: 0;\s*background: transparent;/);
+        expect(css).toContain('.dcc-pc-defense-grid .dcc-fbox input.bx:focus-visible { outline: 2px solid var(--d-accent);');
+      });
+
+      it('styles the Evade roll as a red button with a contrasting label and hover state', () => {
+        expect(defenses).toMatch(/<button[^>]*data-action="rollEvade"[^>]*>{{system\.evadeRollLabel}}<\/button>/);
+        expect(css).toMatch(/button\.bx\[data-action="rollEvade"\] \{\s*border-color: #000;\s*background: var\(--d-hot\);\s*color: #fff;/);
+        expect(css).toMatch(/button\.bx\[data-action="rollEvade"\]:not\(:disabled\):hover \{[^}]*background: var\(--dcc-hot-hover\);[^}]*color: #fff;/);
+        expect(css).toMatch(/button\.bx\[data-action="rollEvade"\]:focus-visible \{[^}]*outline: 2px solid var\(--d-accent\);/);
+      });
+
+      it('places Mana in the third Combat column, with its label above the values', () => {
+        const vitals = readFileSync(new URL('../../templates/actor/pc/vitals.hbs', import.meta.url), 'utf8');
+        const pcSheet = readFileSync(new URL('../../module/applications/pc-sheet.mjs', import.meta.url), 'utf8');
+        expect(vitals).not.toContain('system.mana');
+        expect(combat).toMatch(/class="dcc-box dcc-pc-combat"[\s\S]*class="dcc-bar"[\s\S]*actor\/partials\/defenses\.hbs/);
+        expect(pcSheet).not.toContain("mana: { template: path('actor/pc/mana.hbs') }");
+        expect(defenses).toMatch(/class="dcc-pc-mana"[\s\S]*DCC\.Mana\.Label[\s\S]*{{system\.mana\.max}}[\s\S]*name="system\.mana\.value" value="{{systemSource\.mana\.value}}"[\s\S]*DCC\.Mana\.Max[\s\S]*DCC\.Mana\.Current/);
+        expect(defenses.match(/name="system\.mana\.value"/g)).toHaveLength(1);
+        expect(css).toContain('.dcc-pc-mana .dcc-mana .cur { width: 100%; }');
+        expect(css).toMatch(/\.dcc-pc-mana \{[^}]*grid-column: 9; grid-row: 1 \/ span 2; grid-template-rows: auto auto; align-self: center; gap: 2px;/);
+        expect(css).toMatch(/\.dcc-pc-mana-title \{[^}]*text-align: center;/);
+        expect(css).toContain('.dcc-pc-mana .dcc-mana .sep { font-size: 24px; line-height: 1; }');
+        expect(css).toMatch(/\.dcc-pc-mana \.dcc-mana \.max \{[^}]*border: 1px solid var\(--d-line\);[^}]*background: var\(--d-field\);[^}]*color: var\(--d-ink\);/);
+      });
+    });
+  });
+
+  describe('Mob combat strip', () => {
+    const template = readFileSync(new URL('../../templates/actor/mob/body.hbs', import.meta.url), 'utf8');
+    const header = template.slice(template.indexOf('<header'), template.indexOf('</header>'));
+    const abilities = template.slice(template.indexOf('{{localize "DCC.Abilities"}}'), template.indexOf('actor/partials/attack-list.hbs'));
+    const combat = template.slice(template.indexOf('<div class="dcc-mobstrip">'), template.indexOf('actor/partials/unresolved.hbs'));
+
+    it('places editable Level and Surprise in combat, not the header', () => {
+      for (const field of ['level', 'surprise']) {
+        expect(header).not.toContain(`name="system.${field}"`);
+        expect(combat).toContain(`name="system.${field}" value="{{systemSource.${field}}}"`);
+        expect(template.split(`name="system.${field}"`)).toHaveLength(2);
+      }
+      expect(combat).not.toContain('system.mobToHit');
+    });
+
+    it('uses descriptors instead of a separate Mob Size control', () => {
+      const defenses = readFileSync(new URL('../../templates/actor/partials/defenses.hbs', import.meta.url), 'utf8');
+      expect(header).toContain('name="system.descriptors" value="{{systemSource.descriptors}}"');
+      expect(template).not.toContain('system.size');
+      expect(combat).not.toContain('DCC.Defense.Size');
+      expect(defenses).toContain('name="system.size" value="{{systemSource.size}}"');
+    });
+
+    describe('Mob notes', () => {
+      it('uses a Notes heading and retains an accessible editor label without a duplicate visible label', () => {
+        const mobNotes = readFileSync(new URL('../../templates/actor/mob/notes.hbs', import.meta.url), 'utf8');
+        const richFields = readFileSync(new URL('../../templates/actor/partials/rich-fields.hbs', import.meta.url), 'utf8');
+        const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+        expect(mobNotes).toContain('{{localize "DCC.Bio.Notes"}}');
+        expect(mobNotes).not.toContain('DCC.Tab.bio');
+        expect(richFields).toContain('class="dcc-bio-lab" id="{{@root.rootId}}-bio-{{key}}"');
+        expect(css).toContain('.dcc.sheet.actor .dcc-mob-notes .dcc-bio-lab {');
+      });
+
+      it('removes nested borders and backgrounds for both editable and read-only notes', () => {
+        const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+        expect(css).toContain('.dcc.sheet.actor .dcc-mob-notes .dcc-bio-f { padding: 0; border: none; background: transparent; }');
+        expect(css).toContain('.dcc.sheet.actor .dcc-mob-notes .dcc-bio :is(prose-mirror, .dcc-bio-view) { border: none; background: transparent; }');
+        expect(css).toContain('.dcc.sheet.actor .dcc-mob-notes .dcc-bio prose-mirror:focus-within { outline: 2px solid var(--d-accent);');
+      });
+
+      it('matches Mob attack note typography in read-only and editable Notes content', () => {
+        const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+        expect(css).toContain('--dcc-mob-note-size: 12px;');
+        expect(css).toMatch(/\.dcc\.sheet\.actor\.mob :is\(\.dcc-attack-notes, \.dcc-skill-summary, \.dcc-ichanges, \.dcc-iempty\) \{ font-size: var\(--dcc-mob-note-size\); line-height: 1\.35; \}/);
+        expect(css).toMatch(/\.dcc\.sheet\.actor\.mob \.dcc-mob-notes :is\(\.dcc-bio-view, prose-mirror \.editor-content\) \{[^}]*font-family: var\(--d-cond\);[^}]*font-size: var\(--dcc-mob-note-size\);[^}]*line-height: 1\.35;/);
+        expect(css).toMatch(/\.dcc\.sheet\.actor\.mob \.dcc-mob-notes :is\(\.dcc-bio-view, prose-mirror \.editor-content\) \* \{\s*font-size: var\(--dcc-mob-note-size\) !important;\s*\}/);
+      });
+    });
+
+    describe('Mob sheet layout', () => {
+      it('uses a narrower default and keeps all sections in one column', () => {
+        const sheet = readFileSync(new URL('../../module/applications/mob-sheet.mjs', import.meta.url), 'utf8');
+        const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+        expect(sheet).toContain("classes: ['mob'], position: { width: 600, height: 820 }");
+        expect(css).toMatch(/\.dcc\.sheet\.actor\.mob \.window-content \{\s*grid-template-columns: minmax\(0, 1fr\);[\s\S]*?grid-template-areas: "head" "left" "right" "notes" "\.";/);
+        expect(css).toMatch(/\.dcc\.sheet\.actor\.vehicle \.window-content \{\s*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
+      });
+    });
+
+    describe('optional Mob sections', () => {
+      it('renders controls only within the Mob settings branch', () => {
+        const settings = readFileSync(new URL('../../templates/actor/sheet-config.hbs', import.meta.url), 'utf8');
+        const mobSettings = settings.split('{{else if (eq dccType "mob")}}')[1].split('{{/if}}')[0];
+        for (const field of ['mobShowInventory', 'mobShowSkills', 'mobShowBuffs']) {
+          expect(mobSettings).toContain(`name="system.${field}"`);
+          expect(mobSettings).toContain(`{{checked systemSource.${field}}}`);
+        }
+      });
+
+      it('gates Mob inventory, Skills and Spells, and buffs without hiding Attacks', () => {
+        const template = readFileSync(new URL('../../templates/actor/mob/body.hbs', import.meta.url), 'utf8');
+        expect(template).toMatch(/{{#if system\.mobShowInventory}}[\s\S]*DCC\.Tab\.inventory[\s\S]*{{\/if}}/);
+        expect(template).toMatch(/{{#if system\.mobShowSkills}}[\s\S]*rows=skills[\s\S]*rows=spells[\s\S]*{{\/if}}/);
+        expect(template).toMatch(/{{#if system\.mobShowBuffs}}[\s\S]*actor\/partials\/buff-list\.hbs[\s\S]*{{\/if}}/);
+        expect(template.indexOf('actor/partials/attack-list.hbs')).toBeLessThan(template.indexOf('{{#if system.mobShowBuffs}}'));
+      });
+    });
+
+    it('keeps ability modifiers in Abilities and removes their duplicate combat row', () => {
+      expect(abilities).toContain('s.modifier');
+      expect(combat).not.toContain('s.modifier');
+      expect(combat).not.toContain('dcc-mobstat');
+    });
+
+    it('places Abilities immediately after Combat and before Attacks', () => {
+      expect(template).toMatch(/actor\/partials\/unresolved\.hbs"[^}]*}}\s*<\/div>\s*<div class="dcc-box">\s*<div class="dcc-bar">{{localize "DCC\.Abilities"}}[\s\S]*?{{> "systems\/dungeon-crawler-carl\/templates\/actor\/partials\/attack-list\.hbs"/);
+    });
+
+    it('uses a Mob-only readable type hierarchy with uppercase headings and consistent title-case labels', () => {
+      const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+      expect(css).toMatch(/\.dcc\.sheet\.actor\.mob \{[^}]*--d-cond: system-ui, -apple-system, "Segoe UI", sans-serif;/);
+      expect(css).toMatch(/\.dcc:is\(\.sheet\.actor, \.sheet\.item, \.sheet\.effect, \.dcc-app\) \.dcc-bar \{[^}]*font-size: 12px;[^}]*text-transform: uppercase;/);
+      expect(css).toMatch(/\.dcc\.sheet\.actor\.mob :is\(\.dcc-flabel, \.dcc-ihead\) \{[^}]*font-size: 11px;[^}]*font-weight: 700;[^}]*text-transform: none;/);
+      expect(css).toMatch(/\.dcc\.sheet\.actor\.mob \.dcc-addbtn \{[^}]*font-size: 11px;[^}]*text-transform: capitalize;/);
+      expect(css).toMatch(/\.dcc\.sheet\.actor\.mob :is\(\.dcc-attack-notes, \.dcc-skill-summary, \.dcc-ichanges, \.dcc-iempty\) \{ font-size: var\(--dcc-mob-note-size\);/);
+      expect(css).toMatch(/\.dcc-hb-cell \{[^}]*container-type: inline-size;/);
+      expect(css).toMatch(/\.dcc-hb-percent \{[^}]*font-size: clamp\(8px, 30cqi, 12px\);/);
+      expect(css).toMatch(/\.dcc\.sheet\.actor \.dcc-mob \.dcc-statmod \{[^}]*font-variant: small-caps;/);
+    });
+
+    it('uses shared actor hover fills for damage, ability, roll and add buttons while retaining keyboard focus', () => {
+      const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+      expect(css).toContain('--dcc-hot-hover: color-mix(in srgb, var(--d-hot) 75%, black);');
+      expect(css).toContain('--dcc-bar-hover: color-mix(in srgb, var(--d-bar) 75%, white);');
+      expect(css).toMatch(/\.dcc\.sheet\.actor \.dcc-statmod:not\(:disabled\):hover,\s*\.dcc\.sheet\.actor \.dcc-rollbtn--hot:not\(:disabled\):hover,\s*\.dcc\.sheet\.actor \.dcc-rollbtn\[data-action="rollAttack"\]\[data-roll="damage"\]:not\(:disabled\):hover \{[^}]*background: var\(--dcc-hot-hover\);[^}]*color: #fff;[^}]*filter: none;/);
+      expect(css).toMatch(/\.dcc\.sheet\.actor \.dcc-rollbtn:not\(:disabled\):hover \{[^}]*background: var\(--dcc-bar-hover\);[^}]*color: var\(--d-bar-text\);/);
+      expect(css).toMatch(/\.dcc\.sheet\.actor \.dcc-addbtn:not\(:disabled\):hover \{[^}]*background: var\(--d-accent\);[^}]*color: #fff;/);
+      expect(css).toMatch(/\.dcc\.sheet\.actor :is\(\.dcc-statmod, \.dcc-rollbtn, \.dcc-addbtn\):focus-visible \{[^}]*outline: 2px solid var\(--d-accent\);/);
+    });
+
+    it('shows enhanced abilities and exposes the base and net buffs in edit mode', () => {
+      expect(abilities).toContain('name="system.mobAbilitiesEdit" {{checked systemSource.mobAbilitiesEdit}}');
+      expect(abilities).toMatch(/<button[^>]*class="dcc-statmod"[^>]*data-action="rollAbility"[^>]*data-stat="{{s\.key}}"[\s\S]*?>{{localize \(concat "DCC\.Mob\.StatAbbr\." s\.key\)}}<\/button>\s*<div class="dcc-mob-ability-value">\s*<span class="dcc-statenh">{{s\.enhancement}}<\/span>\s*<span class="dcc-mob-ability-mod">\({{numberFormat s\.modifier sign=true}}\)<\/span>/);
+      expect(abilities).toContain("aria-label=\"{{localize 'DCC.Roll.AbilityLabel' stat=(localize s.label)}}\"");
+      expect(abilities).toMatch(/<div class="dcc-mob-edit-fields">[\s\S]*name="system\.stats\.{{s\.key}}\.base"[\s\S]*<span class="dcc-mob-derived">{{s\.buff}}<\/span>/);
+      expect(abilities).toContain('name="system.stats.{{s.key}}.base" value="{{s.base}}"');
+      expect(abilities).toContain('aria-label="{{localize \'DCC.Mob.AbilityBase\' stat=(localize s.label)}}"');
+    });
+
+    it('distributes five Abilities evenly with balanced padding, regardless of Mana', () => {
+      const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+      expect(abilities).toContain('class="dcc-mob-abilities"');
+      expect(abilities).not.toContain('dcc-mob-abilities--with-mana');
+      expect(abilities).toContain('class="dcc-stats" role="region" aria-label="{{localize \'DCC.Abilities\'}}" tabindex="0"');
+      expect(css).toContain('.dcc.sheet.actor .dcc-mob-abilities { position: relative; padding: 6px 8px; }');
+      expect(css).toContain('.dcc.sheet.actor .dcc-mob .dcc-stats { grid-template-columns: repeat(5, minmax(80px, 1fr)); gap: 8px; overflow-x: auto; padding: 0 16px 4px; }');
+      expect(css).not.toContain('.dcc-mob-abilities--with-mana');
+    });
+
+    it('styles ability-label roll buttons and the combined score display', () => {
+      const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+      const translations = JSON.parse(readFileSync(new URL('../../lang/en.json', import.meta.url), 'utf8'));
+      expect(Object.values(translations.DCC.Mob.StatAbbr)).toEqual(['Str', 'Int', 'Con', 'Dex', 'Cha']);
+      expect(translations.DCC.StatAbbr.strength).toBe('STR');
+      expect(css).toMatch(/\.dcc\.sheet\.actor \.dcc-statmod \{[^}]*background: var\(--d-hot\);[^}]*color: var\(--d-bar-text\);/);
+      expect(css).toMatch(/\.dcc\.sheet\.actor \.dcc-mob \.dcc-statmod \{[^}]*font-variant: small-caps;[^}]*text-transform: none;/);
+      expect(css).toMatch(/\.dcc\.sheet\.actor \.dcc-mob-ability-value \{[^}]*color: var\(--d-ink\);[^}]*white-space: nowrap;/);
+      expect(css).toMatch(/\.dcc\.sheet\.actor \.dcc-mob \.dcc-statenh \{[^}]*font-size: 26px;/);
+      expect(css).toMatch(/\.dcc\.sheet\.actor \.dcc-mob \.dcc-stat \{[^}]*container-type: inline-size;/);
+      expect(css).toMatch(/\.dcc\.sheet\.actor \.dcc-mob-ability-mod \{[^}]*font-size: clamp\(18px, 26cqi, 26px\);/);
+      expect(css).toMatch(/@container \(max-width: 90px\) \{\s*\.dcc\.sheet\.actor\.mob \.dcc-mob-ability-mod \{ font-size: clamp\(18px, 24cqi, 26px\); \}/);
+      expect(css).toMatch(/\.dcc\.sheet\.actor \.dcc-mob \.dcc-stat \{[^}]*gap: 8px;/);
+    });
+
+    it('removes inner Mob combat and ability borders and the combat background', () => {
+      const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+      expect(css).toMatch(/\.dcc\.sheet\.actor \.dcc-mobstrip \{[^}]*border: none;[^}]*background: transparent;/);
+      expect(css).toMatch(/\.dcc\.sheet\.actor \.dcc-mob \.dcc-stat \{[^}]*border: none;/);
+      expect(css).toMatch(/\.dcc\.sheet\.actor \.dcc-stat \{[^}]*border: 1px solid var\(--d-line\);/);
+    });
+
+    it('shows totals with an edit toggle and mana only for owned spells', () => {
+      const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+      const itemRow = readFileSync(new URL('../../templates/actor/partials/item-row.hbs', import.meta.url), 'utf8');
+      expect(combat).toContain('name="system.mobCombatEdit"');
+      expect(combat).toContain('class="fa-solid fa-pen-to-square" aria-hidden="true"');
+      expect(itemRow).toContain('class="icon fa-solid fa-pen-to-square"');
+      expect(css).toMatch(/\.dcc-irow button\.icon:hover,\s*\.dcc\.sheet\.actor \.dcc-mob-edit \{[^}]*width: 20px;[^}]*height: 20px;[^}]*color: var\(--d-ink-dim\);/);
+      expect(css).toContain('.dcc-mob-edit input:focus-visible + i');
+      expect(css).toContain('.dcc-mob-edit input:checked + i');
+      for (const value of ['mobSurprise', 'mobEvade', 'mobMove', 'damageResistance']) {
+        expect(combat).toContain(`{{system.${value}}}`);
+      }
+      expect(combat).toContain('name="system.mobEvadeBase"');
+      expect(combat).toMatch(/{{#if spells\.length}}[\s\S]*name="system\.mana\.value"[\s\S]*name="system\.mana\.max"[\s\S]*{{\/if}}/);
+      expect(combat).toContain('class="dcc-mob-combat-grid" role="region" aria-label="{{localize \'DCC.Tab.combat\'}}" tabindex="0"');
+      expect(css).not.toContain('.dcc.sheet.actor .dcc-mob-combat > .dcc-bar { text-transform: none; }');
+      expect(css).toMatch(/\.dcc\.sheet\.actor \.dcc-mob-combat-stat \{[^}]*gap: 8px;/);
+      expect(css).toMatch(/\.dcc\.sheet\.actor \.dcc-mob-combat-stat > \.dcc-flabel \{[^}]*color: var\(--d-ink\);[^}]*font-weight: 700;[^}]*text-transform: none;/);
+      expect(css).toMatch(/\.dcc\.sheet\.actor \.dcc-mob-total \{[^}]*color: var\(--d-ink\);/);
+      expect(css).toMatch(/\.dcc\.sheet\.actor \.dcc-mob-total \{[^}]*font-size: 26px;/);
+      expect(css).toMatch(/\.dcc\.sheet\.actor \.dcc-mob-combat-grid \{[^}]*grid-auto-flow: column;[^}]*grid-auto-columns: minmax\(80px, 1fr\);[^}]*overflow-x: auto;/);
+      expect(css).toMatch(/\.dcc\.sheet\.actor \.dcc-mob-combat-grid \{[^}]*gap: 2px;[^}]*padding-bottom: 4px;/);
+      expect(css).toContain(':is(.dcc-mobstrip, .dcc-mob-abilities):has(.dcc-mob-edit input:checked) .dcc-mob-edit-fields');
+      expect(css).toMatch(/:is\(\.dcc-mobstrip, \.dcc-mob-abilities\):is\(:hover, :focus-within\) \.dcc-mob-edit,\s*\.dcc\.sheet\.actor \.dcc-mob-edit:has\(input:checked\) \{ opacity: 1; \}/);
+      expect(css).toContain('@media (hover: none)');
+    });
+
+    it('edits Mob To-Hit on each Attack instead of showing a global target', () => {
+      const attack = readFileSync(new URL('../../templates/item/attack.hbs', import.meta.url), 'utf8');
+      const list = readFileSync(new URL('../../templates/actor/partials/attack-list.hbs', import.meta.url), 'utf8');
+      expect(attack).toMatch(/{{#if showMobToHit}}[\s\S]*systemFields\.mobToHitBase[\s\S]*systemFields\.mobToHitNone[\s\S]*{{\/if}}/);
+      expect(list).toContain('{{#if mobToHitNone}}');
+      expect(list).toContain('{{mobToHit}}');
+      expect(combat).not.toContain('DCC.Mob.ToHit');
+    });
+
+    it('uses the shared centered list heading for Mob Attacks', () => {
+      const list = readFileSync(new URL('../../templates/actor/partials/attack-list.hbs', import.meta.url), 'utf8');
+      expect(list).toContain('class="dcc-box dcc-list dcc-list--attacks"');
+      expect(list).toContain('class="dcc-bar dcc-bar--list"');
+    });
+  });
+
+  it('renders variable slots with tier colors and no more than 12 columns', () => {
+    const template = readFileSync(new URL('../../templates/actor/partials/health-bar.hbs', import.meta.url), 'utf8');
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    const sheet = readFileSync(new URL('../../module/applications/actor-sheet-base.mjs', import.meta.url), 'utf8');
+    expect(template).toContain('--dcc-hb-columns: {{health.columns}}');
+    expect(template).toContain('tier-{{slot.tier}}');
+    expect(template).toContain('{{slot.percent}}%');
+    expect(sheet).toContain('Math.min(12, system.healthBarSlots)');
+    expect(css).toContain('grid-template-columns: repeat(var(--dcc-hb-columns), minmax(0, 1fr))');
+    for (let tier = 1; tier <= 10; tier++) expect(css).toContain(`.dcc-hb-slot.filled.tier-${tier} {`);
+  });
+
+  it('allows an explicit zero Vehicle Constitution Modifier in the sheet', () => {
+    const vehicle = readFileSync(new URL('../../templates/actor/vehicle/body.hbs', import.meta.url), 'utf8');
+    expect(vehicle).toMatch(/<input[^>]*type="number"[^>]*min="0"[^>]*name="system\.constitutionModifier"[^>]*value="{{systemSource\.constitutionModifier}}"[^>]*placeholder="5"/);
+  });
+
+  it('shows actor slot percentages below the blocks without removing the heal control', () => {
+    const mob = readFileSync(new URL('../../templates/actor/mob/body.hbs', import.meta.url), 'utf8');
+    const pc = readFileSync(new URL('../../templates/actor/pc/vitals.hbs', import.meta.url), 'utf8');
+    const vehicle = readFileSync(new URL('../../templates/actor/vehicle/body.hbs', import.meta.url), 'utf8');
+    const template = readFileSync(new URL('../../templates/actor/partials/health-bar.hbs', import.meta.url), 'utf8');
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    for (const sheet of [mob, pc, vehicle]) {
+      expect(sheet).toContain('actor/partials/health-bar.hbs"}}');
+      expect(sheet).toMatch(/<div class="dcc-box dcc-health">[\s\S]*?<div class="dcc-bar">[\s\S]*?<button[^>]*class="dcc-addbtn"[^>]*data-action="healSlot"[\s\S]*?<\/div>/);
+    }
+    expect(template).toMatch(/<\/button>\s*<span class="dcc-hb-percent">{{slot\.percent}}%<\/span>/);
+    expect(template).not.toContain('system.healthPoints');
+    expect(template).not.toContain('data-action="healSlot"');
+    expect(template).toContain('data-action="setSlots" data-slot="{{slot.i}}"');
+    expect(css).toMatch(/\.dcc-hb-slot \.cm \{[^}]*font-size: 18px;/);
+    expect(css).toMatch(/\.dcc-hb-slot \{[^}]*border: 1px dashed #000;/);
+    expect(css).toMatch(/\.dcc-hb-slot\.filled \{ border-style: solid;/);
+    expect(css).toMatch(/\.dcc-hb-slot\.filled \.cm \{ color: #fff; \}/);
+    expect(css).toMatch(/\.dcc-hb-percent \{[^}]*color: var\(--d-ink\);/);
+    expect(css).toMatch(/\.dcc-hb \{[^}]*gap: 8px 2px;/);
+    for (const [tier, hue] of [
+      [1, '0, 65%, 34%'], [2, '14, 67%, 36%'], [3, '28, 69%, 37%'],
+      [4, '42, 70%, 36%'], [5, '56, 68%, 33%'], [6, '70, 60%, 31%'],
+      [7, '84, 56%, 29%'], [8, '98, 54%, 27%'], [9, '110, 56%, 25%'], [10, '122, 58%, 23%'],
+    ]) expect(css).toContain(`.dcc-hb-slot.filled.tier-${tier} { background: hsl(${hue}); }`);
+    expect(css).toContain('.dcc-health > .dcc-bar > .dcc-dying { grid-column: 1; grid-row: 1; justify-self: start; }');
+    expect(css).toContain('.dcc-health > .dcc-bar > .dcc-addbtn { grid-column: 3; grid-row: 1; justify-self: end; }');
+  });
+
+  it('distinguishes dead Mobs from dying Crawlers', () => {
+    const mob = readFileSync(new URL('../../templates/actor/mob/body.hbs', import.meta.url), 'utf8');
+    const pc = readFileSync(new URL('../../templates/actor/pc/vitals.hbs', import.meta.url), 'utf8');
+    expect(mob).toContain('{{#if health.dying}}<span class="dcc-dying">{{localize "DCC.Health.Dead"}}');
+    expect(pc).toContain('{{#if health.dying}}<span class="dcc-dying">{{localize "DCC.Health.Dying"}}');
+  });
+});
+
+describe('actor section headings', () => {
+  it('centers list titles for Crawlers, Mobs, and Vehicles while keeping controls on the right', () => {
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    expect(css).toMatch(/\.dcc\.sheet\.actor:is\(\.pc, \.mob, \.vehicle\) \.dcc-bar--list \{\s*display: grid;\s*grid-template-columns: minmax\(0, 1fr\) minmax\(0, 2fr\) minmax\(0, 1fr\);/);
+    expect(css).toMatch(/\.dcc-bar--list > span:first-child \{[^}]*grid-column: 2;[^}]*text-align: center;/);
+    expect(css).toMatch(/\.dcc-bar--list > :is\(\.dcc-addbtn, \.dcc-addbtns\) \{[^}]*grid-column: 3;[^}]*justify-self: end;/);
+    expect(css).toContain('.dcc-bar--list .dcc-addbtns { flex-wrap: wrap; justify-content: flex-end; }');
+    for (const path of ['partials/attack-list.hbs', 'partials/buff-list.hbs', 'partials/skill-list.hbs', 'partials/vehicle-weapon-list.hbs', 'mob/body.hbs', 'pc/inventory.hbs']) {
+      const template = readFileSync(new URL(`../../templates/actor/${path}`, import.meta.url), 'utf8');
+      expect(template).toMatch(/class="dcc-bar dcc-bar--list">\s*<span>/);
+    }
+  });
+});
+
+describe('Crawler identity header', () => {
+  it('removes the identity header border for Crawlers, Mobs and Vehicles only', () => {
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    expect(css).toContain('.dcc.sheet.actor:is(.pc, .mob, .vehicle) .dcc-header.dcc-box { border: none; }');
+    for (const path of ['pc/header.hbs', 'mob/body.hbs', 'vehicle/body.hbs']) {
+      const sheet = readFileSync(new URL(`../../templates/actor/${path}`, import.meta.url), 'utf8');
+      expect(sheet).toContain('<header class="dcc-header dcc-box">');
+    }
+  });
+
+  it('removes the Foundry top border above the Crawler tabs', () => {
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    expect(css).toMatch(/\.dcc\.sheet\.actor\.pc nav\.sheet-tabs \{[^}]*border-top: none;/);
+    expect(css).toMatch(/nav\.sheet-tabs \{[^}]*border-bottom: 2px solid var\(--d-line\);/);
+  });
+
+  it('orders identity fields like the paper sheet without Type or AI Favor and centers Level and Floor', () => {
+    const header = readFileSync(new URL('../../templates/actor/pc/header.hbs', import.meta.url), 'utf8');
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    expect(header).toMatch(/name="name"[\s\S]*?name="system\.race"[\s\S]*?name="system\.pronouns"[\s\S]*?name="system\.level"[\s\S]*?name="system\.crawlerNumber"[\s\S]*?name="system\.class"[\s\S]*?name="system\.floor"/);
+    expect(header).not.toContain('DCC.Header.Type');
+    expect(header).not.toContain('system.aiFavor');
+    expect(css).toContain('.dcc-headside { flex: 0 0 80px;');
+    expect(css).toContain('grid-template-columns: repeat(10, minmax(0, 1fr));');
+    expect(css).toContain('"name name name name race race race pron pron pron"');
+    expect(css).toContain('"lvl lvl crawl crawl crawl class class class floor floor"');
+    expect(css).toContain('.dcc-pcfields :is(.dcc-f-level, .dcc-f-floor) { text-align: center; }');
+    expect(css).toContain('.dcc-pcfields :is(.dcc-f-level, .dcc-f-floor) .dcc-fline { text-align: center; }');
+  });
+
+  it('uses Mob-style header labels and no Type field for Crawlers, Mobs and Vehicles', () => {
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    expect(css).toMatch(/\.dcc\.sheet\.actor:is\(\.pc, \.mob, \.vehicle\) \.dcc-header \.dcc-flabel \{[^}]*color: var\(--d-ink\);[^}]*font-family: system-ui[^}]*font-size: 11px;[^}]*font-weight: 700;[^}]*text-transform: none;/);
+    for (const path of ['pc/header.hbs', 'mob/body.hbs', 'vehicle/body.hbs']) {
+      const sheet = readFileSync(new URL(`../../templates/actor/${path}`, import.meta.url), 'utf8');
+      const header = sheet.slice(sheet.indexOf('<header'), sheet.indexOf('</header>'));
+      expect(header).not.toContain('DCC.Header.Type');
+      expect(header).not.toContain('dcc-type-badge');
+    }
+  });
+
+  it('centers the Vehicle Floor label and input', () => {
+    const vehicle = readFileSync(new URL('../../templates/actor/vehicle/body.hbs', import.meta.url), 'utf8');
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    expect(vehicle).toMatch(/class="dcc-field dcc-field--num dcc-grow-2 dcc-vehicle-floor"[\s\S]*?DCC\.Header\.Floor[\s\S]*?name="system\.floor"/);
+    expect(css).toMatch(/\.dcc\.sheet\.actor\.vehicle \.dcc-header \.dcc-vehicle-floor,\s*\.dcc\.sheet\.actor\.vehicle \.dcc-header \.dcc-vehicle-floor \.dcc-fline \{ text-align: center; \}/);
+  });
+});
+
+describe('abilityRows', () => {
+  it('gives the Crawler ability strip a taller default window while retaining overflow for smaller windows', () => {
+    const sheet = readFileSync(new URL('../../module/applications/pc-sheet.mjs', import.meta.url), 'utf8');
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    expect(sheet).toContain('position: { width: 720, height: 900 }');
+    expect(css).toMatch(/\.dcc\.sheet\.actor\.pc \.dcc-a-abil \{[^}]*overflow-y: auto;/);
+  });
+
+  it('uses the Crawler ability name as the roll button and labels the modifier below the scores', () => {
+    const template = readFileSync(new URL('../../templates/actor/pc/abilities.hbs', import.meta.url), 'utf8');
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    expect(template).toMatch(/<div class="nm">\s*<button[^>]*data-action="rollAbility"[^>]*data-stat="{{s\.key}}"[\s\S]*?>{{localize s\.label}}<\/button>\s*<\/div>\s*<div class="dcc-stat-cols">[\s\S]*?{{s\.enhancement}}[\s\S]*?{{localize "DCC\.Ability\.Enhanced"}}[\s\S]*?dcc-stat-separator[\s\S]*?name="system\.stats\.{{s\.key}}\.base"[\s\S]*?{{localize "DCC\.Ability\.Unenhanced"}}[\s\S]*?<\/label>\s*<\/div>\s*<div class="dcc-stat-col">\s*<span class="dcc-statenh">{{numberFormat s\.modifier sign=true}}<\/span>\s*<span class="dcc-flabel">{{localize "DCC\.Ability\.Modifier"}}<\/span>/);
+    expect(template).toContain('<span class="dcc-stat-separator" aria-hidden="true">/</span>');
+    expect(css).toMatch(/\.dcc\.sheet\.actor\.pc \.dcc-a-abil \{[^}]*border: none;/);
+    expect(css).toMatch(/\.dcc\.sheet\.actor\.pc \.dcc-a-abil \.dcc-stat \{[^}]*padding: 3px 4px; border: 1px solid var\(--d-line\);/);
+    expect(css).toMatch(/\.dcc\.sheet\.actor\.pc \.dcc-a-abil \.dcc-stat \.nm \{[^}]*justify-content: center; text-align: center;/);
+    expect(css).toMatch(/\.dcc\.sheet\.actor\.pc \.dcc-a-abil \.dcc-stat-cols \{[^}]*width: 100%;[^}]*grid-template-columns: minmax\(0, 1fr\) auto minmax\(0, 1fr\);[^}]*gap: 10px;/);
+    expect(css).toMatch(/\.dcc\.sheet\.actor\.pc \.dcc-a-abil \.dcc-statmod \{[^}]*padding: 4px 12px;[^}]*align-items: center; justify-content: center;[^}]*font-size: 13px;/);
+    const labels = JSON.parse(readFileSync(new URL('../../lang/en.json', import.meta.url), 'utf8'));
+    expect(labels.DCC.Ability.Modifier).toBe('Stat Mod');
+  });
+
+  it('gives actor roll and action buttons a black border without changing hover colors', () => {
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    expect(css).toMatch(/\.dcc\.sheet\.actor:is\(\.pc, \.mob, \.vehicle\) :is\(\.dcc-statmod, \.dcc-rollbtn, \.dcc-addbtn, \.dcc-fbox button\.bx\):not\(:hover\) \{\s*border: 1px solid #000;/);
+    expect(css).toContain('.dcc-addbtn:not(:hover) { outline: 1px solid var(--d-bar-text); }');
+    expect(css).toContain('.dcc-addbtn:focus-visible { outline: 2px solid var(--d-accent); }');
+  });
+
+  it('lets owners toggle base-score inputs with an icon-only control', () => {
+    const template = readFileSync(new URL('../../templates/actor/pc/abilities.hbs', import.meta.url), 'utf8');
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    expect(template).toMatch(/{{#if editable}}[\s\S]*?class="dcc-pc-edit-toggle dcc-pc-abilities-edit"[\s\S]*?name="system\.pcAbilitiesEdit" {{checked systemSource\.pcAbilitiesEdit}} aria-label="{{localize 'DCC\.Ability\.Edit'}}"[\s\S]*?<i class="fa-solid fa-pen-to-square" aria-hidden="true"><\/i>\s*<\/label>\s*{{\/if}}/);
+    expect(template).toContain('<span class="dcc-statenh dcc-statbase-view">{{s.base}}</span>');
+    expect(template).toContain('name="system.stats.{{s.key}}.base" value="{{s.base}}"');
+    expect(css).toContain('.dcc-a-abil:has(.dcc-pc-abilities-edit input:checked) .dcc-statbase { display: block; }');
+    expect(css).toContain('.dcc-a-abil:has(.dcc-pc-abilities-edit input:checked) .dcc-statbase-view { display: none; }');
+    expect(css).toContain('.dcc-pc-edit-toggle:has(input:focus-visible) { outline: 2px solid var(--d-accent);');
+  });
+
+  it('spaces Crawler ability cards and uses an underlined base input', () => {
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    expect(css).toMatch(/\.dcc\.sheet\.actor\.pc \.dcc-a-abil \.dcc-stats \{[^}]*gap: 8px;/);
+    expect(css).toMatch(/\.dcc\.sheet\.actor\.pc \.dcc-a-abil \.dcc-stat \{[^}]*gap: 8px;/);
+    expect(css).toMatch(/\.dcc\.sheet\.actor\.pc \.dcc-a-abil \.dcc-statbase \{[^}]*display: none; border: none; border-bottom: 1px solid var\(--d-line\); border-radius: 0; background: transparent;/);
+    expect(css).toMatch(/\.dcc\.sheet\.actor\.pc \.dcc-a-abil \.dcc-statbase:focus-visible \{[^}]*outline: 2px solid var\(--d-accent\);/);
+  });
+
+  it('underlines current Mana and uses Roll20 red in both themes', () => {
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    const tokens = css.slice(css.indexOf('.dcc.sheet,\n.dcc.dcc-app {'), css.indexOf('/* Stage shell'));
+    expect(tokens.match(/--d-accent: #d31f29;/g)).toHaveLength(2);
+    expect(css).not.toContain('#ff5a63');
+    expect(css).toMatch(/\.dcc-mana \.cur \{[^}]*border-bottom: 1px solid var\(--d-line\);[^}]*color: var\(--d-accent\);/);
+  });
+
+  it('uses the enhanced score and net modifier including flat, percentage and negative effects', () => {
+    const source = { stats: Object.fromEntries(STATS.map(key => [key, { base: 10 }])) };
+    const system = deriveCreature({
+      type: 'mob',
+      stats: source.stats,
+      modifiers: [
+        { target: 'strength', value: '2' },
+        { target: 'strength', value: '50%' },
+        { target: 'dexterity', value: '-3' },
+      ],
+    });
+    const rows = abilityRows(system, source);
+    expect(rows.find(row => row.key === 'strength')).toMatchObject({ base: 10, enhancement: 18, buff: 8, modifier: 4 });
+    expect(rows.find(row => row.key === 'dexterity')).toMatchObject({ base: 10, enhancement: 7, buff: -3, modifier: 3 });
+    expect(rows.find(row => row.key === 'charisma')).toMatchObject({ base: 10, enhancement: 10, buff: 0 });
+  });
+});
+
+describe('Mob header layout', () => {
+  it('places Floor beside Name and gives italic Descriptors the full second row', () => {
+    const mob = readFileSync(new URL('../../templates/actor/mob/body.hbs', import.meta.url), 'utf8');
+    const header = mob.slice(mob.indexOf('<header'), mob.indexOf('</header>'));
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    const fields = ['name="name"', 'name="system.floor"', 'name="system.descriptors"'];
+    const positions = fields.map(field => header.indexOf(field));
+    expect(positions.every(index => index >= 0)).toBe(true);
+    expect(positions).toEqual([...positions].sort((a, b) => a - b));
+    expect(header).toContain('class="dcc-mobfields"');
+    expect(css).toContain('.dcc.sheet.actor .dcc-mobfields { display: grid; grid-template-columns: minmax(0, 1fr) max-content;');
+    expect(header).toMatch(/class="dcc-field dcc-mobfield-centered">\s*<span class="dcc-flabel">{{localize "DCC.Header.Floor"}}/);
+    expect(header).toContain('class="dcc-field dcc-mob-descriptors"');
+    expect(css).toContain('.dcc.sheet.actor .dcc-mobfields .dcc-mobfield-centered { text-align: center; }');
+    expect(css).toContain('.dcc.sheet.actor .dcc-mobfields input[name="system.floor"] { box-sizing: border-box; width: 48px; text-align: center; }');
+    expect(css).toContain('.dcc.sheet.actor .dcc-mobfields .dcc-mob-descriptors { grid-column: 1 / -1; }');
+    expect(css).toContain('.dcc.sheet.actor .dcc-mobfields input[name="system.descriptors"] { font-style: italic; }');
   });
 });
 
@@ -44,33 +624,188 @@ describe('sheetItemLists', () => {
     id, type, name, img: `${id}.svg`, sort, system: { ...system, derived, _source: system },
   });
   const lists = sheetItemLists({
-    weapon: [it_('w2', 'weapon', 'Club', 200, { stat: 'strength' }, { rank: 1, toHit: 2, damageLabel: ' +0' }),
-      it_('w1', 'weapon', 'Axe', 100, { stat: 'strength' })],
+    attack: [
+      it_('a2', 'attack', 'Zap Attack', 200, { stat: 'intelligence', linkedItemIds: ['p2'] }, { rank: 2, toHit: 3, damageLabel: '1d6+2 fire' }),
+      it_('a1', 'attack', 'Axe', 100, { stat: 'strength', primarySkillId: 's1', range: '30ft range' }, {
+        rank: 1,
+        toHit: 2,
+        damageLabel: '1d6+1 slashing',
+        skillUses: [{ index: 0, label: 'thrown', skillId: 's2', skillName: 'Brawl', stat: 'dexterity', rank: 2, toHit: 4, damageLabel: '1d6+1 slashing' }],
+      }),
+    ],
     skill: [it_('s2', 'skill', 'Brawl', 0, { stat: 'strength', rank: 1 }), it_('s1', 'skill', 'Axes', 0, { stat: 'dexterity', rank: 2 }, { rankEffective: 3, skillBonus: 4 })],
-    spell: [it_('p2', 'spell', 'Zap', 5, { stat: 'intelligence', attack: { enabled: true } }, { toHit: 1, manaCostEffective: 3 }),
-      it_('p1', 'spell', 'Heal', 5, { stat: 'intelligence', attack: { enabled: false } })],
+    spell: [it_('p2', 'spell', 'Zap', 5, { stat: 'intelligence', linkedItemIds: ['a2'] }, { manaCostEffective: 3 }),
+      it_('p1', 'spell', 'Heal', 5, { stat: 'intelligence' })],
   });
-  it('orders by sort, then name; attacks are weapons then attack spells', () => {
-    expect(lists.attacks.map(r => r.id)).toEqual(['w1', 'w2', 'p2']);
+  it('orders each canonical item list by sort, then name', () => {
+    expect(lists.attacks.map(r => r.id)).toEqual(['a1', 'a2']);
     expect(lists.skills.map(r => r.id)).toEqual(['s1', 's2']);
     expect(lists.spells.map(r => r.id)).toEqual(['p1', 'p2']);
   });
   it('attack rows: derived values, spell flag, trimmed label', () => {
-    expect(lists.attacks[1]).toMatchObject({ stat: 'DCC.StatAbbr.strength', rank: 1, toHit: 2, damageLabel: '+0', isSpell: false });
-    expect(lists.attacks[2].isSpell).toBe(true);
+    expect(lists.attacks[0]).toMatchObject({
+      stat: 'DCC.StatAbbr.strength', rank: 1, toHit: 2, damageLabel: '1d6+1 slashing',
+      isSpell: false, skillName: 'Axes', skillMissing: false, range: '30ft range',
+    });
+    expect(lists.attacks[0].skillUses[0]).toMatchObject({
+      attackId: 'a1',
+      name: 'Axe (thrown)',
+      stat: 'DCC.StatAbbr.dexterity',
+      skillName: 'Brawl',
+      toHit: 4,
+    });
+    expect(lists.attacks[1].isSpell).toBe(true);
+  });
+
+  it('hides To Hit for a Crawler Attack with no Ability while retaining Rank and damage', () => {
+    const { attacks } = sheetItemLists({ attack: [
+      it_('a', 'attack', 'Iron Punch', 0, { stat: '' }, {
+        rank: 7, hasToHit: false, toHit: null, damageLabel: '1d2+1d6',
+      }),
+    ] });
+    expect(attacks[0]).toMatchObject({
+      stat: '',
+      rank: 7,
+      hasToHit: false,
+      toHit: null,
+      damageLabel: '1d2+1d6',
+    });
+    const list = readFileSync(new URL('../../templates/actor/partials/attack-list.hbs', import.meta.url), 'utf8');
+    expect(list).toMatch(/{{#if hasToHit}}\s*<button[^>]+data-roll="toHit"/);
+  });
+
+  it('Attack templates author and roll alternate stable-ID Skill Uses', () => {
+    const attack = readFileSync(new URL('../../templates/item/attack.hbs', import.meta.url), 'utf8');
+    const list = readFileSync(new URL('../../templates/actor/partials/attack-list.hbs', import.meta.url), 'utf8');
+    expect(attack).toContain('name="system.primarySkillId"');
+    expect(attack).toContain('name="system.skillUses.{{index}}.skillId"');
+    expect(attack).toContain('data-action="addSkillUse"');
+    expect(attack).toContain('data-action="deleteSkillUse"');
+    expect(list).toContain('data-skill-use-index="{{index}}"');
+  });
+  it('carries No Damage to primary and alternate rows and renders plain text', () => {
+    const { attacks } = sheetItemLists({ attack: [
+      it_('a', 'attack', 'Aura', 0, {}, {
+        noDamage: true, skillUses: [{ index: 0, label: 'alternate', noDamage: true }],
+      }),
+    ] });
+    expect(attacks[0].noDamage).toBe(true);
+    expect(attacks[0].skillUses[0].noDamage).toBe(true);
+    const list = readFileSync(new URL('../../templates/actor/partials/attack-list.hbs', import.meta.url), 'utf8');
+    expect(list.match(/{{#if noDamage}}/g)).toHaveLength(3);
+    expect(list.match(/<span class="dcc-no-damage">{{localize "DCC\.Roll\.NoDamage"}}<\/span>/g)).toHaveLength(3);
+    expect(list).not.toContain('data-action="postAttackNotes"');
+    const vehicle = readFileSync(new URL('../../templates/actor/partials/vehicle-weapon-list.hbs', import.meta.url), 'utf8');
+    expect(vehicle).toContain('<span class="dcc-no-damage">{{localize "DCC.Roll.NoDamage"}}</span>');
+    expect(vehicle).not.toContain('data-action="postAttackNotes"');
+  });
+  it('keeps Crawler attack headers aligned for damage buttons and No Damage rows', () => {
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    expect(css).toContain(
+      '.dcc.sheet.actor .dcc-ilist--attacks > li { grid-template-columns: minmax(0, 1fr) 44px 40px 56px 128px 44px; }',
+    );
   });
   it('attack rows carry the mob static To-Hit target (derived.mobToHit)', () => {
     const { attacks } = sheetItemLists({
-      weapon: [it_('w', 'weapon', 'Club', 0, { stat: 'strength' }, { toHit: 2, mobToHit: 13 })],
-      spell: [it_('p', 'spell', 'Zap', 0, { attack: { enabled: true } }, { mobToHit: 11 })],
+      attack: [
+        it_('a', 'attack', 'Club', 0, { stat: 'strength' }, { toHit: 2, mobToHit: 13 }),
+        it_('p', 'attack', 'Zap', 1, {}, { mobToHit: 11 }),
+        it_('z', 'attack', 'Zero', 2, {}, { mobToHit: 0, mobToHitNone: false }),
+        it_('n', 'attack', 'None', 3, {}, { mobToHit: 0, mobToHitNone: true }),
+      ],
     });
-    expect(attacks.map(r => r.mobToHit)).toEqual([13, 11]);
+    expect(attacks.map(r => r.mobToHit)).toEqual([13, 11, 0, 0]);
+    expect(attacks.slice(2).map(r => r.mobToHitNone)).toEqual([false, true]);
+  });
+  it('converts authored Attack notes to safe plain text with line breaks', () => {
+    const { attacks } = sheetItemLists({
+      attack: [
+        it_('a', 'attack', 'Club', 0, { description: '<p>First &amp; second<br>line</p><script>bad()</script><p>&lt;b&gt;literal&lt;/b&gt;</p>' }),
+        it_('b', 'attack', 'Blank', 1, { description: '<p></p>' }),
+      ],
+    });
+    expect(attacks.map(r => r.notes)).toEqual(['First & second\nline\n<b>literal</b>', '']);
+    const list = readFileSync(new URL('../../templates/actor/partials/attack-list.hbs', import.meta.url), 'utf8');
+    const itemRow = readFileSync(new URL('../../templates/actor/partials/item-row.hbs', import.meta.url), 'utf8');
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    expect(list).toContain('attackNotes=true');
+    expect(itemRow).toMatch(/{{#if attackNotes}}[\s\S]*{{#if notes}}[\s\S]*class="dcc-attack-notes">{{notes}}/);
+    expect(css).toMatch(/\.dcc-ilist--attacks > \.dcc-attack-row > \.dcc-attack-notes \{[^}]*grid-area: auto;[^}]*grid-column: 1 \/ -1;/);
+  });
+  it('renders book-style Mob attack rows without a subheader', () => {
+    const list = readFileSync(new URL('../../templates/actor/partials/attack-list.hbs', import.meta.url), 'utf8');
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    expect(list).toMatch(/{{#unless mob}}\s*<li class="dcc-ihead">[\s\S]*?{{\/unless}}/);
+    expect(list).toContain('class="dcc-irow draggable dcc-mob-attack-row"');
+    expect(list).toContain('class="dcc-mob-attack-icon"');
+    expect(list).toContain('class="dcc-iname dcc-mob-attack-name"');
+    expect(list).toContain('{{localize "DCC.Mob.ToHitLabel" target=mobToHit}}');
+    expect(list).toContain('<span class="dcc-mob-attack-range" data-tooltip="{{range}}">{{range}}</span>');
+    expect(list).toMatch(/{{#if notes}}\s*<span class="dcc-attack-notes">{{notes}}<\/span>\s*{{\/if}}/);
+    expect(list.indexOf('dcc-attack-notes')).toBeLessThan(list.indexOf('{{#each skillUses}}'));
+    expect(list).toContain('data-tooltip="{{#if ../../mob}}{{damageLabel}}{{else}}{{localize \'DCC.Roll.Damage\'}}{{/if}}"');
+    expect(css).toMatch(/\.dcc-ilist--attacks\.dcc-ilist--lean > \.dcc-mob-attack-row \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) 12px 12px;/);
+    expect(css).toMatch(/\.dcc-mob-attack-main \{[\s\S]*?grid-template-columns: 20px auto auto minmax\(110px, 160px\) minmax\(0, 1fr\);/);
+    expect(css).toContain('.dcc-ilist--attacks.dcc-ilist--lean { --dcc-mob-attack-size: 11px; }');
+    expect(css).toMatch(/\.dcc-mob-attack-main \.dcc-rollbtn--wide \{[^}]*display: block;[^}]*padding-inline: 4px;[^}]*font-size: var\(--dcc-mob-attack-size\);[^}]*text-overflow: ellipsis;[^}]*white-space: nowrap;/);
+    expect(css).toMatch(/:is\(\.dcc-attack-notes, \.dcc-inventory-notes\) \{[^}]*grid-area: notes;[^}]*white-space: pre-line;/);
   });
   it('skill rows: source rank, effective rank flag, cost for spells', () => {
     expect(lists.skills[0]).toMatchObject({ rank: 2, rankEffective: 3, rankModified: true, bonus: 4 });
     expect(lists.skills[1].rankModified).toBe(false);
-    expect(lists.spells[1]).toMatchObject({ cost: 3, attack: true });
+    expect(lists.spells[1]).toMatchObject({ cost: 3 });
+    expect(lists.spells[1]).not.toHaveProperty('attack');
     expect(lists.skills[0].cost).toBeUndefined();
+  });
+  it('skill rows expose opposed/passive display state from checkType', () => {
+    const { skills } = sheetItemLists({
+      skill: [
+        it_('o', 'skill', 'Persuade', 0, { checkType: 'opposed', opposedStat: 'charisma', mark: true }),
+        it_('p', 'skill', 'Powerful', 1, { checkType: 'passive', mark: true }),
+      ],
+    });
+    expect(skills[0]).toMatchObject({
+      checkType: 'opposed', opposedStat: 'charisma', isOpposed: true, isPassive: false, markable: true,
+    });
+    expect(skills[1]).toMatchObject({
+      checkType: 'passive', isOpposed: false, isPassive: true, markable: false,
+    });
+  });
+  it('skill rows expose populated authored metadata without Notes', () => {
+    const { skills, spells } = sheetItemLists({
+      skill: [it_('s', 'skill', 'Crossbow', 0, {
+        range: '50 feet', cooldown: 'Once per round', limitations: 'Needs bolts',
+        description: '<p>Rank 5: ignores cover.</p>',
+      })],
+      spell: [it_('p', 'spell', 'Rootfoot', 0, {
+        range: '30 feet', cooldown: 'Once per scene', duration: '2 rounds',
+        description: '<p>Roots ensnare.</p>', attack: {},
+      }, { manaCostEffective: 5 })],
+    });
+    expect(skills[0]).toMatchObject({
+      summary: [
+        { label: 'DCC.Items.Range', value: '50 feet' },
+        { label: 'DCC.Items.Cooldown', value: 'Once per round' },
+      ],
+      hasSummary: true,
+    });
+    expect(skills[0]).not.toHaveProperty('notes');
+    expect(spells[0]).not.toHaveProperty('notes');
+    expect(skills[0].summary.some(field => field.value === 'Needs bolts')).toBe(false);
+    expect(spells[0].summary).toEqual([
+      { label: 'DCC.Items.Range', value: '30 feet' },
+      { label: 'DCC.Items.Cooldown', value: 'Once per scene' },
+      { label: 'DCC.Items.ManaCost', value: 5 },
+      { label: 'DCC.Items.Duration', value: '2 rounds' },
+    ]);
+  });
+  it('blank metadata and zero mana cost do not create an actor summary', () => {
+    const { skills, spells } = sheetItemLists({
+      skill: [it_('s', 'skill', 'Blank', 0, { range: ' ', cooldown: '', description: '<p></p>' })],
+      spell: [it_('p', 'spell', 'Free', 0, { attack: {} }, { manaCostEffective: 0 })],
+    });
+    expect(skills[0]).toMatchObject({ summary: [], hasSummary: false });
+    expect(spells[0]).toMatchObject({ summary: [], hasSummary: false });
   });
   it('empty input -> empty lists', () => {
     expect(sheetItemLists()).toEqual({ attacks: [], skills: [], spells: [] });
@@ -102,10 +837,63 @@ describe('skill rows carry the hotlist flag', () => {
   });
 });
 
+describe('skill and spell authored metadata templates', () => {
+  const skill = readFileSync(new URL('../../templates/item/skill.hbs', import.meta.url), 'utf8');
+  const spell = readFileSync(new URL('../../templates/item/spell.hbs', import.meta.url), 'utf8');
+  const list = readFileSync(new URL('../../templates/actor/partials/skill-list.hbs', import.meta.url), 'utf8');
+  const row = readFileSync(new URL('../../templates/actor/partials/item-row.hbs', import.meta.url), 'utf8');
+  const description = readFileSync(new URL('../../templates/item/partials/description.hbs', import.meta.url), 'utf8');
+  const upgrades = readFileSync(new URL('../../templates/item/upgrades.hbs', import.meta.url), 'utf8');
+
+  it('edits Range, Cooldown, and Limitations on skills and spells, with spell-only Duration', () => {
+    for (const template of [skill, spell]) {
+      for (const field of ['range', 'cooldown', 'limitations']) {
+        expect(template).toContain(`systemFields.${field} value=systemSource.${field}`);
+      }
+    }
+    expect(spell).toContain('systemFields.duration value=systemSource.duration');
+    expect(skill).not.toContain('systemFields.duration');
+  });
+
+  it('renders populated actor summaries and uses the context-specific description label', () => {
+    expect(list).toContain('{{#if hasSummary}}');
+    expect(list).toContain('{{#each summary}}');
+    expect(list).not.toContain('dcc-skill-summary-notes');
+    expect(list).not.toContain('{{notes}}');
+    expect(description).toContain('{{descriptionLabel}}');
+    expect(upgrades).toContain('systemFields.upgrades value=systemSource.upgrades');
+    expect(list).not.toContain('upgrades');
+  });
+
+  it('keeps hotlist editing on item sheets and removes Skill Check controls', () => {
+    for (const template of [skill, spell]) {
+      expect(template).toContain('systemFields.onHotlist value=systemSource.onHotlist');
+      expect(template).not.toContain('data-action="skillCheck"');
+    }
+    expect(list).not.toContain('system.onHotlist');
+    expect(list).not.toContain('data-action="skillCheck"');
+    expect(list).toContain('data-field="system.mark"');
+    expect(row).not.toContain('data-field="system.mark"');
+    expect(list).toContain('data-field="system.enabled"');
+    expect(list).toContain('dcc-c-type');
+    expect(list).toContain('fa-comment');
+  });
+
+  it('lets Skills and Spells grant a linked Attack', () => {
+    for (const template of [skill, spell]) {
+      expect(template).toContain('systemFields.isAttack value=systemSource.isAttack');
+    }
+  });
+});
+
 describe('inventoryView', () => {
+  const inventoryTemplate = readFileSync(new URL('../../templates/actor/pc/inventory.hbs', import.meta.url), 'utf8');
+  const itemRowTemplate = readFileSync(new URL('../../templates/actor/partials/item-row.hbs', import.meta.url), 'utf8');
+  const itemSheet = readFileSync(new URL('../../module/applications/item-sheet.mjs', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
   const view = inventoryView({
     gear: [
-      item('g2', 'gear', 'Ring', 200, { quantity: 1, slot: 'pack', active: true, accessory: true, onHotlist: false }),
+      item('g2', 'gear', 'Ring', 200, { quantity: 1, slot: 'pack', active: true, accessory: true, onHotlist: false, description: '<p>Triggers after Evade.</p>' }),
       item('g1', 'gear', 'Helm', 100, { quantity: 1, slot: 'head', active: false, accessory: false, onHotlist: true }),
       item('g3', 'gear', 'Cap', 300, { quantity: 1, slot: 'head' }),
       item('g4', 'gear', 'Amulet', 400, { quantity: 3, slot: 'pack', active: false, accessory: true }),
@@ -120,6 +908,13 @@ describe('inventoryView', () => {
     expect(view.inventory[1]).toMatchObject({ accessory: true, worn: false });
     expect(view.inventory[4]).toMatchObject({ isWeapon: true, quantity: 2, slot: 'hands', worn: true });
     expect(view.inventory[4].accessory).toBeUndefined();
+    expect(view.inventory[1].notes).toBe('Triggers after Evade.');
+  });
+  it('labels inventory descriptions as Notes and displays them below inventory rows', () => {
+    expect(itemSheet).toContain("['skill', 'spell', 'gear', 'weapon'].includes(this.document.type)");
+    expect(inventoryTemplate).toContain('inventoryNotes=true');
+    expect(itemRowTemplate).toMatch(/{{#if inventoryNotes}}[\s\S]*class="dcc-inventory-notes">{{notes}}/);
+    expect(css).toMatch(/\.dcc-ilist--inventory > \.dcc-inventory-row > \.dcc-inventory-notes \{[^}]*grid-column: 1 \/ -1;/);
   });
   it('paper doll: every gear slot in order, the first item (gear before weapons) per slot', () => {
     expect(view.gearSlots.map(s => s.slot)).toEqual(['head', 'torso', 'arms', 'hands', 'legs', 'feet']);
@@ -149,16 +944,20 @@ describe('hotlistCells', () => {
     item('r', 'gear', 'Rations', 1, { onHotlist: true, quantity: 4 }),
     item('h', 'gear', 'Helm', 0, { onHotlist: false, quantity: 1 }),
     item('d', 'weapon', 'Dagger', 9, { onHotlist: true, quantity: 1 }),
+    item('a', 'attack', 'Dagger Attack', 0, { onHotlist: true }),
   ];
   const cells = hotlistCells(items);
-  it('always 10 cells: grouped gear, weapon, skill, spell, each by sort then name, then empty (null) cells', () => {
+  it('always 10 cells: grouped inventory, skills/spells, Attacks, then empty cells', () => {
     expect(cells).toHaveLength(10);
-    expect(cells.slice(0, 4).map(c => c.id)).toEqual(['r', 'd', 'k', 'z']);
-    expect(cells.slice(4).every(c => c === null)).toBe(true);
+    expect(cells.slice(0, 5).map(c => c.id)).toEqual(['r', 'd', 'k', 'z', 'a']);
+    expect(cells.slice(5).every(c => c === null)).toBe(true);
   });
   it('entries carry name, img, type; quantity only when above 1', () => {
     expect(cells[0]).toEqual({ id: 'r', name: 'Rations', img: 'r.svg', type: 'gear', quantity: 4, hint: 'DCC.Hotlist.Use.gear' });
-    expect(cells.slice(0, 4).map(c => c.hint)).toEqual(['DCC.Hotlist.Use.gear', 'DCC.Hotlist.Use.weapon', 'DCC.Hotlist.Use.skill', 'DCC.Hotlist.Use.spell']);
+    expect(cells.slice(0, 5).map(c => c.hint)).toEqual([
+      'DCC.Hotlist.Use.gear', 'DCC.Hotlist.Use.weapon', 'DCC.Hotlist.Use.skill',
+      'DCC.Hotlist.Use.spell', 'DCC.Hotlist.Use.attack',
+    ]);
     expect(cells[1].quantity).toBeNull();
     expect(cells[3].quantity).toBeNull();
   });
@@ -304,7 +1103,7 @@ describe('vehicleWeaponRows', () => {
   // The prepared instance differs from the stored source (as after derived
   // data / effects), so the source reads are observable.
   const w = (id, name, sort, source = {}, derived = {}, instance = {}) => ({
-    id, type: 'weapon', name, img: `${id}.svg`, sort, system: { ...source, ...instance, derived, _source: source },
+    id, type: 'attack', name, img: `${id}.svg`, sort, system: { ...source, ...instance, derived, _source: source },
   });
   const rows = vehicleWeaponRows([
     w('w2', 'Turret', 200, { rank: 2, gunnerSlot: '1', skillName: 'Gunnery' }, { toHit: 3, damageLabel: '2d8 +0 piercing ' },
@@ -331,19 +1130,22 @@ describe('crewRows (vehicle crew rows from the live crew actors)', () => {
     system: { healthBarDisplay: 7, healthBarSlots: 10, damageResistance: 2 },
     itemTypes: {
       skill: [it_('s1', 'skill', 'Driving', 0, { stat: 'dexterity', rank: 3 }, { skillBonus: 6 })],
-      spell: [it_('p1', 'spell', 'Zap', 0, { stat: 'intelligence', attack: { enabled: true } }, { skillBonus: 2, toHit: 4 })],
-      weapon: [it_('w1', 'weapon', 'Fist', 0, { stat: 'strength' }, { toHit: 3 })],
+      spell: [it_('p1', 'spell', 'Zap', 0, { stat: 'intelligence', linkedItemIds: ['a2'] }, { skillBonus: 2 })],
+      attack: [
+        it_('a1', 'attack', 'Fist', 0, { stat: 'strength' }, { toHit: 3 }),
+        it_('a2', 'attack', 'Zap Attack', 1, { stat: 'intelligence', linkedItemIds: ['p1'] }, { toHit: 4 }),
+      ],
     },
   };
   const actors = { 'Actor.carl': carl };
   const resolve = uuid => (actors[uuid] ? { actor: actors[uuid], limited: true, observer: true } : null);
   const rows = crewRows([{ uuid: 'Actor.carl', role: 'driver' }, { uuid: 'Actor.gone', role: 'gunner1' }], resolve, 'vehicle');
 
-  it('a live member: name, HB / DR, role, and the roll lists (skills then spells; weapons then attack spells)', () => {
+  it('a live member: name, HB / DR, role, and canonical roll lists', () => {
     expect(rows[0]).toMatchObject({
       index: 0, uuid: 'Actor.carl', role: 'driver', roleLabel: 'DCC.Crew.Role.driver', missing: false, limited: false, name: 'Carl', img: 'carl.svg', healthBar: 7, healthBarSlots: 10, damageResistance: 2,
       skills: [{ id: 's1', name: 'Driving', bonus: 6 }, { id: 'p1', name: 'Zap', bonus: 2 }],
-      attacks: [{ id: 'w1', name: 'Fist', toHit: 3 }, { id: 'p1', name: 'Zap', toHit: 4 }],
+      attacks: [{ id: 'a1', name: 'Fist', toHit: 3 }, { id: 'a2', name: 'Zap Attack', toHit: 4 }],
     });
   });
   it('role options: value -> label key, per the vehicle kind', () => {

@@ -11,6 +11,7 @@
             on the button itself would never explain why it is disabled. A disabled End Floor /
             Level Up / Undo also points aria-describedby at a visually-hidden copy of that reason. --}}
       <div class="dcc-hdr-actions">
+        {{!--
         <span class="dcc-advancement" data-tooltip="{{localize 'DCC.Advance.EndSessionTooltip'}}">
           <button type="button" class="dcc-rollbtn" id="{{@root.rootId}}-advancement-endSession" data-action="advancementEndSession"
                   {{disabled (not advancement.canAct)}}>{{localize "DCC.Advance.EndSession"}}</button>
@@ -27,6 +28,8 @@
                   {{disabled (not advancement.canLevelUp)}}>{{localize "DCC.Advance.LevelUp"}}</button>
           {{#unless advancement.canLevelUp}}<span class="dcc-sr-only" id="{{@root.rootId}}-advancement-levelUp-why">{{localize advancement.levelUpTooltip}}</span>{{/unless}}
         </span>
+        --}}
+        {{!--
         <span class="dcc-advancement" data-tooltip="{{localize advancement.undoTooltip}}">
           <button type="button" class="dcc-rollbtn" id="{{@root.rootId}}-advancement-undo" data-action="advancementUndo"
                   {{#unless advancement.canUndo}}aria-describedby="{{@root.rootId}}-advancement-undo-why"{{/unless}}
@@ -41,11 +44,14 @@
           <span class="lbl">{{localize "DCC.Advance.StatPoints"}}</span>
           <span class="val">{{advancement.statPoints}}</span>
         </span>
+        --}}
+        {{!--
         {{#if advancement.safehouseBadge}}
         <span class="dcc-advancement-badge dcc-safehouse" data-tooltip="{{localize 'DCC.GmScreen.BadgeTooltip'}}">
           <span class="lbl">{{localize "DCC.GmScreen.Badge"}}</span>
         </span>
         {{/if}}
+        --}}
       </div>
     </div>
     <div class="dcc-headmain dcc-pcfields">
@@ -53,10 +59,6 @@
         <span class="dcc-flabel">{{localize "DCC.Sheet.Name"}}</span>
         <input class="dcc-fline" type="text" name="name" value="{{document.name}}">
       </label>
-      <div class="dcc-field dcc-f-type">
-        <span class="dcc-flabel">{{localize "DCC.Header.Type"}}</span>
-        <span class="dcc-type-badge">{{localize (concat "TYPES.Actor." document.type)}}</span>
-      </div>
       <label class="dcc-field dcc-f-race">
         <span class="dcc-flabel">{{localize "DCC.Header.Race"}}</span>
         <input class="dcc-fline" type="text" name="system.race" value="{{systemSource.race}}">
@@ -64,10 +66,6 @@
       <label class="dcc-field dcc-f-pronouns">
         <span class="dcc-flabel">{{localize "DCC.Header.Pronouns"}}</span>
         <input class="dcc-fline" type="text" name="system.pronouns" value="{{systemSource.pronouns}}">
-      </label>
-      <label class="dcc-field dcc-f-class">
-        <span class="dcc-flabel">{{localize "DCC.Header.Class"}}</span>
-        <input class="dcc-fline" type="text" name="system.class" value="{{systemSource.class}}">
       </label>
       <label class="dcc-field dcc-field--num dcc-f-level">
         <span class="dcc-flabel">{{localize "DCC.Header.Level"}}</span>
@@ -77,13 +75,13 @@
         <span class="dcc-flabel">{{localize "DCC.Header.CrawlerNumber"}}</span>
         <input class="dcc-fline" type="text" name="system.crawlerNumber" value="{{systemSource.crawlerNumber}}">
       </label>
+      <label class="dcc-field dcc-f-class">
+        <span class="dcc-flabel">{{localize "DCC.Header.Class"}}</span>
+        <input class="dcc-fline" type="text" name="system.class" value="{{systemSource.class}}">
+      </label>
       <label class="dcc-field dcc-field--num dcc-f-floor">
         <span class="dcc-flabel">{{localize "DCC.Header.Floor"}}</span>
         <input class="dcc-fline" type="number" step="1" name="system.floor" value="{{systemSource.floor}}">
-      </label>
-      <label class="dcc-field dcc-field--num dcc-f-favor">
-        <span class="dcc-flabel">{{localize "DCC.Header.AiFavor"}}</span>
-        <input class="dcc-fline" type="number" step="1" name="system.aiFavor" value="{{systemSource.aiFavor}}">
       </label>
     </div>
   </div>

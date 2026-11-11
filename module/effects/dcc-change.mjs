@@ -2,7 +2,10 @@
 // change is collected into the actor model's modifier list (`system._modifiers`,
 // reset in prepareBaseData) and resolved by the pure derive engine in
 // prepareDerivedData. Targets/values use the R20 modifier syntax
-// (see rules/modifiers.mjs): 'strength', 'item:Name:to_hit', '2', '10%'.
+// (see rules/modifiers.mjs): 'strength', 'item-id:ID:to_hit', '2', '10%'.
+
+import { parseTarget } from '../rules/modifiers.mjs';
+import { idOf } from '../rules/items.mjs';
 
 export const DCC_CHANGE_TYPE = 'dcc';
 
@@ -26,8 +29,11 @@ export function dccChangeHandler(targetDoc, change) {
 }
 
 /** One-line summary of a change: `key value`, with the type shown when it isn't 'dcc'. */
-export const describeChange = ({ key, type, value } = {}) => {
-  const text = `${key ?? ''} ${value ?? ''}`.trim();
+export const describeChange = ({ key, type, value } = {}, items = []) => {
+  const parsed = type === DCC_CHANGE_TYPE ? parseTarget(key) : null;
+  const item = parsed?.kind === 'itemId' ? items.find(entry => idOf(entry) === parsed.id) : null;
+  const target = item ? `item:${item.name} [${parsed.id}]:${parsed.aspect}` : (key ?? '');
+  const text = `${target} ${value ?? ''}`.trim();
   return type === DCC_CHANGE_TYPE ? text : `${text} (${type})`;
 };
 

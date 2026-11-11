@@ -1,20 +1,29 @@
 import { directDamage, healSlots, clampSlots } from '../rules/health.mjs';
 import { checkFormula, damageFormula, castPlan } from '../rules/combat.mjs';
 import { postCard } from '../rolls/card.mjs';
-import { htmlToText } from '../rules/card.mjs';
+import { attackCardExtras, htmlToText, spellCardExtras } from '../rules/card.mjs';
 import {
   postDriving, postRam, postRace, rollVehicleWeapon, crewSkillPost, crewAttackPost, applyRamAftermath,
 } from './vehicle-rolls.mjs';
 import {
-  isDue, planAdvancement, undoPush, undoPop, snapshot, restoreUpdates, levelUpBlocker,
+  isDue, planAdvancement, undoPush, undoPop, snapshot, restoreUpdates, levelUpBlocker, skillCheckSuccess,
 } from '../rules/advancement.mjs';
 import { ADVANCING_TYPES, UNDO_MAX, LEVEL_UP_STAT_POINTS } from '../config.mjs';
 import { gmLinkFor } from '../gm-link.mjs';
 import { floorEndBlocked } from '../rules/gm-screen.mjs';
+import { checkTypeLabel, isPassiveCheck } from '../rules/items.mjs';
+import { attackSource, grantedAttack } from '../rules/item-links.mjs';
+import { mobTokenSize } from '../rules/token-size.mjs';
 
-const checkTypeTag = type => (type ? game.i18n.localize(`DCC.CheckType.${type}`) : '');
+const checkTypeTag = system => checkTypeLabel(system?.checkType, system?.opposedStat, key => game.i18n.localize(key));
 
 export default class DCCActor extends foundry.documents.Actor {
+  /** Keep the deferred GM Screen type out of Foundry's Create Actor dialog. */
+  static async createDialog(data = {}, createOptions = {}, options = {}, renderOptions = {}) {
+    const types = (options.types ?? this.TYPES).filter(type => type !== 'gmscreen');
+    return super.createDialog(data, createOptions, { ...options, types }, renderOptions);
+  }
+
   /**
    * Core Actor#getRollData returns only `this.system`. Merge (not replace) the
    * model's short keys on top, so both `@stats.dexterity.modifier` and `@dex` resolve.
@@ -24,6 +33,13 @@ export default class DCCActor extends foundry.documents.Actor {
    */
   getRollData() {
     return { ...super.getRollData(), ...this.system.rollShortcuts?.() };
+  }
+
+  /** Size new Mob tokens from descriptors, including actors created before this rule. */
+  async getTokenDocument(data = {}, options = {}) {
+    const size = this.type === 'mob' ? mobTokenSize(this.system.descriptors) : null;
+    if (size === null) return super.getTokenDocument(data, options);
+    return super.getTokenDocument({ width: size, height: size, ...data }, options);
   }
 
   /** Current slots as the bar shows them (the stored healthBar clamped to healthBarSlots). */
@@ -103,9 +119,9 @@ export default class DCCActor extends foundry.documents.Actor {
   }
 
   /**
-   * Skill check: 1d20 + the item's derived skillBonus, tagged with its check
-   * type. A spell's roll IS a cast (R20 rollSkill -> doCast), so spells route
-   * to castSpell and always spend mana.
+   * Skill use: active checks roll 1d20 + the derived skillBonus; Passive
+   * skills post their description without a roll. A spell's use IS a cast
+   * (R20 rollSkill -> doCast), so spells route to castSpell and always spend mana.
    * @param {Item} item - a skill or spell owned by this actor
    * @param {object} [options] - postCard options (e.g. `speaker` for crew rolls)
    * @returns {Promise<object|null>} postCard's result, or null when nothing rolled
@@ -115,40 +131,76 @@ export default class DCCActor extends foundry.documents.Actor {
     if (item.type === 'spell') return this.castSpell(item, options);
     const bonus = item.system?.derived?.skillBonus;
     if (!Number.isFinite(bonus)) return null;
-    return postCard(this, { name: item.name, tag: checkTypeTag(item.system.checkType) }, { roll: checkFormula(bonus) }, options);
+    const fields = { name: item.name, tag: checkTypeTag(item.system) };
+    if (isPassiveCheck(item.system)) fields.note = htmlToText(item.system.description);
+    return postCard(this, fields, isPassiveCheck(item.system) ? {} : { roll: checkFormula(bonus) }, options);
   }
 
   /**
-   * Attack roll from a weapon or an attack-enabled spell. To-hit and damage
-   * are separate rolls. A spell's to-hit casts the spell (R20 dual entry);
-   * its damage uses the spell's attack die / type.
-   * @param {Item} item
+   * Manual Skill Check (Roll20 rollSkillAdvancement): roll a bare d20 against
+   * the stored base Rank and report Success/Failure without changing Rank.
+   * Passive rows and non-PC actors cannot use it.
+   * @param {Item} item - an owned skill or spell
+   * @param {object} [options] - postCard options
+   * @returns {Promise<object|null>}
+   */
+  async rollSkillCheck(item, options = {}) {
+    if ((this.type !== 'pc') || !this.#owns(item) || !ADVANCING_TYPES.includes(item.type) || isPassiveCheck(item.system)) return null;
+    const rank = Math.max(0, +(item.system?._source ?? item.system)?.rank || 0);
+    return postCard(this, ({ check }) => ({
+      name: item.name,
+      tag: game.i18n.localize('DCC.Advance.SkillCheck'),
+      dc: rank,
+      result: game.i18n.localize(skillCheckSuccess(rank, check?.total) ? 'DCC.Advance.Success' : 'DCC.Advance.Failure'),
+      utility: true,
+    }), { roll: '1d20' }, options);
+  }
+
+  /**
+   * Roll a canonical Attack Item. To-hit and damage are separate. A linked
+   * Spell source makes To-Hit invoke the same cast path as that Spell.
+   * @param {Item} item - an owned Attack
    * @param {'toHit'|'damage'} [which='toHit']
    * @param {object} [options] - postCard options
    * @returns {Promise<object|null>}
    */
-  async rollWeapon(item, which = 'toHit', options = {}) {
-    if (!this.#owns(item)) return null;
-    if ((this.type === 'vehicle') && this.system.rollsWithGunner(which)) {
-      return this.#vehicleGuard(() => rollVehicleWeapon(this, item, options));
+  async rollAttack(item, which = 'toHit', options = {}) {
+    if (!this.#owns(item) || item.type !== 'attack') return null;
+    const { skillUseIndex, ...cardOptions } = options;
+    const hasSkillUse = Number.isInteger(skillUseIndex);
+    const use = hasSkillUse ? item.system?.derived?.skillUses?.[skillUseIndex] : null;
+    if (hasSkillUse && !use) return null;
+    if (this.type === 'mob' && which !== 'damage' && (use ?? item.system?.derived)?.mobToHitNone) return null;
+    if (which === 'damage' && item.system?.derived?.noDamage) {
+      ui.notifications.warn(game.i18n.format('DCC.Roll.NoDamageWarning', { name: item.name }));
+      return null;
     }
-    const isSpell = item.type === 'spell';
-    if (isSpell && (which !== 'damage')) return this.castSpell(item, options);
+    if ((this.type === 'vehicle') && this.system.rollsWithGunner(which)) {
+      return this.#vehicleGuard(() => rollVehicleWeapon(this, item, cardOptions));
+    }
     const d = item.system?.derived ?? {};
+    const rollData = use ?? d;
+    if (which !== 'damage' && !Number.isFinite(rollData.toHit)) return null;
+    const source = attackSource(item, this.items);
+    if (!use && (source?.type === 'spell') && (which !== 'damage')) return this.castSpell(source, cardOptions);
+    const name = use?.label ? `${item.name} (${use.label})` : item.name;
+    const extras = attackCardExtras(this.system, item.system, use ? use.range : item.system.range);
     if (which === 'damage') {
       if (!Number.isFinite(d.damageBase)) return null;
-      const attack = isSpell ? (item.system.attack ?? {}) : item.system;
       return postCard(this, {
-        name: item.name, tag: game.i18n.localize('DCC.Roll.Damage'), type: attack.damageType ?? '',
-      }, { damage: damageFormula(attack.die, d.damageBase) }, options);
+        name, tag: game.i18n.localize('DCC.Roll.Damage'), type: item.system.damageType ?? '', ...extras,
+      }, { damage: damageFormula(d.damageDice, d.damageBase) }, cardOptions);
     }
-    if (!Number.isFinite(d.toHit)) return null;
-    return postCard(this, { name: item.name, tag: game.i18n.localize('DCC.Roll.ToHit') }, { roll: checkFormula(d.toHit) }, options);
+    return postCard(this, {
+      name,
+      tag: game.i18n.localize('DCC.Roll.ToHit'),
+      ...extras,
+    }, { roll: checkFormula(rollData.toHit) }, cardOptions);
   }
 
   /**
    * Use an item from the hotlist (also the entry point for macros / crew):
-   * spell -> castSpell, weapon -> to-hit, skill -> skill check, gear -> a
+   * spell -> castSpell, Attack -> to-hit, skill -> skill check, gear/weapon -> a
    * roll-less card with the item's description as plain text. Not gated on
    * `onHotlist`, so any owned item can be "used".
    * @param {Item} item - an item owned by this actor
@@ -159,11 +211,12 @@ export default class DCCActor extends foundry.documents.Actor {
     if (!this.#owns(item)) return null;
     switch (item.type) {
       case 'spell': return this.castSpell(item, options);
-      case 'weapon': return this.rollWeapon(item, 'toHit', options);
+      case 'attack': return this.rollAttack(item, 'toHit', options);
       case 'skill': return this.rollSkill(item, options);
+      case 'weapon':
       case 'gear': return postCard(this, {
         name: item.name,
-        tag: game.i18n.localize('TYPES.Item.gear'),
+        tag: game.i18n.localize(`TYPES.Item.${item.type}`),
         note: htmlToText(item.system?.description),
       }, {}, options);
       default: return null;
@@ -172,8 +225,9 @@ export default class DCCActor extends foundry.documents.Actor {
 
   /**
    * Cast a spell: spend the mana if affordable and auto-enable the spell (see
-   * castPlan; one update per document), then post the 1d20 + skillBonus check
-   * with the effective mana cost, flagged insufficient when it exceeded mana.
+   * castPlan; one update per document), then post the skill check, or a
+   * roll-less card for a Passive spell, with the effective mana cost and
+   * insufficient flag.
    *
    * Mana is spent BEFORE the card, reading the current mana, and a per-actor
    * re-entry guard drops any cast while another is in flight, so neither a
@@ -191,7 +245,7 @@ export default class DCCActor extends foundry.documents.Actor {
     this.#casting = true;
     try {
       const manaValue = this.system.mana?.value;
-      // No mana pool (a mob): nothing to spend, and the card carries no cost / insufficient flag.
+      // Actors without a mana pool do not spend mana or report a cost.
       const hasMana = Number.isFinite(manaValue);
       const plan = castPlan({
         manaValue, costEffective: d.manaCostEffective, enabled: item.system.enabled, autoEnable: this.system.autoEnableCast,
@@ -203,9 +257,10 @@ export default class DCCActor extends foundry.documents.Actor {
       const manaFields = hasMana ? { cost: d.manaCostEffective ?? 0, insufficient: plan.insufficient } : {};
       return await postCard(this, {
         name: item.name,
-        tag: checkTypeTag(item.system.checkType),
+        tag: checkTypeTag(item.system),
+        ...spellCardExtras(this.system, item.system, grantedAttack(item, this.items)?.system),
         ...manaFields,
-      }, { roll: checkFormula(d.skillBonus) }, options);
+      }, isPassiveCheck(item.system) ? {} : { roll: checkFormula(d.skillBonus) }, options);
     } finally {
       this.#casting = false;
     }
@@ -218,7 +273,7 @@ export default class DCCActor extends foundry.documents.Actor {
   // points (sheet, macros) and the per-vehicle re-entry guards.
 
   /**
-   * Re-entry guard: one vehicle card (Drive / Ram / Race, a vehicle weapon,
+   * Re-entry guard: one vehicle card (Drive / Ram / Race, a vehicle Attack,
    * a crew roll) in flight per vehicle, so a double-click posts one card
    * (same pattern as #casting).
    */
@@ -252,11 +307,11 @@ export default class DCCActor extends foundry.documents.Actor {
   }
 
   /**
-   * Roll a crew member's attack (weapon or attack spell) from this vehicle:
+   * Roll a crew member's canonical Attack from this vehicle:
    * to-hit with the aboard penalty (the Driver / Rider at Disadvantage) plus
    * damage. Posted as the crew actor.
    * @param {Actor} crew - a PC / Mob aboard this vehicle (this user: Observer or better)
-   * @param {string} itemId - the crew actor's weapon / attack-spell id
+   * @param {string} itemId - the crew actor's Attack Item id
    * @param {object} [options] - postCard options
    * @returns {Promise<object|null>}
    */

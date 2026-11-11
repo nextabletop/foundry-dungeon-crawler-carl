@@ -1,7 +1,7 @@
 import DCCCreatureSheet from './creature-sheet.mjs';
 import { ACTOR_PARTIALS, templatePath as path, runGuarded, confirmYesNo } from './actor-sheet-base.mjs';
 import { inventoryView, hotlistCells, advancementView, singleFlight } from './sheet-rows.mjs';
-import { ITEM_SLOTS, HOTLIST_CAP, ACCESSORY_CAP } from '../config.mjs';
+import { ITEM_SLOTS, HOTLIST_CAP, ACCESSORY_CAP, APP_CLASSES } from '../config.mjs';
 
 /** Inventory slot <select> choices: value -> label key. */
 const SLOT_OPTIONS = Object.freeze(Object.fromEntries(ITEM_SLOTS.map(s => [s, `DCC.Slot.${s}`])));
@@ -19,19 +19,22 @@ const BIO_FIELDS = Object.freeze([
   { key: 'notes', label: 'DCC.Bio.Notes', wide: true },
 ]);
 
+const COMBAT_PART = {
+  template: path('actor/pc/combat.hbs'),
+  templates: [ACTOR_PARTIALS.defenses, ACTOR_PARTIALS.unresolved],
+};
+
 /**
  * The tab parts, in tab order. Single source for both TABS (the nav) and the
  * matching PARTS entries; the base sheet hands each part its `context.tab`.
  */
 const TAB_PARTS = {
-  combat: {
-    template: path('actor/pc/combat.hbs'),
-    templates: [
-      ACTOR_PARTIALS.defenses, ACTOR_PARTIALS.unresolved, ACTOR_PARTIALS.attackList, ACTOR_PARTIALS.crewing,
-      ACTOR_PARTIALS.buffList, ACTOR_PARTIALS.itemRow,
-    ],
+  attacks: {
+    template: path('actor/pc/attacks.hbs'),
+    templates: [ACTOR_PARTIALS.attackList, ACTOR_PARTIALS.crewing, ACTOR_PARTIALS.itemRow],
     scrollable: [''],
   },
+  buffs: { template: path('actor/pc/buffs.hbs'), templates: [ACTOR_PARTIALS.buffList, ACTOR_PARTIALS.itemRow], scrollable: [''] },
   inventory: { template: path('actor/pc/inventory.hbs'), templates: [ACTOR_PARTIALS.itemRow], scrollable: [''] },
   skills: { template: path('actor/pc/skills.hbs'), templates: [ACTOR_PARTIALS.skillList, ACTOR_PARTIALS.itemRow], scrollable: [''] },
   bio: { template: path('actor/pc/bio.hbs'), templates: [ACTOR_PARTIALS.richFields], scrollable: [''] },
@@ -40,10 +43,9 @@ const TAB_PARTS = {
 export default class PcSheet extends DCCCreatureSheet {
   static DEFAULT_OPTIONS = {
     classes: ['pc'],
-    // Sized so the Abilities strip fits without scrolling, with an 8px gap below the last card
-    // matching the 8px gap under its header bar (measured live).
-    position: { width: 720, height: 822 },
+    position: { width: 720, height: 900 },
     actions: {
+      createInventoryItem: PcSheet.#onCreateInventoryItem,
       useHotlist: PcSheet.#onUseHotlist,
       advancementEndSession: PcSheet.#onAdvancementEndSession,
       advancementEndFloor: PcSheet.#onAdvancementEndFloor,
@@ -57,7 +59,7 @@ export default class PcSheet extends DCCCreatureSheet {
   static TABS = {
     primary: {
       tabs: Object.keys(TAB_PARTS).map(id => ({ id })),
-      initial: 'combat',
+      initial: 'attacks',
       labelPrefix: 'DCC.Tab',
     },
   };
@@ -71,6 +73,7 @@ export default class PcSheet extends DCCCreatureSheet {
     header: { template: path('actor/pc/header.hbs') },
     abilities: { template: path('actor/pc/abilities.hbs') },
     vitals: { template: path('actor/pc/vitals.hbs'), templates: [ACTOR_PARTIALS.healthBar] },
+    combat: COMBAT_PART,
     tabs: { template: 'templates/generic/tab-navigation.hbs' },
     ...TAB_PARTS,
     hotlist: { template: path('actor/pc/hotlist.hbs') },
@@ -110,6 +113,30 @@ export default class PcSheet extends DCCCreatureSheet {
     return { ...cell, label };
   }
 
+  #createInventoryItem = singleFlight(() => runGuarded(async () => {
+    if (!this.isEditable) return;
+    const type = await foundry.applications.api.DialogV2.wait({
+      window: { title: game.i18n.localize('DCC.Inventory.AddItem') },
+      content: `<p>${foundry.utils.escapeHTML(game.i18n.localize('DCC.Inventory.ChooseItemType'))}</p>`,
+      buttons: [
+        { action: 'gear', label: game.i18n.localize('TYPES.Item.gear') },
+        { action: 'weapon', label: game.i18n.localize('TYPES.Item.weapon') },
+        { action: 'cancel', label: game.i18n.localize('DCC.Inventory.Cancel') },
+      ],
+      classes: [...APP_CLASSES],
+      rejectClose: false,
+      modal: true,
+    });
+    if (type === null || type === 'cancel') return;
+    if (type !== 'gear' && type !== 'weapon') throw new Error(`Unexpected inventory item type: ${type}`);
+    await this._createOwnedItem(type);
+  }));
+
+  /** @this {PcSheet} */
+  static async #onCreateInventoryItem() {
+    await this.#createInventoryItem();
+  }
+
   /**
    * Hotlist click. The dispatch lives on DCCActor#useHotlistItem so crew
    * rolls and macros share it; the sheet only resolves the item.
@@ -128,7 +155,7 @@ export default class PcSheet extends DCCCreatureSheet {
   /**
    * Run an advancement action (runGuarded) after saving pending input
    * (_flushForm): End Session / End Floor / Level Up read the Floor, Level and
-   * the skills' Mark / Rank / Passive, and Undo restores them (an in-flight
+   * the skills' Mark / Rank / Check Type, and Undo restores them (an in-flight
    * edit landing after the restore would win). An invalid form aborts it.
    * One flight for all four actions (singleFlight): the flush and End Floor's
    * confirm run before the actor's own guard, so without it a second click

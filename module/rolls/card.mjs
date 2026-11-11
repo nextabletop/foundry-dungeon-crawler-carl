@@ -31,7 +31,7 @@ const speakerImg = (speaker, actor) => {
  * own roll HTML only when `content` is empty, so the card embeds each roll's dice
  * breakdown itself (Roll#getTooltip) in a collapsible <details>.
  *
- * Visibility: the player's `core.messageMode`; a hidden mob (cardMessageMode, of `options.privacyOf` ?? actor) upgrades
+ * Visibility: the player's `core.messageMode`; a Mob with whispering enabled (cardMessageMode, of `options.privacyOf` ?? actor) upgrades
  * 'public'/'ic' to 'gm'. `chatBubble: false` because 'ic' mode would otherwise put
  * the card HTML in a token speech bubble (chat-message.mjs:533-534).
  *

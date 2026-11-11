@@ -7,17 +7,14 @@
 // (the Rank -> bonus-damage-die chart is UNSOURCED per _data-notes.md).
 
 // To-Hit and Damage are materialized per attack so the roll-button labels ARE
-// the values (e.g. "To Hit +10", "Damage 2d8 +4 slashing").
+// the values (e.g. "To Hit +10", "Damage 2d8+4 slashing").
 export const attackToHit = (statModifier, rank, misc) => (+statModifier || 0) + (+rank || 0) + (+misc || 0);
 
-// R20 quirk, preserved verbatim: the template always inserts a space between
-// `die` and the sign, so a blank die (e.g. damageLabel('', 4) -> ' +4') keeps
-// a leading space rather than collapsing it away.
 export const damageLabel = (die, flat, type) => {
   const f = +flat || 0;
-  const sign = f >= 0 ? '+' : '-';
-  const base = `${die || ''} ${sign}${Math.abs(f)}`;
-  return type ? `${base} ${type}` : base;
+  if (!die && f === 0) return 'No damage';
+  const modifier = f === 0 ? '' : `${f > 0 ? '+' : '-'}${Math.abs(f)}`;
+  return [`${die || ''}${modifier}`, type].filter(Boolean).join(' ');
 };
 
 // ── Mob / NPC math ──
@@ -26,7 +23,9 @@ export const damageLabel = (die, flat, type) => {
 // only mob damage.
 export const mobToHit = (statModifier, floor) => 10 + (+statModifier || 0) + (+floor || 0);
 
-export const mobEvade = (dexterityModifier, floor) => 10 + (+dexterityModifier || 0) + (+floor || 0);
+export const mobAttackBase = (statModifier, rank) => 10 + attackToHit(statModifier, rank, 0);
+
+export const mobEvade = (base, floor) => (+base || 0) + (+floor || 0);
 
 // Current mana after spending `cost`, never below 0.
 export const manaAfterCast = (current, cost) => Math.max(0, (+current || 0) - (+cost || 0));
@@ -45,8 +44,12 @@ export const signedFormula = (head, n) => {
 // Skill / to-hit / cast check: 1d20 + bonus.
 export const checkFormula = (bonus) => signedFormula('1d20', bonus);
 
-// Damage: die + damageBase, or damageBase alone when the die is blank.
-export const damageFormula = (die, damageBase) => signedFormula(die, damageBase);
+// Damage: die(s) + damageBase. A modifier-only dice string starts with a sign,
+// so prefix 0 for a valid Foundry formula (`0+1d4`, not bare `+1d4`).
+export const damageFormula = (die, damageBase) => {
+  const dice = String(die ?? '').trim();
+  return signedFormula(/^[+-]/.test(dice) ? `0${dice}` : dice, damageBase);
+};
 
 // ── Spell cast ──
 // R20 _spells.js castOutputFields + doCast: an unaffordable cast still rolls but

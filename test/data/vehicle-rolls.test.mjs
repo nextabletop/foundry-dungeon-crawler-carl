@@ -133,6 +133,11 @@ describe('applyRamAftermath (R20 applyRam)', () => {
     await a.applyRamAftermath(); // 1 self-damage < Con Mod 3
     expect(a.update).toHaveBeenCalledWith({ 'system.speed': 2 });
   });
+  it('zero Constitution Modifier prevents ram damage from removing slots but still changes Speed', async () => {
+    const a = vehicle({ healthBar: 3, speed: 4, ramDamageDealt: 24, constitutionModifier: 0 });
+    await a.applyRamAftermath();
+    expect(a.update).toHaveBeenCalledWith({ 'system.speed': 2 });
+  });
   it('double-click guard: two concurrent applies issue one update', async () => {
     const a = vehicle({ healthBar: 4, speed: 3, ramDamageDealt: 8, ramTargetLarger: true });
     const [first, second] = await Promise.all([a.applyRamAftermath(), a.applyRamAftermath()]);
@@ -171,14 +176,14 @@ const STAT_MODIFIERS = { strength: 0, intelligence: 0, constitution: 0, dexterit
 // Permission levels as core names them; `players` is every other non-GM
 // user's level on the actor, `roller` the rolling user's (game.user).
 const LEVELS = { NONE: 0, LIMITED: 1, OBSERVER: 2, OWNER: 3 };
-const crewActor = ({ uuid = 'Actor.carl', type = 'pc', name = 'Carl', modifiers = STAT_MODIFIERS, items = [], players = 3, roller = 3, mobPublic } = {}) => ({
+const crewActor = ({ uuid = 'Actor.carl', type = 'pc', name = 'Carl', modifiers = STAT_MODIFIERS, items = [], players = 3, roller = 3, mobWhisper } = {}) => ({
   uuid, type, name, items,
   testUserPermission: vi.fn((user, level) => (user.isGM ? 3 : (user === game.user ? roller : players)) >= LEVELS[level]),
-  system: { mobPublic, stats: Object.fromEntries(Object.entries(modifiers).map(([k, modifier]) => [k, { modifier }])) },
+  system: { mobWhisper, stats: Object.fromEntries(Object.entries(modifiers).map(([k, modifier]) => [k, { modifier }])) },
 });
 const skillItem = (id, name, bonus, stat = 'dexterity') => ({ id, type: 'skill', name, system: { stat, derived: { skillBonus: bonus } } });
 const weaponItem = (id, name, toHit, die = '1d8', damageBase = 2) => ({
-  id, type: 'weapon', name, system: { stat: 'strength', die, damageType: 'piercing', derived: { toHit, damageBase } },
+  id, type: 'attack', name, system: { stat: 'strength', die, damageType: 'piercing', derived: { toHit, damageBase, damageDice: die } },
 });
 
 describe('crew resolution (VehicleModel)', () => {
@@ -206,14 +211,14 @@ describe('crew resolution (VehicleModel)', () => {
     });
     it('hidden from a player on a public card: the generic label', async () => {
       withNames();
-      world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', players: 0, mobPublic: true });
+      world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', players: 0 });
       const a = vehicle({ drivingMode: 'stop', crew: [{ uuid: 'Actor.gob', role: 'driver' }] });
       await a.rollDriving();
       expect(postCard.mock.calls[0][1].note).toBe('DCC.Vehicle.Card.DriverUntrained|DCC.Crew.Unknown');
     });
-    it('hidden, but the card whispers to the GM (a hidden mob): the real name', async () => {
+    it('hidden, but the Mob card whispers to the GM: the real name', async () => {
       withNames();
-      world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', players: 0 });
+      world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', players: 0, mobWhisper: true });
       const a = vehicle({ drivingMode: 'stop', crew: [{ uuid: 'Actor.gob', role: 'driver' }] });
       await a.rollDriving();
       expect(postCard.mock.calls[0][1].note).toBe('DCC.Vehicle.Card.DriverUntrained|Goblin');
@@ -221,7 +226,7 @@ describe('crew resolution (VehicleModel)', () => {
     it('whispered, but the rolling player cannot see the mob (the whisper author sees it): the generic label', async () => {
       withNames();
       game.user = PLAYERS[0];
-      world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', players: 0, roller: 0 });
+      world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', players: 0, roller: 0, mobWhisper: true });
       const a = vehicle({ drivingMode: 'stop', crew: [{ uuid: 'Actor.gob', role: 'driver' }] });
       await a.rollDriving();
       expect(postCard.mock.calls[0][1].note).toBe('DCC.Vehicle.Card.DriverUntrained|DCC.Crew.Unknown');
@@ -230,22 +235,31 @@ describe('crew resolution (VehicleModel)', () => {
     it('whispered, and the rolling player can see the mob: the real name', async () => {
       withNames();
       game.user = PLAYERS[0];
-      world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', players: 0, roller: 1 });
+      world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', players: 0, roller: 1, mobWhisper: true });
       const a = vehicle({ drivingMode: 'stop', crew: [{ uuid: 'Actor.gob', role: 'driver' }] });
       await a.rollDriving();
       expect(postCard.mock.calls[0][1].note).toBe('DCC.Vehicle.Card.DriverUntrained|Goblin');
     });
-    it('a hidden mob made public (mobPublic): masked even for a GM roller', async () => {
+    it('a hidden Mob with whispering disabled is masked even for a GM roller', async () => {
       withNames();
-      world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', players: 0, mobPublic: true });
+      world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', players: 0, mobWhisper: false });
       await vehicle({ drivingMode: 'stop', crew: [{ uuid: 'Actor.gob', role: 'driver' }] }).rollDriving();
       expect(postCard.mock.calls[0][1].note).toBe('DCC.Vehicle.Card.DriverUntrained|DCC.Crew.Unknown');
+    });
+    it('uses the actual privacy override when masking the crew name', async () => {
+      withNames();
+      world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', players: 0, mobWhisper: true });
+      const a = vehicle({ drivingMode: 'stop', crew: [{ uuid: 'Actor.gob', role: 'driver' }] });
+      const privacyOf = crewActor({ type: 'pc' });
+      await a.rollDriving({ privacyOf });
+      expect(postCard.mock.calls[0][1].note).toBe('DCC.Vehicle.Card.DriverUntrained|DCC.Crew.Unknown');
+      expect(postCard.mock.calls[0][3].privacyOf).toBe(privacyOf);
     });
     it('a hidden PC gunner on a weapon card: the generic label', async () => {
       withNames();
       world['Actor.carl'] = crewActor({ players: 0 });
       const a = vehicle({ crew: [{ uuid: 'Actor.carl', role: 'gunner1' }] });
-      await a.rollWeapon({ parent: a, type: 'weapon', name: 'Turret', system: { gunnerSlot: '1', skillName: 'Guns', stat: 'dexterity', derived: { toHit: 1 } } });
+      await a.rollAttack({ parent: a, type: 'attack', name: 'Turret', system: { gunnerSlot: '1', skillName: 'Guns', stat: 'dexterity', derived: { toHit: 1 } } });
       expect(postCard.mock.calls[0][1].note).toBe('DCC.Crew.Card.GunnerUntrained|DCC.Crew.Unknown');
     });
     it('crew skill cards (posted as the crew actor) keep the real name', async () => {
@@ -255,6 +269,13 @@ describe('crew resolution (VehicleModel)', () => {
       await a.rollCrewSkill(carl, 's1');
       expect(postCard.mock.calls[0][1].name).toBe('DCC.Crew.Card.SkillName|Carl');
     });
+  });
+
+  it.each(['rollDriving', 'rollRam', 'rollRace'])('%s uses the Mob driver as privacy actor', async (action) => {
+    world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', mobWhisper: true });
+    const a = vehicle({ crew: [{ uuid: 'Actor.gob', role: 'driver' }] });
+    await a[action]();
+    expect(postCard.mock.calls[0][3].privacyOf).toBe(world['Actor.gob']);
   });
 
   it('resolveDriver: the driver drive-skill bonus by name', () => {
@@ -303,24 +324,30 @@ describe('crew resolution (VehicleModel)', () => {
     expect(options.privacyOf).toBe(world['Actor.gob']);
   });
 
-  describe('vehicle weapon to-hit (rollWeapon on a vehicle)', () => {
+  describe('vehicle Attack to-hit', () => {
     const turret = (a, over = {}) => ({
-      parent: a, type: 'weapon', name: 'Turret',
-      system: { gunnerSlot: '1', skillName: 'Guns', stat: 'dexterity', die: '2d6', derived: { toHit: 1, damageBase: 0 }, ...over },
+      parent: a, type: 'attack', name: 'Turret',
+      system: { gunnerSlot: '1', skillName: 'Guns', stat: 'dexterity', die: '2d6', derived: { toHit: 1, damageBase: 0, damageDice: '2d6' }, ...over },
     });
     it('the gunner skill bonus + the weapon to-hit', async () => {
       world['Actor.carl'] = crewActor({ items: [skillItem('s1', 'Guns', 5)] });
       const a = vehicle({ crew: [{ uuid: 'Actor.carl', role: 'gunner1' }] });
-      await a.rollWeapon(turret(a));
+      await a.rollAttack(turret(a));
       const [poster, fields, formulas, options] = postCard.mock.calls[0];
       expect(poster).toBe(a);
       expect(formulas.roll).toBe('1d20 + 6');
       expect(fields.note).toBe('DCC.Crew.Card.Gunner');
       expect(options.privacyOf).toBe(world['Actor.carl']);
     });
+    it.each([false, true])('uses the Mob gunner as privacy actor with whisper=%s', async (mobWhisper) => {
+      world['Actor.gob'] = crewActor({ uuid: 'Actor.gob', type: 'mob', name: 'Goblin', mobWhisper });
+      const a = vehicle({ crew: [{ uuid: 'Actor.gob', role: 'gunner1' }] });
+      await a.rollAttack(turret(a));
+      expect(postCard.mock.calls[0][3].privacyOf).toBe(world['Actor.gob']);
+    });
     it('no gunner: 1d20 + weapon to-hit', async () => {
       const a = vehicle();
-      await a.rollWeapon(turret(a, { gunnerSlot: '' }));
+      await a.rollAttack(turret(a, { gunnerSlot: '' }));
       const [, fields, formulas, options] = postCard.mock.calls[0];
       expect(formulas.roll).toBe('1d20 + 1');
       expect(fields.note).toBe('DCC.Crew.Card.NoGunner');
@@ -329,18 +356,62 @@ describe('crew resolution (VehicleModel)', () => {
     it('a mount attacks on its own (plain derived to-hit)', async () => {
       world['Actor.carl'] = crewActor({ items: [skillItem('s1', 'Guns', 5)] });
       const a = vehicle({ kind: 'mount', crew: [{ uuid: 'Actor.carl', role: 'gunner1' }] });
-      await a.rollWeapon(turret(a));
+      await a.rollAttack(turret(a));
       expect(postCard.mock.calls[0][2].roll).toBe('1d20 + 1');
       expect(foundry.utils.fromUuidSync).not.toHaveBeenCalled();
     });
+    it('mount Attack rolls use the mount chat settings', async () => {
+      const a = vehicle({ kind: 'mount', showRangeInChat: false, showNotesInChat: true });
+      await a.rollAttack(turret(a, { range: '5ft', description: '<p>Bite.</p>' }));
+      expect(postCard.mock.calls[0][1]).not.toHaveProperty('range');
+      expect(postCard.mock.calls[0][1]).toMatchObject({ notes: 'Bite.' });
+    });
     it('damage is the plain weapon damage', async () => {
       const a = vehicle();
-      await a.rollWeapon(turret(a), 'damage');
+      await a.rollAttack(turret(a), 'damage');
       expect(postCard.mock.calls[0][2].damage).toBe('2d6');
+    });
+    it('vehicle gunner and damage cards include extras without overwriting the gunner note', async () => {
+      const a = vehicle();
+      const attack = turret(a, { range: '100ft', description: '<p>Explodes.</p>' });
+      await a.rollAttack(attack, 'toHit');
+      await a.rollAttack(attack, 'damage');
+      expect(postCard.mock.calls[0][1]).toMatchObject({
+        note: 'DCC.Crew.Card.NoGunner', range: '100ft', notes: 'Explodes.',
+      });
+      expect(postCard.mock.calls[1][1]).toMatchObject({ range: '100ft', notes: 'Explodes.' });
+      a.system.showRangeInChat = false;
+      a.system.showNotesInChat = false;
+      await a.rollAttack(attack);
+      expect(postCard.mock.calls[2][1]).toMatchObject({ note: 'DCC.Crew.Card.NoGunner' });
+      expect(postCard.mock.calls[2][1]).not.toHaveProperty('range');
+      expect(postCard.mock.calls[2][1]).not.toHaveProperty('notes');
     });
   });
 
   describe('crew skill / attack from the vehicle', () => {
+    it.each([false, true])('posts Mob crew skill and attack as the Mob with whisper=%s', async (mobWhisper) => {
+      const gob = crewActor({
+        uuid: 'Actor.gob', type: 'mob', mobWhisper,
+        items: [skillItem('s1', 'Sneak', 2), weaponItem('w1', 'Claw', 3)],
+      });
+      const a = vehicle({ crew: [{ uuid: 'Actor.gob', role: 'passenger' }] });
+      await a.rollCrewSkill(gob, 's1');
+      await a.rollCrewAttack(gob, 'w1');
+      expect(postCard.mock.calls.map(call => call[0])).toEqual([gob, gob]);
+      expect(gob.system.mobWhisper).toBe(mobWhisper);
+    });
+    it('posts a No Damage Mob crew attack without any damage formula', async () => {
+      const attack = weaponItem('w1', 'Aura', 3);
+      attack.system.derived.noDamage = true;
+      const gob = crewActor({ uuid: 'Actor.gob', type: 'mob', items: [attack] });
+      const a = vehicle({ speed: 2, floor: 2, crew: [{ uuid: 'Actor.gob', role: 'passenger' }] });
+      await a.rollCrewAttack(gob, 'w1');
+      const [poster, fields, formulas] = postCard.mock.calls[0];
+      expect(poster).toBe(gob);
+      expect(fields.target).toBe(13);
+      expect(formulas.damage).toBeUndefined();
+    });
     it('skill: posted as the crew actor with the aboard penalty', async () => {
       const carl = crewActor({ items: [skillItem('s1', 'Knives', 4)] });
       const a = vehicle({ speed: 3, crew: [{ uuid: 'Actor.carl', role: 'passenger' }] });
@@ -376,6 +447,22 @@ describe('crew resolution (VehicleModel)', () => {
       const a = vehicle({ speed: 2, crew: [{ uuid: 'Actor.carl', role: 'passenger' }] });
       await a.rollCrewAttack(carl, 'w1');
       expect(postCard.mock.calls[0][2].roll).toBe('1d20 + 3 - 2');
+    });
+    it('crew Attack extras follow vehicle settings and preserve the aboard/speed note', async () => {
+      const weapon = weaponItem('w1', 'Dagger', 3);
+      weapon.system.range = '5ft';
+      weapon.system.description = '<p>Sharp.</p>';
+      const carl = crewActor({ items: [weapon] });
+      const a = vehicle({ crew: [{ uuid: 'Actor.carl', role: 'passenger' }] });
+      await a.rollCrewAttack(carl, 'w1');
+      expect(postCard.mock.calls[0][1]).toMatchObject({ range: '5ft', notes: 'Sharp.' });
+      expect(postCard.mock.calls[0][1].note).toContain('Speed');
+      a.system.showRangeInChat = false;
+      a.system.showNotesInChat = false;
+      await a.rollCrewAttack(carl, 'w1');
+      expect(postCard.mock.calls[1][1].note).toContain('Speed');
+      expect(postCard.mock.calls[1][1]).not.toHaveProperty('range');
+      expect(postCard.mock.calls[1][1]).not.toHaveProperty('notes');
     });
     it('refused below Observer on the crew member (also covers macros)', async () => {
       game.user = PLAYERS[0];

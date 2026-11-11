@@ -3,15 +3,29 @@
   <div class="dcc-box dcc-item-section">
     <div class="dcc-bar">{{localize "DCC.ItemSheet.Skill"}}</div>
     <div class="dcc-item-grid">
+      {{#unless (eq systemSource.checkType "passive")}}
       {{formGroup systemFields.stat value=systemSource.stat options=selectOptions.stat rootId=rootId}}
+      {{/unless}}
       {{formGroup systemFields.rank value=systemSource.rank rootId=rootId}}
       {{formGroup systemFields.checkType value=systemSource.checkType options=selectOptions.checkType rootId=rootId}}
+      {{#if (eq systemSource.checkType "opposed")}}
+      {{formGroup systemFields.opposedStat value=systemSource.opposedStat options=selectOptions.opposedStat rootId=rootId}}
+      {{/if}}
       {{formGroup systemFields.class value=systemSource.class rootId=rootId}}
+    </div>
+    <div class="dcc-item-grid">
+      {{formGroup systemFields.range value=systemSource.range rootId=rootId}}
+      {{formGroup systemFields.cooldown value=systemSource.cooldown rootId=rootId}}
+    </div>
+    <div class="dcc-item-grid">
+      {{formGroup systemFields.limitations value=systemSource.limitations rootId=rootId}}
     </div>
     <div class="dcc-item-flags">
       {{formGroup systemFields.enabled value=systemSource.enabled rootId=rootId}}
-      {{formGroup systemFields.passive value=systemSource.passive rootId=rootId}}
+      {{formGroup systemFields.isAttack value=systemSource.isAttack rootId=rootId}}
+      {{#unless (eq systemSource.checkType "passive")}}
       {{formGroup systemFields.mark value=systemSource.mark rootId=rootId}}
+      {{/unless}}
       {{formGroup systemFields.onHotlist value=systemSource.onHotlist rootId=rootId}}
     </div>
   </div>

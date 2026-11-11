@@ -3,17 +3,17 @@ import { ACTOR_PARTIALS, templatePath as path } from './actor-sheet-base.mjs';
 import { inventoryView } from './sheet-rows.mjs';
 
 /**
- * Mob stat block (R20 mode = mob): no tabs; the R20 two-column card flow
- * (system.css). The stat block and the Notes editor are separate parts so an
+ * Mob stat block: one scrolling column, without tabs. The stat block and the Notes editor are separate parts so an
  * open Notes editor is not torn down when the stat block re-renders (health
  * clicks, item edits). The window content scrolls as one page.
  *
- * Rolls whisper to the GM unless `system.mobPublic` (postCard / whisperToGM),
+ * Rolls whisper to the GM when `system.mobWhisper` is enabled (postCard / whisperToGM),
  * set in Configure Sheet (DCCSheetConfig).
+ * Inventory, Skills & Spells, and Buffs & Debuffs are optional sheet sections.
  * Owned item types: the base default (weapon, skill, spell, gear).
  */
 export default class MobSheet extends DCCCreatureSheet {
-  static DEFAULT_OPTIONS = { classes: ['mob'], position: { width: 720, height: 820 } };
+  static DEFAULT_OPTIONS = { classes: ['mob'], position: { width: 600, height: 820 } };
 
   static RICH_TEXT_PARTS = {
     notes: [{ key: 'notes', label: 'DCC.Bio.Notes', wide: true }],
@@ -32,7 +32,7 @@ export default class MobSheet extends DCCCreatureSheet {
   };
 
   /**
-   * The right column's Inventory list: gear only (weapons are listed under Attacks).
+   * Inventory contains gear only (weapons are listed under Attacks).
    * @inheritDoc
    */
   async _prepareContext(options) {

@@ -143,7 +143,11 @@ class MockDocument {
   constructor(data = {}) { Object.assign(this, data); }
   getRollData() { return this.system; }
 }
-class MockActor extends MockDocument {}
+class MockActor extends MockDocument {
+  async getTokenDocument(data = {}, options = {}) {
+    return { ...this.prototypeToken, ...data, options };
+  }
+}
 class MockItem extends MockDocument {}
 
 globalThis.foundry = {

@@ -26,13 +26,69 @@
   <fieldset>
     <legend>{{localize "DCC.Tab.settings"}}</legend>
     <div class="form-group">
-      <label for="{{rootId}}-mobPublic">{{localize "DCC.Mob.Public"}}</label>
+      <label for="{{rootId}}-mobWhisper">{{localize "DCC.Mob.Whisper"}}</label>
       <div class="form-fields">
-        <input type="checkbox" id="{{rootId}}-mobPublic" name="system.mobPublic"
-               {{checked systemSource.mobPublic}} {{disabled (not canEdit)}}>
+        <input type="checkbox" id="{{rootId}}-mobWhisper" name="system.mobWhisper"
+               {{checked systemSource.mobWhisper}} {{disabled (not canEdit)}}>
       </div>
-      <p class="hint">{{localize "DCC.Mob.PublicHint"}}</p>
+      <p class="hint">{{localize "DCC.Mob.WhisperHint"}}</p>
+    </div>
+    <div class="form-group">
+      <label for="{{rootId}}-mobShowInventory">{{localize "DCC.Mob.ShowInventory"}}</label>
+      <div class="form-fields">
+        <input type="checkbox" id="{{rootId}}-mobShowInventory" name="system.mobShowInventory"
+               {{checked systemSource.mobShowInventory}} {{disabled (not canEdit)}}>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="{{rootId}}-mobShowSkills">{{localize "DCC.Mob.ShowSkills"}}</label>
+      <div class="form-fields">
+        <input type="checkbox" id="{{rootId}}-mobShowSkills" name="system.mobShowSkills"
+               {{checked systemSource.mobShowSkills}} {{disabled (not canEdit)}}>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="{{rootId}}-mobShowBuffs">{{localize "DCC.Mob.ShowBuffs"}}</label>
+      <div class="form-fields">
+        <input type="checkbox" id="{{rootId}}-mobShowBuffs" name="system.mobShowBuffs"
+               {{checked systemSource.mobShowBuffs}} {{disabled (not canEdit)}}>
+      </div>
+      <p class="hint">{{localize "DCC.Mob.ShowSectionsHint"}}</p>
     </div>
   </fieldset>
   {{/if}}
+  {{#if (or (eq dccType "pc") (eq dccType "mob"))}}
+  <fieldset>
+    <legend>{{localize "DCC.Health.Bar"}}</legend>
+    <div class="form-group">
+      <label for="{{rootId}}-healthBarSlotsCustom">{{localize "DCC.Settings.HealthBarOverride"}}</label>
+      <div class="form-fields">
+        <input type="number" id="{{rootId}}-healthBarSlotsCustom" name="system.healthBarSlotsCustom"
+               value="{{systemSource.healthBarSlotsCustom}}" min="1" max="100" step="1" {{disabled (not canEdit)}}>
+      </div>
+      <p class="hint">{{localize "DCC.Settings.HealthBarOverrideHint"}}</p>
+    </div>
+  </fieldset>
+  {{/if}}
+  {{#unless (eq dccType "gmscreen")}}
+  <fieldset>
+    <legend>{{localize "DCC.Settings.ChatExtras"}}</legend>
+    <div class="form-group">
+      <label for="{{rootId}}-showRangeInChat">{{localize "DCC.Settings.ShowRangeInChat"}}</label>
+      <div class="form-fields">
+        <input type="checkbox" id="{{rootId}}-showRangeInChat" name="system.showRangeInChat"
+               {{checked systemSource.showRangeInChat}} {{disabled (not canEdit)}}>
+      </div>
+      <p class="hint">{{localize "DCC.Settings.ShowRangeInChatHint"}}</p>
+    </div>
+    <div class="form-group">
+      <label for="{{rootId}}-showNotesInChat">{{localize "DCC.Settings.ShowNotesInChat"}}</label>
+      <div class="form-fields">
+        <input type="checkbox" id="{{rootId}}-showNotesInChat" name="system.showNotesInChat"
+               {{checked systemSource.showNotesInChat}} {{disabled (not canEdit)}}>
+      </div>
+      <p class="hint">{{localize "DCC.Settings.ShowNotesInChatHint"}}</p>
+    </div>
+  </fieldset>
+  {{/unless}}
 </section>

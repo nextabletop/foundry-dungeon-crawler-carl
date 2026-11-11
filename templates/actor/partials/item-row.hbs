@@ -1,18 +1,14 @@
-{{!-- One owned-item row: [mark] name (opens the item sheet) … columns … edit/delete.
+{{!-- One owned-item row: name (opens the item sheet) … columns … edit/delete.
       Called as a partial block from an {{#each}} over sheet rows:
-        {{#> "…/item-row.hbs" markable=true}} middle cells {{/"…/item-row.hbs"}}
-      The row context is `this` ({id, name, img, mark?}); `markable` adds the mark box. Inline edit controls in the
+        {{#> "…/item-row.hbs"}} middle cells {{/"…/item-row.hbs"}}
+      The row context is `this` ({id, name, img}). Inline edit controls in the
       block carry data-field (no `name`), so they update the item, not the actor form, and a
       stable id ({{@root.rootId}}-<item id>-<field>) so a re-render restores keyboard focus.
       Every focusable control has one. Attack-list spell rows (isSpell) add "-attack" so they
       don't collide with the same spell's Spells-list row, and are not draggable (sorting is
       per item type). An item listed on two tabs passes `idSuffix` (e.g. idSuffix="-inv" for a
       weapon's Inventory row, also listed under Attacks) so its row ids stay unique. --}}
-<li class="dcc-irow{{#unless isSpell}} draggable{{/unless}}" data-item-id="{{id}}">
-  {{#if markable}}
-  <input class="dcc-icheck dcc-imark" type="checkbox" id="{{@root.rootId}}-{{id}}-mark" data-field="system.mark" {{checked mark}}
-         data-tooltip="{{localize 'DCC.Items.MarkTooltip'}}" aria-label="{{localize 'DCC.Items.Mark'}}">
-  {{/if}}
+<li class="dcc-irow{{#unless isSpell}} draggable{{/unless}}{{#if attackNotes}} dcc-attack-row{{/if}}{{#if inventoryNotes}} dcc-inventory-row{{/if}}" data-item-id="{{id}}">
   <button type="button" class="dcc-iname" id="{{@root.rootId}}-{{id}}{{#if isSpell}}-attack{{/if}}{{idSuffix}}-name" data-action="editItem" data-view-only data-tooltip="{{localize 'DCC.Items.Edit'}}">
     <img src="{{img}}" alt="" width="20" height="20">
     <span>{{name}}</span>
@@ -26,4 +22,14 @@
             data-tooltip aria-label="{{localize 'DCC.Items.Delete'}}"></button>
     {{/if}}
   </span>
+  {{#if attackNotes}}
+  {{#if notes}}
+  <span class="dcc-attack-notes">{{notes}}</span>
+  {{/if}}
+  {{/if}}
+  {{#if inventoryNotes}}
+  {{#if notes}}
+  <span class="dcc-inventory-notes">{{notes}}</span>
+  {{/if}}
+  {{/if}}
 </li>

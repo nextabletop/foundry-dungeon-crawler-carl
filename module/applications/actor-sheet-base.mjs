@@ -1,8 +1,7 @@
 import { itemModels } from '../data/item/_module.mjs';
-import { SYSTEM_ID, APP_CLASSES } from '../config.mjs';
+import { SYSTEM_ID, APP_CLASSES, DEFAULT_ITEM_ICONS } from '../config.mjs';
 import DCCSheetConfig from './sheet-config.mjs';
 import { slotClickTarget, slotView, isDying } from '../rules/health.mjs';
-import { translateDefenseEdits } from '../rules/engine.mjs';
 import { inlineFieldValue, inlineEditTarget, isBlankHTML, richTextFieldNames, enableViewOnlyControls } from './sheet-rows.mjs';
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
@@ -71,7 +70,7 @@ export default class DCCActorSheetBase extends HandlebarsApplicationMixin(foundr
       createItem: DCCActorSheetBase.#onCreateItem,
       editItem: DCCActorSheetBase.#onEditItem,
       deleteItem: DCCActorSheetBase.#onDeleteItem,
-      rollWeapon: DCCActorSheetBase.#onRollWeapon,
+      rollAttack: DCCActorSheetBase.#onRollAttack,
     },
   };
 
@@ -130,6 +129,7 @@ export default class DCCActorSheetBase extends HandlebarsApplicationMixin(foundr
     return {
       health: {
         slots: slotView(system.healthBarDisplay, system.healthBarSlots),
+        columns: Math.min(12, system.healthBarSlots),
         constitutionModifier: system.healthConstitutionModifier,
         dying: isDying(system.healthBarDisplay),
       },
@@ -245,17 +245,6 @@ export default class DCCActorSheetBase extends HandlebarsApplicationMixin(foundr
       const label = editor.closest('.dcc-bio-f')?.querySelector('.dcc-bio-lab');
       if (label?.id) editor.setAttribute('aria-labelledby', label.id);
     }
-  }
-
-  /**
-   * Display-only move/step inputs are named `dcc.move` / `dcc.step`; turn an
-   * edited value into `system.moveBase` / `system.stepBase` (backCalcBase
-   * against the current flat bonus) before core validates the submit data.
-   * Core: DocumentSheetV2#_prepareSubmitData calls this before validate.
-   * @inheritDoc
-   */
-  _processFormData(event, form, formData) {
-    return translateDefenseEdits(super._processFormData(event, form, formData), this.document.system);
   }
 
   /**
@@ -381,12 +370,25 @@ export default class DCCActorSheetBase extends HandlebarsApplicationMixin(foundr
    * @this {DCCActorSheetBase}
    */
   static async #onCreateItem(_event, target) {
+    await this._createOwnedItem(target.dataset.type);
+  }
+
+  /**
+   * Create an allowed owned Item and open its sheet.
+   * @param {string} type
+   * @protected
+   */
+  async _createOwnedItem(type) {
     if (!this.isEditable) return;
-    const { type } = target.dataset;
     if (!this.constructor.ALLOWED_ITEM_TYPES.includes(type)) return;
     const typeLabel = game.i18n.localize(`TYPES.Item.${type}`);
+    const itemData = {
+      type,
+      name: game.i18n.format('DCC.Items.New', { type: typeLabel }),
+    };
+    if (DEFAULT_ITEM_ICONS[type]) itemData.img = DEFAULT_ITEM_ICONS[type];
     const [item] = await this.document.createEmbeddedDocuments('Item', [{
-      type, name: game.i18n.format('DCC.Items.New', { type: typeLabel }),
+      ...itemData,
     }]);
     item?.sheet.render(true);
   }
@@ -398,12 +400,15 @@ export default class DCCActorSheetBase extends HandlebarsApplicationMixin(foundr
    * read before the flush: a re-render replaces the DOM).
    * @this {DCCActorSheetBase}
    */
-  static async #onRollWeapon(_event, target) {
+  static async #onRollAttack(_event, target) {
     const item = this._itemFromTarget(target);
     if (!item) return;
     const which = target.dataset.roll === 'damage' ? 'damage' : 'toHit';
+    const useIndex = target.dataset.skillUseIndex;
     if (!(await this._flushForm())) return;
-    await this.document.rollWeapon(item, which);
+    await this.document.rollAttack(item, which, {
+      ...(useIndex === undefined ? {} : { skillUseIndex: Number(useIndex) }),
+    });
   }
 
   /** Open an owned item's sheet. @this {DCCActorSheetBase} */

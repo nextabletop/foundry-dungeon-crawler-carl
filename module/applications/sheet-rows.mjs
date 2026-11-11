@@ -3,12 +3,14 @@
 // directly; the sheets call them from _prepareContext / _onChangeForm.
 
 import { STATS, GEAR_SLOTS, HOTLIST_CAP, ACCESSORY_CAP } from '../config.mjs';
-import { isAttackSpell } from '../rules/items.mjs';
 import { buildGear, buildAccessories } from '../rules/inventory.mjs';
 import { describeChange } from '../effects/dcc-change.mjs';
 import { levelUpBlocker } from '../rules/advancement.mjs';
 import { UNLINKED, floorEndBlocked, floorEndsAvailable, isRosterPc, undoFloorEndBlockers } from '../rules/gm-screen.mjs';
 import { crewRoleChoices, crewRoleKey } from '../rules/crew.mjs';
+import { htmlToText } from '../rules/card.mjs';
+import { attackPrimarySkill, attackSource } from '../rules/item-links.mjs';
+import { checkTypeOf } from '../rules/items.mjs';
 
 /**
  * The value an inline item control on the actor sheet writes: a checkbox's
@@ -59,6 +61,17 @@ export const richTextFieldNames = (parts = {}) => Object.values(parts).flat().ma
 
 // ── Actor-sheet list rows ──
 
+/** Creature ability rows, with the net effect of all modifiers on the stored base. */
+export const abilityRows = (system, source) => STATS.map(key => ({
+  key,
+  label: `DCC.Stat.${key}`,
+  abbr: `DCC.StatAbbr.${key}`,
+  base: source.stats[key].base,
+  enhancement: system.stats[key].enhancement,
+  modifier: system.stats[key].modifier,
+  buff: system.stats[key].enhancement - source.stats[key].base,
+}));
+
 /** Sheet list order: the manual sort, then name. */
 export const bySort = (a, b) => ((a.sort ?? 0) - (b.sort ?? 0)) || String(a.name ?? '').localeCompare(String(b.name ?? ''));
 
@@ -66,21 +79,38 @@ export const bySort = (a, b) => ((a.sort ?? 0) - (b.sort ?? 0)) || String(a.name
 const statAbbr = key => (STATS.includes(key) ? `DCC.StatAbbr.${key}` : '');
 
 /**
- * A weapon (or attack-enabled spell) row. Displays derived values only; the
- * rank is the one the attack used (a linked skill's base rank, else its own).
+ * A canonical Attack row. Displays derived values only; Rank comes from a
+ * linked Skill/Spell when present, otherwise from the Attack.
  */
-const attackRow = (item) => {
+const attackRow = (item, items) => {
   const d = item.system.derived ?? {};
+  const source = attackSource(item, items);
+  const primarySkill = attackPrimarySkill(item, items);
   return {
     id: item.id,
     name: item.name,
     img: item.img,
-    isSpell: item.type === 'spell',
+    isSpell: source?.type === 'spell',
+    skillName: primarySkill?.name ?? '',
+    skillMissing: Boolean(d.primarySkillMissing),
     stat: statAbbr(item.system.stat),
     rank: d.rank,
+    hasToHit: d.hasToHit !== false && Number.isFinite(d.toHit),
     toHit: d.toHit,
     mobToHit: d.mobToHit,
+    mobToHitNone: d.mobToHitNone,
+    noDamage: d.noDamage,
     damageLabel: String(d.damageLabel ?? '').trim(),
+    range: String(item.system.range ?? '').trim(),
+    notes: htmlToText((item.system._source ?? item.system).description),
+    skillUses: (d.skillUses ?? []).map(use => ({
+      ...use,
+      attackId: item.id,
+      name: use.label ? `${item.name} (${use.label})` : item.name,
+      stat: statAbbr(use.stat),
+      hasToHit: use.hasToHit !== false && Number.isFinite(use.toHit),
+      damageLabel: String(use.damageLabel ?? '').trim(),
+    })),
   };
 };
 
@@ -91,43 +121,63 @@ const attackRow = (item) => {
 const skillRow = (item) => {
   const src = item.system._source ?? item.system;
   const d = item.system.derived ?? {};
+  const checkType = checkTypeOf(src.checkType);
+  const isPassive = checkType === 'passive';
+  const summary = [
+    ['DCC.Items.Range', src.range],
+    ['DCC.Items.Cooldown', src.cooldown],
+  ];
   const row = {
     id: item.id,
     name: item.name,
     img: item.img,
     stat: statAbbr(src.stat),
     rank: src.rank,
-    rankEffective: d.rankEffective,
+    rankEffective: d.rankEffective ?? src.rank,
     rankModified: Number.isFinite(d.rankEffective) && (d.rankEffective !== src.rank),
     bonus: d.skillBonus,
     mark: src.mark,
     enabled: src.enabled,
-    passive: src.passive,
     checkType: src.checkType,
+    checkTypeKey: `DCC.CheckType.${checkType}`,
+    opposedStat: src.opposedStat,
+    opposedAbbr: checkType === 'opposed' ? statAbbr(src.opposedStat) : '',
+    isOpposed: src.checkType === 'opposed',
+    isPassive,
+    markable: !isPassive,
     onHotlist: src.onHotlist,
   };
   if (item.type === 'spell') {
     row.cost = d.manaCostEffective;
-    row.attack = !!src.attack?.enabled;
+    if (Number.isFinite(d.manaCostEffective) && d.manaCostEffective !== 0) {
+      summary.push(['DCC.Items.ManaCost', d.manaCostEffective]);
+    }
+    summary.push(['DCC.Items.Duration', src.duration]);
   }
+  row.summary = summary
+    .filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== '')
+    .map(([label, value]) => ({ label, value }));
+  row.hasSummary = row.summary.length > 0;
   return row;
 };
 
 /**
  * Actor-sheet item lists from `actor.itemTypes`, each in sort order:
- * `attacks` (weapons, then attack-enabled spells), `skills`, `spells`.
+ * `attacks`, `skills`, `spells`.
  */
-export const sheetItemLists = ({ weapon = [], skill = [], spell = [] } = {}) => {
+export const sheetItemLists = (itemTypes = {}) => {
+  const { attack = [], skill = [], spell = [] } = itemTypes;
+  const items = Object.values(itemTypes).flat();
   const spells = [...spell].sort(bySort);
   return {
-    attacks: [...[...weapon].sort(bySort), ...spells.filter(isAttackSpell)].map(attackRow),
+    attacks: [...attack].sort(bySort).map(item => attackRow(item, items)),
     skills: [...skill].sort(bySort).map(skillRow),
     spells: spells.map(skillRow),
   };
 };
 
 /**
- * Vehicle weapon / mount attack rows, in sort order. The inline-edited gunner
+ * Vehicle / mount Attack rows, in sort order. The inline-edited gunner
  * slot and skill name, and the rank (deriveVehicle has no linked-skill rank),
  * read the stored source; to-hit and the damage label are derived.
  */
@@ -142,6 +192,7 @@ export const vehicleWeaponRows = (weapons = []) => [...weapons].sort(bySort).map
     gunnerSlot: src.gunnerSlot ?? '',
     skillName: src.skillName ?? '',
     toHit: d.toHit,
+    noDamage: d.noDamage,
     damageLabel: String(d.damageLabel ?? '').trim(),
   };
 });
@@ -156,7 +207,7 @@ export const vehicleWeaponRows = (weapons = []) => [...weapons].sort(bySort).map
  * (below Observer) shows the name and role only; an `unknown` one (below
  * Limited, e.g. a hidden Mob) not even the name. Otherwise the quick-roll
  * lists are the member's skills then spells (with their bonus) and its
- * attacks, weapons then attack spells (with their to-hit), as on its own sheet.
+ * canonical Attacks (with their to-hit), as on its own sheet.
  */
 export const crewRows = (crew, resolve, kind) => (crew ?? []).map(({ uuid, role }, index) => {
   const roleOptions = Object.fromEntries(crewRoleChoices(kind, role).map(r => [r, crewRoleKey(r, kind)]));
@@ -182,12 +233,12 @@ export const crewRows = (crew, resolve, kind) => (crew ?? []).map(({ uuid, role 
 });
 
 /** Actor-level effect rows (Buffs & Debuffs), in sort order. */
-export const buffRows = (effects = []) => [...effects].sort(bySort).map(effect => ({
+export const buffRows = (effects = [], items = []) => [...effects].sort(bySort).map(effect => ({
   id: effect.id,
   name: effect.name,
   img: effect.img,
   disabled: effect.disabled,
-  changes: (effect.system?.changes ?? []).map(describeChange).join(', '),
+  changes: (effect.system?.changes ?? []).map(change => describeChange(change, items)).join(', '),
 }));
 
 // ── Inventory tab + hotlist ──
@@ -209,6 +260,7 @@ const inventoryRow = (item, occupants) => {
     slot: src.slot,
     active: src.active,
     onHotlist: src.onHotlist,
+    notes: htmlToText(src.description),
     worn,
     slotConflict: worn && (occupants[src.slot]?.id !== item.id),
   };
@@ -233,8 +285,8 @@ export const inventoryView = ({ gear = [], weapon = [] } = {}) => {
   };
 };
 
-/** Hotlist grouping: items first, then skills and spells (R20: inventory rows, then spells). */
-const HOTLIST_TYPE_ORDER = ['gear', 'weapon', 'skill', 'spell'];
+/** Hotlist grouping: inventory, skills/spells, then canonical Attacks. */
+const HOTLIST_TYPE_ORDER = ['gear', 'weapon', 'skill', 'spell', 'attack'];
 const typeRank = type => {
   const i = HOTLIST_TYPE_ORDER.indexOf(type);
   return (i === -1) ? HOTLIST_TYPE_ORDER.length : i;
@@ -242,7 +294,7 @@ const typeRank = type => {
 
 /**
  * The header hotlist: always `cap` cells — every owned item with
- * `system.onHotlist`, grouped by type (gear, weapon, skill, spell) and by
+ * `system.onHotlist`, grouped by type (gear, weapon, skill, spell, attack) and by
  * sort then name within a type (`sort` is only meaningful within one type),
  * the first `cap` of those, then null (empty) cells. `quantity` is set only when
  * above 1 (the ×N badge); `hint` is the key for what a click does (see

@@ -10,10 +10,12 @@
       "weapon": "Weapon",
       "skill": "Skill",
       "spell": "Spell",
-      "gear": "Gear"
+      "gear": "Gear",
+      "attack": "Attack"
     }
   },
   "DCC": {
+    "None": "—",
     "Sheet": {
       "pc": "DCC Crawler Sheet",
       "mob": "DCC Mob Sheet",
@@ -26,6 +28,17 @@
     },
     "Effect": {
       "ChangeType": "DCC Modifier",
+      "ItemTargetLabel": "Target an owned item and aspect",
+      "ItemTargetChoose": "Choose an owned item target",
+      "ItemTargetEmpty": "No eligible owned items",
+      "ItemTargetUnowned": "Owned item targets can be selected when this effect belongs to an actor.",
+      "ItemTargetOption": "{name} — {aspect} ({type}, {id})",
+      "Aspect": {
+        "to_hit": "To-Hit",
+        "damage": "Damage",
+        "rank": "Rank",
+        "mana_cost": "Mana Cost"
+      },
       "Header": "Effects",
       "Create": "Modifier",
       "NewName": "Modifier",
@@ -39,15 +52,33 @@
         "description": {
           "label": "Description"
         },
+        "upgrades": {
+          "label": "Upgrades"
+        },
         "onHotlist": {
           "label": "On Hotlist",
           "hint": "Show on the Crawler hotlist (first 10)."
+        },
+        "linkedItemIds": {
+          "label": "Linked Items"
         },
         "stat": {
           "label": "Ability"
         },
         "rank": {
           "label": "Rank"
+        },
+        "mobToHitBase": {
+          "label": "Mob To-Hit Base",
+          "hint": "Floor and attack modifiers are added to this base. Leave blank to seed it from ability and rank."
+        },
+        "mobToHitNone": {
+          "label": "No Mob To-Hit",
+          "hint": "This attack has no To-Hit target."
+        },
+        "mobNoDamage": {
+          "label": "No Damage",
+          "hint": "This Mob attack deals no damage, even when it has damage dice or modifiers."
         },
         "skill": {
           "label": "Skill",
@@ -57,6 +88,9 @@
         "die": {
           "label": "Damage Die",
           "placeholder": "1d6"
+        },
+        "damageStat": {
+          "label": "Damage Ability"
         },
         "damageBonus": {
           "label": "Damage Bonus"
@@ -95,18 +129,37 @@
           "label": "Enabled",
           "hint": "This item's modifiers apply."
         },
+        "isAttack": {
+          "label": "Attack",
+          "hint": "Create a linked Attack when this Skill or Spell is owned by an Actor."
+        },
         "checkType": {
           "label": "Check"
         },
-        "passive": {
-          "label": "Passive",
-          "hint": "Never rolls to advance at End Session / End Floor."
+        "opposedStat": {
+          "label": "Opposed By",
+          "hint": "The antagonist stat used to set this Opposed check's difficulty."
         },
         "class": {
           "label": "Class"
         },
+        "range": {
+          "label": "Range",
+          "placeholder": "e.g. 50 feet"
+        },
+        "cooldown": {
+          "label": "Cooldown",
+          "placeholder": "e.g. Once per round"
+        },
+        "limitations": {
+          "label": "Limitations"
+        },
         "manaCost": {
           "label": "Mana Cost"
+        },
+        "duration": {
+          "label": "Duration",
+          "placeholder": "e.g. 2 rounds"
         },
         "attack": {
           "label": "Attack",
@@ -131,23 +184,34 @@
       "Attack": "Attack",
       "Inventory": "Inventory",
       "VehicleWeapon": "Vehicle Weapon",
+      "VehicleAttack": "Vehicle Attack",
       "Skill": "Skill",
       "Spell": "Spell",
       "SpellAttack": "Spell Attack",
+      "SourceLink": "Granted By",
+      "Source": "Source Item",
+      "SourceHint": "Links this Attack to one owned item using stable Foundry Item IDs.",
+      "ApplySource": "Apply Link",
+      "LinkedRankHint": "Rank is supplied by the linked Skill or Spell. Renaming either item does not break the link.",
+      "SkillUses": "Skill Uses",
+      "PrimarySkill": "Primary Skill",
+      "PrimarySkillHint": "The Skill or Spell whose effective Rank this Attack uses. The Attack ability remains the default ability.",
+      "MissingPrimarySkill": "The selected primary Skill or Spell is missing. This Attack uses Rank 0.",
+      "MissingSkill": "The selected Skill or Spell is missing. This use rolls at Rank 0.",
+      "MissingSkillOption": "Missing ({id})",
+      "UseLabel": "Use Label",
+      "Skill": "Skill or Spell",
+      "AbilityOverride": "Ability Override",
+      "AddSkillUse": "Add Skill Use",
+      "DeleteSkillUse": "Delete Skill Use",
+      "UnownedSkillUses": "Add this Attack to an Actor before selecting owned Skills or Spells.",
+      "StaleLinks": "Missing linked Item IDs: {ids}",
+      "AsymmetricLinks": "One-sided links need repair: {names}",
+      "UnownedAttack": "Add this Attack to an Actor before linking a source.",
+      "Notes": "Notes",
+      "Upgrades": "Upgrades",
+      "NotesEffects": "Notes & Effects",
       "Flags": "Flags"
-    },
-    "DamageType": {
-      "none": "—",
-      "slashing": "Slashing",
-      "piercing": "Piercing",
-      "bludgeoning": "Bludgeoning",
-      "fire": "Fire",
-      "cold": "Cold",
-      "lightning": "Lightning",
-      "poison": "Poison",
-      "psychic": "Psychic",
-      "force": "Force",
-      "necrotic": "Necrotic"
     },
     "Drop": {
       "Rejected": "A {actorType} cannot own a {type} item."
@@ -157,6 +221,9 @@
       "Fumble": "Fumble!",
       "Target": "target",
       "DC": "DC",
+      "Range": "Range",
+      "Duration": "Duration",
+      "Cooldown": "Cooldown",
       "ManaCost": "Mana Cost",
       "InsufficientMana": "⚠ Insufficient mana"
     },
@@ -171,7 +238,14 @@
       "ManaStat": "Mana Ability",
       "ManaStatHint": "The enhanced ability score that sets Max Mana.",
       "AutoEnableCast": "Auto-enable skill modifiers on cast",
-      "AutoEnableCastHint": "Casting a spell turns its skill modifiers on."
+      "AutoEnableCastHint": "Casting a spell turns its skill modifiers on.",
+      "HealthBarOverride": "Health Bar Override",
+      "HealthBarOverrideHint": "Leave blank for the default: 10 for Crawlers, or the Mob's level (maximum 10). Custom bars can have 1–100 slots.",
+      "ChatExtras": "Attack and Spell Chat Cards",
+      "ShowRangeInChat": "Show Range in chat",
+      "ShowRangeInChatHint": "Show Range on Attack rolls and Spell casts.",
+      "ShowNotesInChat": "Show Notes in chat",
+      "ShowNotesInChatHint": "Show Attack Notes & Effects and Spell Notes & Upgrades on their cards."
     },
     "Setting": {
       "GmScreen": {
@@ -216,6 +290,8 @@
     },
     "Tab": {
       "combat": "Combat",
+      "attacks": "Attacks",
+      "buffs": "Buffs & Debuffs",
       "inventory": "Inventory",
       "skills": "Skills",
       "bio": "Bio",
@@ -236,6 +312,9 @@
       "EndSession": "End Session",
       "EndFloor": "End Floor",
       "LevelUp": "Level Up",
+      "SkillCheck": "Skill Check",
+      "Success": "Success",
+      "Failure": "Failure",
       "Undo": "Undo",
       "EndSessionTooltip": "End the session: marked skills and spells at rank 4 or lower roll 1d20 to advance; +1 pending level",
       "EndFloorTooltip": "End the floor: marked skills and spells at rank 5 or higher roll 1d20 to advance; Floor +1",
@@ -279,7 +358,9 @@
     },
     "Ability": {
       "Unenhanced": "Unenh",
-      "Enhanced": "Enh"
+      "Enhanced": "Enh",
+      "Modifier": "Stat Mod",
+      "Edit": "Edit ability scores"
     },
     "Roll": {
       "Ability": "Ability",
@@ -287,11 +368,15 @@
       "AbilityLabel": "Roll {stat} check",
       "ToHit": "To Hit",
       "Damage": "Damage",
-      "Cast": "Cast"
+      "NoDamage": "No Damage",
+      "NoDamageWarning": "{name} has no damage to roll.",
+      "Cast": "Cast",
+      "Post": "Post"
     },
     "Health": {
       "Bar": "Health Bar",
       "Dying": "Dying",
+      "Dead": "Dead",
       "Slot": "Slot {n}",
       "HealthPointsShort": "HP",
       "HealSlot": "Heal slot"
@@ -306,9 +391,15 @@
       "DexterityModifier": "Dex Mod",
       "Buffs": "Buffs",
       "EvadeTotal": "Evade Total",
-      "EvadeRollTooltip": "Roll Evade: 1d20 + Dex Mod + Int Mod",
+      "EvadeRollTooltip": "Roll Evade: 1d20 + Dex Mod + Evade modifiers",
+      "Edit": "Edit",
+      "EditCombat": "Edit Combat fields",
       "Move": "Move",
+      "MoveBase": "Move Base",
+      "MoveTotal": "Move Total",
       "Step": "Step",
+      "StepBase": "Step Base",
+      "StepTotal": "Step Total",
       "Size": "Size",
       "DamageResistance": "Damage Resistance",
       "Armor": "Armor",
@@ -318,7 +409,8 @@
     "CheckType": {
       "opposed": "Opposed",
       "unopposed": "Unopposed",
-      "generic": "Generic"
+      "evade": "Evade",
+      "passive": "Passive"
     },
     "Items": {
       "New": "New {type}",
@@ -328,10 +420,17 @@
       "Stat": "Stat",
       "Rank": "Rank",
       "Bonus": "Bonus",
+      "Range": "Range",
+      "Cooldown": "Cooldown",
+      "Duration": "Duration",
       "ManaCost": "Mana cost",
       "ManaChip": "{cost} MP",
       "CheckType": "Check",
-      "Passive": "Passive",
+      "Type": "Type",
+      "Roll": "Roll",
+      "Used": "Used",
+      "Modifiers": "Mods",
+      "OpposedStat": "Opposed by",
       "Enabled": "On",
       "EnabledTooltip": "Enabled: this item's modifiers apply",
       "Mark": "Mark",
@@ -339,17 +438,18 @@
       "Edit": "Edit Item",
       "Delete": "Delete Item",
       "RollTooltip": "Roll 1d20 + skill bonus",
+      "PostPassiveTooltip": "Post this Passive skill without rolling",
       "CastTooltip": "Cast: 1d20 + skill bonus, spends mana",
       "CastTooltipNoMana": "Cast: 1d20 + skill bonus",
+      "CastPassiveTooltip": "Cast this Passive spell without rolling, spends mana",
+      "SkillCheck": "Skill Check",
+      "SkillCheckTooltip": "Roll 1d20 against base Rank; equal or higher succeeds",
       "RankEffectiveTooltip": "Effective rank (with modifiers)",
-      "NoAttacks": "No weapons or attack spells.",
+      "NoAttacks": "No attacks.",
       "NoSkills": "No skills.",
       "NoSpells": "No spells."
     },
     "Chip": {
-      "PassiveOn": "Passive",
-      "PassiveOff": "Passive",
-      "PassiveTooltip": "Passive: never rolls to advance at End Session / End Floor",
       "EnabledOn": "Enabled",
       "EnabledOff": "Enable",
       "HotlistOn": "On hotlist",
@@ -364,17 +464,35 @@
       "None": "No buffs or debuffs."
     },
     "Mob": {
+      "StatAbbr": {
+        "strength": "Str",
+        "intelligence": "Int",
+        "constitution": "Con",
+        "dexterity": "Dex",
+        "charisma": "Cha"
+      },
       "LevelTooltip": "Level sets the Health Bar slot count (1–10)",
       "Surprise": "Surprise",
-      "SurpriseTooltip": "The DC to surprise this mob",
+      "SurpriseTooltip": "Surprise target: base + Floor",
+      "SurpriseBase": "Surprise base",
+      "EvadeBase": "Evade base",
+      "Base": "Base",
+      "PlusFloor": "+F",
+      "EditCombat": "Edit Mob combat values",
+      "EditAbilities": "Edit Mob abilities",
+      "AbilityBase": "{stat} base",
+      "MoveTooltip": "Effective Move + effective Step",
       "Descriptors": "Descriptors",
       "DescriptorsPlaceholder": "e.g. undead, flying, boss",
-      "Public": "Rolls are public",
-      "PublicHint": "When on, this mob's rolls post publicly instead of whispering to the GM",
-      "ToHit": "To-Hit",
-      "ToHitTooltip": "Static To-Hit target: 10 + Str Mod + Floor",
-      "EvadeTooltip": "Static Evade target: 10 + Dex Mod + Floor",
-      "StaticToHitTooltip": "Static To-Hit target: 10 + to-hit + Floor (crawlers roll against it)"
+      "Whisper": "Whisper Mob rolls to the GM",
+      "WhisperHint": "When on, public Mob rolls whisper to the GM. Your selected private roll mode still applies.",
+      "ShowInventory": "Show Inventory & Gear",
+      "ShowSkills": "Show Skills & Spells",
+      "ShowBuffs": "Show Buffs & Debuffs",
+      "ShowSectionsHint": "Hidden sections keep their items and active effects.",
+      "EvadeTooltip": "Static Evade target: base + modifiers + Floor",
+      "StaticToHitTooltip": "Static To-Hit target: attack base + modifiers + Floor",
+      "ToHitLabel": "{target} to hit"
     },
     "Vehicle": {
       "StatBlock": "Vehicle / Mount",
@@ -398,7 +516,7 @@
       "Speed": "Speed",
       "SpeedMax": "Max",
       "ConstitutionModifier": "Con Mod",
-      "ConstitutionModifierTooltip": "Hit points per Health Bar slot. Blank = 5 (the rulebook vehicle default); a mount uses its own Con Mod",
+      "ConstitutionModifierTooltip": "Hit points per Health Bar slot. Blank = 5 (the rulebook vehicle default); a mount uses its own Con Mod. At 0, HP stays 0 and damage cannot remove slots; adjust slots manually.",
       "Passengers": "Passengers",
       "DriveSkill": "Drive skill",
       "DriveSkillTooltip": "The skill the Driver / Rider rolls, e.g. Driving, Riding, Chopper Pilot",
@@ -444,9 +562,9 @@
       "Race": "Race / Chase",
       "DamageResistanceAbsorbed": "DR absorbed a hit (-1 slot)",
       "DamageResistanceAbsorbedTooltip": "The vehicle loses one Health Bar slot whenever its DR reduced damage to an occupant",
-      "Weapons": "Vehicle Weapons",
+      "Weapons": "Vehicle Attacks",
       "MountAttacks": "Mount Attacks",
-      "NoWeapons": "No weapons.",
+      "NoWeapons": "No attacks.",
       "Gunner": "Gunner",
       "GunnerSlot": {
         "1": "Gunner 1",
@@ -539,6 +657,9 @@
     },
     "Inventory": {
       "Header": "Inventory",
+      "AddItem": "Add Item",
+      "ChooseItemType": "Choose the type of item to add.",
+      "Cancel": "Cancel",
       "GearSlots": "Gear Slots",
       "Accessories": "Accessories",
       "AccessoryCount": "{n}/{cap}",
@@ -561,7 +682,8 @@
       "CellQuantity": "{name} ×{quantity} — {action}",
       "Use": {
         "spell": "Cast",
-        "weapon": "Roll to hit",
+        "attack": "Roll to hit",
+        "weapon": "Show in chat",
         "skill": "Roll check",
         "gear": "Show in chat"
       }

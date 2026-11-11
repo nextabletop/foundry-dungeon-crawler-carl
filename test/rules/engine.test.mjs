@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { statModifier, isActive, parseModifierValue, applyModifiers, backCalcBase, healthBarSlotsFor, whisperToGM, cardMessageMode } from '../../module/rules/engine.mjs';
+import { statModifier, isActive, parseModifierValue, applyModifiers, healthBarSlotsFor, whisperToGM, cardMessageMode } from '../../module/rules/engine.mjs';
 
 // Ported from character-sheet/__tests__/engine.test.js
 describe('statModifier (sourced step chart)', () => {
@@ -57,6 +57,10 @@ describe('parseModifierValue (text -> {kind, value})', () => {
   it('trims whitespace', () => {
     expect(parseModifierValue(' 5 ')).toEqual({ kind: 'flat', value: 5 });
   });
+  it('normalizes signed dice as a roll-time modifier', () => {
+    expect(parseModifierValue('1D4')).toEqual({ kind: 'dice', value: 0, dice: '+1d4' });
+    expect(parseModifierValue('- 2d6')).toEqual({ kind: 'dice', value: 0, dice: '-2d6' });
+  });
   it('unparseable body degrades to 0, kind preserved', () => {
     expect(parseModifierValue('  ')).toEqual({ kind: 'flat', value: 0 });
     expect(parseModifierValue('abc')).toEqual({ kind: 'flat', value: 0 });
@@ -86,20 +90,9 @@ describe('applyModifiers (floor((base+flat)*(1+percent/100)))', () => {
   });
 });
 
-describe('backCalcBase (stale-aggregate guard)', () => {
-  it('subtracts the bonus from the entered value', () => {
-    expect(backCalcBase(10, 3)).toBe(7);
-  });
-  it('treats a missing/NaN bonus as "no bonus", returning entered as-is', () => {
-    expect(backCalcBase(10, undefined)).toBe(10);
-    expect(backCalcBase(10, null)).toBe(10);
-    expect(backCalcBase(10, NaN)).toBe(10);
-  });
-});
-
 // Ported from character-sheet/__tests__/mode.test.js
 describe('healthBarSlotsFor (Health Bar slot count by mode)', () => {
-  it('pc always has 10 slots', () => {
+  it('pc has 10 slots by default', () => {
     expect(healthBarSlotsFor('pc', 3, 6)).toBe(10);
   });
   it('mob has min(level, 10), floor 1', () => {
@@ -112,28 +105,42 @@ describe('healthBarSlotsFor (Health Bar slot count by mode)', () => {
     expect(healthBarSlotsFor('vehicle', 1, 0)).toBe(1);
     expect(healthBarSlotsFor('vehicle', 1, 12)).toBe(8);
   });
+  it('PCs and Mobs accept custom counts up to the sanity guard', () => {
+    for (const type of ['pc', 'mob']) {
+      expect(healthBarSlotsFor(type, 3, 6, 25)).toBe(25);
+      expect(healthBarSlotsFor(type, 3, 6, 5000)).toBe(100);
+      expect(healthBarSlotsFor(type, 3, 6, 0)).toBe(type === 'pc' ? 10 : 3);
+    }
+    expect(healthBarSlotsFor('vehicle', 1, 6, 25)).toBe(6);
+  });
 });
 
 describe('whisperToGM (replaces whisperPrefix; returns a boolean, not a chat prefix)', () => {
-  it('pc and vehicle never whisper', () => {
-    expect(whisperToGM('pc', false)).toBe(false);
-    expect(whisperToGM('vehicle', false)).toBe(false);
+  it('pc and vehicle do not use the Mob whisper setting', () => {
+    expect(whisperToGM('pc', true)).toBe(false);
+    expect(whisperToGM('vehicle', true)).toBe(false);
   });
-  it('mob whispers unless mobPublic is true', () => {
-    expect(whisperToGM('mob', false)).toBe(true);
-    expect(whisperToGM('mob', true)).toBe(false);
+  it('mob whispers only when explicitly enabled', () => {
+    expect(whisperToGM('mob')).toBe(false);
+    expect(whisperToGM('mob', false)).toBe(false);
+    expect(whisperToGM('mob', true)).toBe(true);
   });
 });
 
 describe('cardMessageMode (the one whisper decision for a card)', () => {
-  const mob = (mobPublic = false) => ({ type: 'mob', system: { mobPublic } });
-  it('a hidden mob upgrades public / ic to gm and keeps the private modes', () => {
+  const mob = (mobWhisper = false) => ({ type: 'mob', system: { mobWhisper } });
+  it('a Mob with whispers enabled upgrades public / ic to gm and keeps private modes', () => {
     for (const [chosen, expected] of [['public', 'gm'], ['ic', 'gm'], ['self', 'self'], ['blind', 'blind'], ['gm', 'gm']]) {
-      expect(cardMessageMode(mob(), chosen), chosen).toBe(expected);
+      expect(cardMessageMode(mob(true), chosen), chosen).toBe(expected);
     }
   });
-  it('a public mob, a PC or a vehicle keeps the chosen mode', () => {
-    expect(cardMessageMode(mob(true), 'public')).toBe('public');
+  it('a default Mob respects every selected message mode', () => {
+    for (const mode of ['public', 'ic', 'self', 'blind', 'gm']) {
+      expect(cardMessageMode(mob(), mode)).toBe(mode);
+    }
+    expect(cardMessageMode({ type: 'mob', system: {} }, 'public')).toBe('public');
+  });
+  it('a PC or vehicle keeps the chosen mode', () => {
     expect(cardMessageMode({ type: 'pc', system: {} }, 'ic')).toBe('ic');
     expect(cardMessageMode({ type: 'vehicle' }, 'public')).toBe('public');
   });

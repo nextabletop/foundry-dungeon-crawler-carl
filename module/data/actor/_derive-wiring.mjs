@@ -4,7 +4,8 @@
 // used by each model's _preUpdate.
 
 import { toList } from '../../rules/derive.mjs';
-import { applyHealthPointsEdit } from '../../rules/health.mjs';
+import { applyHealthPointsEdit, clampSlots } from '../../rules/health.mjs';
+import { healthBarSlotsFor } from '../../rules/engine.mjs';
 
 /**
  * Reset the modifier collector. Called from prepareBaseData; the `dcc`
@@ -81,4 +82,19 @@ export const rewriteHealthPointsEdit = (model, changes) => {
     if (healthBar !== current) system.healthBar = healthBar;
   }
   delete system.healthPoints;
+};
+
+/** Reconcile filled slots when an update changes the slot count. */
+export const rewriteHealthBarSlotCount = (model, changes, type, explicitHealthBar) => {
+  const system = changes.system;
+  if (!system) return;
+  const relevant = type === 'vehicle' ? ['size'] : ['level', 'healthBarSlotsCustom'];
+  if (!relevant.some(key => Object.hasOwn(system, key))) return;
+  const value = key => Object.hasOwn(system, key) ? system[key] : model[key];
+  const next = healthBarSlotsFor(type, value('level'), value('size'), value('healthBarSlotsCustom'));
+  const previous = model.healthBarSlots;
+  if (next === previous) return;
+  const current = system.healthBar ?? model.healthBarDisplay;
+  const growth = explicitHealthBar ? 0 : Math.max(0, next - previous);
+  system.healthBar = clampSlots(current + growth, next);
 };

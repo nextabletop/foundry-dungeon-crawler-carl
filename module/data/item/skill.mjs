@@ -1,6 +1,6 @@
 import BaseItemModel from './base-item.mjs';
 import { STATS, CHECK_TYPES } from '../../config.mjs';
-import { int, str, bool } from '../_fields.mjs';
+import { int, str, bool, html } from '../_fields.mjs';
 
 export default class SkillModel extends BaseItemModel {
   static defineSchema() {
@@ -10,9 +10,14 @@ export default class SkillModel extends BaseItemModel {
       rank: int(0),
       mark: bool(false),
       enabled: bool(false),
-      checkType: str('unopposed', { choices: CHECK_TYPES }),
-      passive: bool(false),
+      isAttack: bool(false),
+      checkType: str('opposed', { choices: CHECK_TYPES }),
+      opposedStat: str('', { choices: ['', ...STATS], blank: true }),
       class: str(),
+      range: str(),
+      cooldown: str(),
+      limitations: str(),
+      upgrades: html(),
     };
   }
 }

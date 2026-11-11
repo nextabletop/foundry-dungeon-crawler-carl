@@ -3,19 +3,8 @@
     <div class="dcc-bar">
       <span>{{localize "DCC.Health.Bar"}}</span>
       {{#if health.dying}}<span class="dcc-dying">{{localize "DCC.Health.Dying"}}</span>{{/if}}
+      <button type="button" class="dcc-addbtn" data-action="healSlot">{{localize "DCC.Health.HealSlot"}}</button>
     </div>
     {{> "systems/dungeon-crawler-carl/templates/actor/partials/health-bar.hbs"}}
-  </div>
-  <div class="dcc-box dcc-manabox">
-    <div class="dcc-bar">{{localize "DCC.Mana.Label"}}</div>
-    <div class="dcc-mana">
-      <input class="cur" type="number" step="1" name="system.mana.value" value="{{systemSource.mana.value}}" aria-label="{{localize 'DCC.Mana.Current'}}">
-      <span class="sep">/</span>
-      <span class="max">{{system.mana.max}}</span>
-    </div>
-    <div class="dcc-mana-lbl">
-      <span>{{localize "DCC.Mana.Current"}}</span>
-      <span>{{localize "DCC.Mana.Max"}}</span>
-    </div>
   </div>
 </div>

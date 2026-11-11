@@ -75,20 +75,20 @@ afterEach(() => {
 
 describe('endSession', () => {
   it('rolls one silent d20 per DUE skill/spell only, advances, clears marks, +1 pending level', async () => {
-    const knives = makeItem('skill', 'Knives', { rank: 2, mark: true });       // due, d20 5 > 2 -> 3
-    const zap = makeItem('spell', 'Zap', { rank: 4, mark: true });             // due (spell), d20 3 <= 4 -> stays 4
+    const knives = makeItem('skill', 'Knives', { rank: 2, mark: true });       // due, d20 2 >= 2 -> 3
+    const zap = makeItem('spell', 'Zap', { rank: 4, mark: true });             // due (spell), d20 3 < 4 -> stays 4
     const idle = makeItem('skill', 'Idle', { rank: 1, mark: false });          // not marked
     const high = makeItem('skill', 'High', { rank: 7, mark: true });           // rank >= 5: floor only
-    const passive = makeItem('skill', 'Passive', { rank: 0, mark: true, passive: true });
+    const passive = makeItem('skill', 'Passive', { rank: 0, mark: true, checkType: 'passive' });
     const sword = makeItem('weapon', 'Sword', { rank: 0, mark: true });        // not a skill
     const actor = makeActor({ items: [knives, zap, idle, high, passive, sword], system: { pendingLevels: 1 } });
-    FixedRoll.queue = [5, 3];
+    FixedRoll.queue = [2, 3];
 
     const result = await actor.endSession();
 
     expect(FixedRoll.made.map(r => r.formula)).toEqual(['1d20', '1d20']);
     for (const r of FixedRoll.made) expect(r.options).toEqual({ allowInteractive: false });
-    expect(result.rolls).toEqual({ [knives.id]: 5, [zap.id]: 3 });
+    expect(result.rolls).toEqual({ [knives.id]: 2, [zap.id]: 3 });
     expect(actor.updateEmbeddedDocuments).toHaveBeenCalledTimes(1);
     expect(actor.updateEmbeddedDocuments).toHaveBeenCalledWith('Item', [
       { _id: knives.id, 'system.rank': 3, 'system.mark': false },

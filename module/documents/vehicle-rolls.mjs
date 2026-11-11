@@ -10,6 +10,7 @@ import { drivingCheck, ram, race, ramAftermath } from '../rules/vehicle.mjs';
 import { crewPenalty, crewSkillCard, crewAttackCard, vehicleWeaponCard, crewCardName } from '../rules/crew.mjs';
 import { cardMessageMode, PUBLIC_MODES } from '../rules/engine.mjs';
 import { crewCache } from '../data/actor/vehicle.mjs';
+import { attackCardExtras, htmlToText } from '../rules/card.mjs';
 
 /** The card-text formatter the pure rules builders take. */
 const t = (key, data) => game.i18n.format(key, data);
@@ -19,16 +20,16 @@ const withPrivacy = (actor, options) => (actor ? { privacyOf: actor, ...options 
 
 /**
  * The name a vehicle card may print for crew member `actor` (crewCardName).
- * `whispered` comes from cardMessageMode, the same decision postCard makes
- * (the card is posted with `privacyOf: actor`); `rollerCanSee` because the
+ * `whispered` comes from cardMessageMode, the same decision postCard makes;
+ * `rollerCanSee` because the
  * whisper's author (this user) sees it too.
  *
  * `allPlayersCanSee` checks EVERY non-GM user, offline ones included. That
  * is deliberately conservative: the card stays in the chat log, so a player
  * who logs in later reads it too.
  */
-const cardCrewName = (actor) => {
-  const mode = cardMessageMode(actor, game.settings.get('core', 'messageMode'));
+const cardCrewName = (actor, privacyActor = actor) => {
+  const mode = cardMessageMode(privacyActor, game.settings.get('core', 'messageMode'));
   return crewCardName({
     name: actor.name,
     whispered: !PUBLIC_MODES.includes(mode),
@@ -47,7 +48,7 @@ const postVehicleCard = async (vehicle, build, options) => {
   const { fields, roll, damage } = build({
     mode: s.drivingMode, target: s.drivingTarget, speed: s.speed, floor: s.floor, size: s.size,
     kind: s.kind, driveSkill: s.driveSkill, advantage: s.rollAdvantage, targetEvade: s.ramTargetEvade, ahead: s.raceAhead,
-    driverBonus: bonus, driver: driver ? { ...driver, name: cardCrewName(actor) } : null,
+    driverBonus: bonus, driver: driver ? { ...driver, name: cardCrewName(actor, options?.privacyOf ?? actor) } : null,
   }, t);
   return postCard(vehicle, fields, { roll, damage }, withPrivacy(actor, options));
 };
@@ -62,8 +63,8 @@ export const postRam = (vehicle, options) => postVehicleCard(vehicle, ram, optio
 export const postRace = (vehicle, options) => postVehicleCard(vehicle, race, options);
 
 /**
- * A vehicle weapon's to-hit (R20 rollVehicleWeapon): the crew member in the
- * weapon's gunner slot adds their bonus for its skill (rules/crew.mjs
+ * A vehicle Attack's to-hit: the crew member in the Attack's gunner slot adds
+ * their bonus for its skill (rules/crew.mjs
  * vehicleWeaponCard). Posted as the vehicle; a mob gunner's card follows
  * the mob's privacy. A mount's attacks don't come here (they roll alone).
  * @returns {Promise<object|null>}
@@ -75,9 +76,9 @@ export const rollVehicleWeapon = async (vehicle, item, options) => {
   const { actor, gunner } = s.resolveGunner(item.system.gunnerSlot);
   const { fields, roll } = vehicleWeaponCard({
     weapon: { name: item.name, toHit: d.toHit, skillName: item.system.skillName, stat: item.system.stat },
-    gunner: gunner && { ...gunner, name: cardCrewName(actor) }, floor: s.floor,
+    gunner: gunner && { ...gunner, name: cardCrewName(actor, options?.privacyOf ?? actor) }, floor: s.floor,
   }, t);
-  return postCard(vehicle, fields, { roll }, withPrivacy(actor, options));
+  return postCard(vehicle, { ...fields, ...attackCardExtras(s, item.system) }, { roll }, withPrivacy(actor, options));
 };
 
 /**
@@ -107,7 +108,8 @@ export const crewSkillPost = (vehicle, crew, itemId, options) => {
   const s = vehicle.system;
   return () => {
     const { fields, roll } = crewSkillCard({
-      crewName: crew.name, skill, mob: crew.type === 'mob', vehicleName: vehicle.name,
+      crewName: crew.name, skill: { ...skill, description: htmlToText(skill.description) },
+      mob: crew.type === 'mob', vehicleName: vehicle.name,
       penalty: crewPenalty(s.penaltyInputs, skill.name), floor: s.floor,
     }, t);
     return postCard(crew, fields, { roll }, options);
@@ -131,7 +133,7 @@ export const crewAttackPost = (vehicle, crew, itemId, options) => {
       crewName: crew.name, attack, mob: crew.type === 'mob', vehicleName: vehicle.name,
       penalty: crewPenalty(s.penaltyInputs, ''), floor: s.floor, driver: entry.role === 'driver', speed: s.speed,
     }, t);
-    return postCard(crew, fields, { roll, damage }, options);
+    return postCard(crew, { ...fields, ...attackCardExtras(s, attack) }, { roll, damage }, options);
   };
 };
 

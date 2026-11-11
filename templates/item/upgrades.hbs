@@ -1,0 +1,10 @@
+<section class="dcc-item-upgrades">
+  <div class="dcc-box dcc-item-desc">
+    <div class="dcc-bar" id="{{rootId}}-upgrades-label">{{localize "DCC.ItemSheet.Upgrades"}}</div>
+    {{#if editable}}
+    {{formInput systemFields.upgrades value=systemSource.upgrades enriched=upgradesHTML toggled=true}}
+    {{else}}
+    <div class="dcc-item-view" role="group" aria-labelledby="{{rootId}}-upgrades-label">{{#if upgradesEmpty}}<span class="dcc-item-empty">&mdash;</span>{{else}}{{{upgradesHTML}}}{{/if}}</div>
+    {{/if}}
+  </div>
+</section>

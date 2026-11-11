@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { slotClickTarget, slotView } from '../../module/rules/health.mjs';
-import { editedBase, translateDefenseEdits } from '../../module/rules/engine.mjs';
 
 describe('slotClickTarget', () => {
   it('fills up to the clicked slot', () => {
@@ -17,15 +16,18 @@ describe('slotClickTarget', () => {
   it('coerces string slot indexes (data attributes)', () => {
     expect(slotClickTarget('4', 4)).toBe(3);
     expect(slotClickTarget('4', 10)).toBe(4);
+    expect(slotClickTarget('25', 25)).toBe(24);
+    expect(slotClickTarget('25', 7)).toBe(25);
   });
 });
 
 describe('slotView', () => {
-  it('always yields 10 slots with i x 10% labels', () => {
+  it('yields 10 slots with i x 10% labels and tiers', () => {
     const v = slotView(10, 10);
     expect(v).toHaveLength(10);
     expect(v.map(s => s.percent)).toEqual([10, 20, 30, 40, 50, 60, 70, 80, 90, 100]);
-    expect(v.every(s => s.filled && !s.disabled)).toBe(true);
+    expect(v.map(s => s.tier)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(v.every(s => s.filled)).toBe(true);
   });
 
   it('fills slots at or below healthBar', () => {
@@ -37,67 +39,21 @@ describe('slotView', () => {
     expect(slotView(0, 10).some(s => s.filled)).toBe(false);
   });
 
-  it('disables slots above the slot count and never fills them', () => {
+  it('renders exactly the count, with proportional labels and tiers', () => {
     const v = slotView(10, 4);
-    expect(v.filter(s => s.disabled).map(s => s.i)).toEqual([5, 6, 7, 8, 9, 10]);
+    expect(v).toHaveLength(4);
     expect(v.filter(s => s.filled).map(s => s.i)).toEqual([1, 2, 3, 4]);
-  });
-});
-
-describe('editedBase (move/step sheet back-calc)', () => {
-  it('back-calcs a changed value against the flat bonus', () => {
-    expect(editedBase(30, 0, 0)).toBe(30);
-    expect(editedBase('12', 10, 5)).toBe(7);
+    expect(v.map(s => s.percent)).toEqual([25, 50, 75, 100]);
+    expect(v.map(s => s.tier)).toEqual([3, 5, 8, 10]);
   });
 
-  it('writes nothing when the value is unchanged (no percent drift)', () => {
-    // base 30, +10% → displays 33; an unrelated submit resends 33.
-    expect(editedBase(33, 33, 0)).toBeUndefined();
-    expect(editedBase('5', 5, 0)).toBeUndefined();
-  });
-
-  it('ignores blank / null / non-numeric input', () => {
-    expect(editedBase('', 5, 0)).toBeUndefined();
-    expect(editedBase(null, 5, 0)).toBeUndefined();
-    expect(editedBase(undefined, 5, 0)).toBeUndefined();
-    expect(editedBase('abc', 5, 0)).toBeUndefined();
-  });
-
-  it('treats a missing bonus as zero (stale-aggregate guard)', () => {
-    expect(editedBase(8, 5, undefined)).toBe(8);
-  });
-
-  it('a 0 entry is a real edit', () => {
-    expect(editedBase(0, 5, 2)).toBe(-2);
-  });
-});
-
-describe('translateDefenseEdits', () => {
-  const system = { move: 33, step: 5, moveBonus: 0, stepBonus: 2 };
-
-  it('drops dcc.* and writes nothing when unchanged', () => {
-    const out = translateDefenseEdits({ name: 'Carl', dcc: { move: 33, step: 5 }, system: { armor: 1 } }, system);
-    expect(out).toEqual({ name: 'Carl', system: { armor: 1 } });
-  });
-
-  it('writes the back-calculated base for a changed value', () => {
-    const out = translateDefenseEdits({ dcc: { move: 33, step: 9 } }, system);
-    expect(out).toEqual({ system: { stepBase: 7 } });
-  });
-
-  it('handles only `move` present (step absent)', () => {
-    const out = translateDefenseEdits({ dcc: { move: 40 } }, system);
-    expect(out).toEqual({ system: { moveBase: 40 } });
-  });
-
-  it('back-calcs a move change against a nonzero moveBonus', () => {
-    // base 20 + bonus 5 → displays 25; the user enters 30 → base 25.
-    const buffed = { move: 25, step: 5, moveBonus: 5, stepBonus: 0 };
-    const out = translateDefenseEdits({ dcc: { move: 30, step: 5 }, system: { armor: 2 } }, buffed);
-    expect(out).toEqual({ system: { armor: 2, moveBase: 25 } });
-  });
-
-  it('leaves data without dcc untouched', () => {
-    expect(translateDefenseEdits({ system: { healthBar: 3 } }, system)).toEqual({ system: { healthBar: 3 } });
+  it('supports long and uneven bars through 100 slots', () => {
+    const v = slotView(7, 30);
+    expect(v).toHaveLength(30);
+    expect([v[0].percent, v[1].percent, v[28].percent, v[29].percent]).toEqual([3, 6, 96, 100]);
+    expect([v[0].tier, v[2].tier, v[3].tier, v[29].tier]).toEqual([1, 1, 2, 10]);
+    expect(v.filter(s => s.filled)).toHaveLength(7);
+    expect(slotView(1, 1)[0]).toMatchObject({ percent: 100, tier: 10 });
+    expect(slotView(100, 100)).toHaveLength(100);
   });
 });
