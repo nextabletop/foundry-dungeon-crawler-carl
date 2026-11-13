@@ -1,7 +1,10 @@
-{{!-- Skills and Spells share the Roll20-style compact row. Editing full item
+{{!-- Skills and Spells share compact rows. Editing full item
       details and hotlist membership happens on the item sheet. --}}
 {{#*inline "skillCells"}}
   <span class="dcc-icell dcc-c-rank" data-tooltip="{{#if rankModified}}{{localize 'DCC.Items.RankEffectiveTooltip'}}{{/if}}">{{rankEffective}}</span>
+  {{#unless lean}}
+  <span class="dcc-icell dcc-c-stat">{{#if isPassive}}-{{else}}{{#if stat}}{{localize stat}} {{numberFormat statModifier sign=true}}{{/if}}{{/if}}</span>
+  {{/unless}}
   <span class="dcc-icell dcc-c-type">{{#if opposedAbbr}}{{localize opposedAbbr}}-{{/if}}{{localize checkTypeKey}}</span>
   <span class="dcc-icell dcc-c-roll">
     {{#if spell}}
@@ -22,10 +25,12 @@
     {{/if}}
   </span>
   {{/unless}}
+  {{#if lean}}
   <span class="dcc-icell dcc-c-mods">
     <input class="dcc-icheck dcc-mods-check" type="checkbox" id="{{@root.rootId}}-{{id}}-enabled" data-field="system.enabled" {{checked enabled}}
            data-tooltip="{{localize 'DCC.Items.EnabledTooltip'}}" aria-label="{{localize 'DCC.Items.Enabled'}}">
   </span>
+  {{/if}}
   {{#if hasSummary}}
   <span class="dcc-skill-summary">
     {{#if summary.length}}
@@ -40,27 +45,34 @@
 {{/inline}}
 <div class="dcc-box dcc-list">
   <div class="dcc-bar dcc-bar--list">
-    <span>{{#if spell}}{{localize "DCC.Items.Spells"}}{{else}}{{localize "DCC.Items.Skills"}}{{/if}}</span>
+    <span>{{#if combined}}{{localize "DCC.Items.SkillsAndSpells"}}{{else if spell}}{{localize "DCC.Items.Spells"}}{{else}}{{localize "DCC.Items.Skills"}}{{/if}}</span>
     {{#if @root.editable}}
+    {{#if combined}}
+    <button type="button" class="dcc-addbtn" id="{{@root.rootId}}-add-skill-or-spell" data-action="createSkillOrSpell">
+      <i class="fa-solid fa-plus" inert></i> {{localize "DCC.Items.AddSkillOrSpell"}}
+    </button>
+    {{else}}
     <button type="button" class="dcc-addbtn" id="{{@root.rootId}}-add-{{#if spell}}spell{{else}}skill{{/if}}" data-action="createItem" data-type="{{#if spell}}spell{{else}}skill{{/if}}">
       <i class="fa-solid fa-plus" inert></i> {{#if spell}}{{localize "TYPES.Item.spell"}}{{else}}{{localize "TYPES.Item.skill"}}{{/if}}
     </button>
+    {{/if}}
     {{/if}}
   </div>
   <ol class="dcc-ilist {{#if spell}}dcc-ilist--spells{{else}}dcc-ilist--skills{{/if}}{{#if lean}} dcc-ilist--lean{{/if}}">
     <li class="dcc-ihead">
       <span class="dcc-c-name">{{localize "DCC.Sheet.Name"}}</span>
       <span class="dcc-c-rank">{{localize "DCC.Items.Rank"}}</span>
+      {{#unless lean}}<span class="dcc-c-stat">{{localize "DCC.Items.StatMod"}}</span>{{/unless}}
       <span class="dcc-c-type">{{localize "DCC.Items.Type"}}</span>
       <span class="dcc-c-roll">{{localize "DCC.Items.Roll"}}</span>
       {{#unless lean}}<span class="dcc-c-used">{{localize "DCC.Items.Used"}}</span>{{/unless}}
-      <span class="dcc-c-mods">{{localize "DCC.Items.Modifiers"}}</span>
+      {{#if lean}}<span class="dcc-c-mods">{{localize "DCC.Items.Modifiers"}}</span>{{/if}}
       <span class="dcc-c-ctl"></span>
     </li>
     {{#each rows}}
-    {{#> "systems/dungeon-crawler-carl/templates/actor/partials/item-row.hbs" spell=../spell lean=../lean}}{{> skillCells}}{{/"systems/dungeon-crawler-carl/templates/actor/partials/item-row.hbs"}}
+    {{#> "systems/dungeon-crawler-carl/templates/actor/partials/item-row.hbs" spell=(or spell ../spell) lean=../lean}}{{> skillCells}}{{/"systems/dungeon-crawler-carl/templates/actor/partials/item-row.hbs"}}
     {{else}}
-    <li class="dcc-iempty">{{#if spell}}{{localize "DCC.Items.NoSpells"}}{{else}}{{localize "DCC.Items.NoSkills"}}{{/if}}</li>
+    <li class="dcc-iempty">{{#if combined}}{{localize "DCC.Items.NoSkillsOrSpells"}}{{else if spell}}{{localize "DCC.Items.NoSpells"}}{{else}}{{localize "DCC.Items.NoSkills"}}{{/if}}</li>
     {{/each}}
   </ol>
 </div>

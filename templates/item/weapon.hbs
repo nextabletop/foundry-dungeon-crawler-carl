@@ -8,7 +8,9 @@
     </div>
     <div class="dcc-item-flags">
       {{formGroup systemFields.active value=systemSource.active rootId=rootId}}
+      {{#if showHotlist}}
       {{formGroup systemFields.onHotlist value=systemSource.onHotlist rootId=rootId}}
+      {{/if}}
     </div>
   </div>
   {{> "systems/dungeon-crawler-carl/templates/item/partials/description.hbs"}}

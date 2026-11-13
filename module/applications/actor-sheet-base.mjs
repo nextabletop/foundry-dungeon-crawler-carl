@@ -130,6 +130,7 @@ export default class DCCActorSheetBase extends HandlebarsApplicationMixin(foundr
       health: {
         slots: slotView(system.healthBarDisplay, system.healthBarSlots),
         columns: Math.min(12, system.healthBarSlots),
+        gradientSize: system.healthBarSlots * 100,
         constitutionModifier: system.healthConstitutionModifier,
         dying: isDying(system.healthBarDisplay),
       },

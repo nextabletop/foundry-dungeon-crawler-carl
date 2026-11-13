@@ -44,16 +44,41 @@ describe('slotView', () => {
     expect(v).toHaveLength(4);
     expect(v.filter(s => s.filled).map(s => s.i)).toEqual([1, 2, 3, 4]);
     expect(v.map(s => s.percent)).toEqual([25, 50, 75, 100]);
-    expect(v.map(s => s.tier)).toEqual([3, 5, 8, 10]);
+    expect(v.map(s => s.tier)).toEqual([1, 4, 7, 10]);
+  });
+
+  it('spreads colors from red to green for short bars and keeps a single slot at 100%', () => {
+    expect(slotView(2, 2).map(s => s.tier)).toEqual([1, 10]);
+    expect(slotView(3, 3).map(s => s.tier)).toEqual([1, 6, 10]);
+    expect(slotView(1, 1)[0]).toMatchObject({ percent: 100, tier: 10 });
+  });
+
+  it('keeps tier colors bounded and ordered for every supported multi-slot bar', () => {
+    for (let count = 2; count <= 100; count++) {
+      const tiers = slotView(count, count).map(s => s.tier);
+      expect(tiers[0]).toBe(1);
+      expect(tiers.at(-1)).toBe(10);
+      expect(tiers.every((tier, i) => tier >= 1 && tier <= 10 && (i === 0 || tier >= tiers[i - 1]))).toBe(true);
+    }
   });
 
   it('supports long and uneven bars through 100 slots', () => {
     const v = slotView(7, 30);
     expect(v).toHaveLength(30);
     expect([v[0].percent, v[1].percent, v[28].percent, v[29].percent]).toEqual([3, 6, 96, 100]);
-    expect([v[0].tier, v[2].tier, v[3].tier, v[29].tier]).toEqual([1, 1, 2, 10]);
+    expect([v[0].tier, v[2].tier, v[3].tier, v[29].tier]).toEqual([1, 2, 2, 10]);
     expect(v.filter(s => s.filled)).toHaveLength(7);
-    expect(slotView(1, 1)[0]).toMatchObject({ percent: 100, tier: 10 });
     expect(slotView(100, 100)).toHaveLength(100);
+  });
+
+  it('positions gradient slices across the entire bar, including wrapped and partially filled bars', () => {
+    expect(slotView(1, 1)[0].gradientPosition).toBe(0);
+    expect(slotView(1, 2).map(s => [s.gradientPosition, s.filled])).toEqual([[0, true], [100, false]]);
+    expect(slotView(3, 3).map(s => s.gradientPosition)).toEqual([0, 50, 100]);
+    const wrapped = slotView(7, 25);
+    expect(wrapped[0].gradientPosition).toBe(0);
+    expect(wrapped[12].gradientPosition).toBe(50);
+    expect(wrapped[24].gradientPosition).toBe(100);
+    expect(wrapped.filter(s => s.filled)).toHaveLength(7);
   });
 });

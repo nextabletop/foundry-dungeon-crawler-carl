@@ -65,7 +65,7 @@ export default class DCCCreatureSheet extends DCCActorSheetBase {
    */
   _prepareItemLists() {
     return {
-      ...sheetItemLists(this.document.itemTypes),
+      ...sheetItemLists(this.document.itemTypes, this.document.system.stats),
       buffs: buffRows(this.document.effects.contents, this.document.items.contents),
     };
   }

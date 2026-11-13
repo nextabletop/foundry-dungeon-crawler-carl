@@ -14,10 +14,21 @@
             <span>{{localize "DCC.Mob.PlusFloor"}}</span>
           </span>
         </label>
-        <p class="hint">{{localize "DCC.Item.FIELDS.mobToHitBase.hint"}}</p>
       </div>
-      {{formGroup systemFields.mobToHitNone value=systemSource.mobToHitNone rootId=rootId}}
-      {{formGroup systemFields.mobNoDamage value=systemSource.mobNoDamage rootId=rootId}}
+      <div class="dcc-item-flags dcc-item-wide">
+        <div class="form-group">
+          <label for="{{rootId}}-mob-tohit-none">{{localize "DCC.Item.FIELDS.mobToHitNone.label"}}</label>
+          <div class="form-fields">
+            {{formInput systemFields.mobToHitNone value=systemSource.mobToHitNone id=(concat rootId "-mob-tohit-none")}}
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="{{rootId}}-mob-no-damage">{{localize "DCC.Item.FIELDS.mobNoDamage.label"}}</label>
+          <div class="form-fields">
+            {{formInput systemFields.mobNoDamage value=systemSource.mobNoDamage id=(concat rootId "-mob-no-damage")}}
+          </div>
+        </div>
+      </div>
       {{/if}}
       <div class="dcc-item-damage-grid">
         {{formGroup systemFields.die value=systemSource.die rootId=rootId}}
@@ -29,9 +40,11 @@
       </div>
       {{formGroup systemFields.range value=systemSource.range rootId=rootId classes="dcc-item-wide"}}
     </div>
+    {{#if showHotlist}}
     <div class="dcc-item-flags">
       {{formGroup systemFields.onHotlist value=systemSource.onHotlist rootId=rootId}}
     </div>
+    {{/if}}
   </div>
   <div class="dcc-box dcc-item-section">
     <div class="dcc-bar">{{localize "DCC.ItemSheet.VehicleAttack"}}</div>

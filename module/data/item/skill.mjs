@@ -11,6 +11,12 @@ export default class SkillModel extends BaseItemModel {
       mark: bool(false),
       enabled: bool(false),
       isAttack: bool(false),
+      attackDefaults: new foundry.data.fields.SchemaField({
+        die: str(),
+        damageStat: str('', { choices: ['', ...STATS], blank: true }),
+        damageBonus: int(0),
+        damageType: str(),
+      }),
       checkType: str('opposed', { choices: CHECK_TYPES }),
       opposedStat: str('', { choices: ['', ...STATS], blank: true }),
       class: str(),

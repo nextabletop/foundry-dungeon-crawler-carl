@@ -149,9 +149,15 @@ describe('item schemas', () => {
     expect(schema.opposedStat.initial).toBe('');
     expect(schema.opposedStat.options.choices).toEqual(Object.fromEntries(['', ...STATS].map(stat => [stat, stat])));
     expect(keys(SkillModel)).not.toContain('passive');
+    const defaults = schema.attackDefaults.fields;
+    expect(defaults.die.initial).toBe('');
+    expect(defaults.damageStat.options.choices)
+      .toEqual(Object.fromEntries(['', ...STATS].map(stat => [stat, stat])));
+    expect(defaults.damageBonus.initial).toBe(0);
+    expect(defaults.damageType.initial).toBe('');
   });
 
-  it('spell is a skill plus manaCost and duration, without embedded attack data', () => {
+  it('spell inherits Skill creation defaults plus manaCost and duration', () => {
     expect(keys(SpellModel)).toEqual([...keys(SkillModel), 'manaCost', 'duration']);
   });
 

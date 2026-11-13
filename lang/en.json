@@ -69,11 +69,11 @@
           "label": "Rank"
         },
         "mobToHitBase": {
-          "label": "Mob To-Hit Base",
+          "label": "To-Hit Base",
           "hint": "Floor and attack modifiers are added to this base. Leave blank to seed it from ability and rank."
         },
         "mobToHitNone": {
-          "label": "No Mob To-Hit",
+          "label": "No To-Hit",
           "hint": "This attack has no To-Hit target."
         },
         "mobNoDamage": {
@@ -137,8 +137,7 @@
           "label": "Check"
         },
         "opposedStat": {
-          "label": "Opposed By",
-          "hint": "The antagonist stat used to set this Opposed check's difficulty."
+          "label": "Opposed By"
         },
         "class": {
           "label": "Class"
@@ -416,8 +415,14 @@
       "New": "New {type}",
       "Attacks": "Attacks",
       "Skills": "Skills",
+      "SkillsAndSpells": "Skills & Spells",
+      "AddSkillOrSpell": "Add Skill / Spell",
+      "ChooseSkillOrSpell": "Choose whether to create a Skill or a Spell.",
+      "NoSkillsOrSpells": "No skills or spells.",
       "Spells": "Spells",
       "Stat": "Stat",
+      "StatMod": "Stat & Mod",
+      "StatModifier": "Mod",
       "Rank": "Rank",
       "Bonus": "Bonus",
       "Range": "Range",

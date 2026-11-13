@@ -2,7 +2,7 @@
 // inline item-edit plumbing. PURE (no Foundry globals) so they are unit-tested
 // directly; the sheets call them from _prepareContext / _onChangeForm.
 
-import { STATS, GEAR_SLOTS, HOTLIST_CAP, ACCESSORY_CAP } from '../config.mjs';
+import { STATS, GEAR_SLOTS, HOTLIST_CAP, ACCESSORY_CAP, DEFAULT_ITEM_ICONS } from '../config.mjs';
 import { buildGear, buildAccessories } from '../rules/inventory.mjs';
 import { describeChange } from '../effects/dcc-change.mjs';
 import { levelUpBlocker } from '../rules/advancement.mjs';
@@ -82,18 +82,20 @@ const statAbbr = key => (STATS.includes(key) ? `DCC.StatAbbr.${key}` : '');
  * A canonical Attack row. Displays derived values only; Rank comes from a
  * linked Skill/Spell when present, otherwise from the Attack.
  */
-const attackRow = (item, items) => {
+const attackRow = (item, items, stats) => {
   const d = item.system.derived ?? {};
   const source = attackSource(item, items);
   const primarySkill = attackPrimarySkill(item, items);
+  const magical = source?.type === 'spell' || primarySkill?.type === 'spell';
   return {
     id: item.id,
     name: item.name,
-    img: item.img,
+    img: magical && (!item.img || item.img === DEFAULT_ITEM_ICONS.attack) ? DEFAULT_ITEM_ICONS.spell : item.img,
     isSpell: source?.type === 'spell',
     skillName: primarySkill?.name ?? '',
     skillMissing: Boolean(d.primarySkillMissing),
     stat: statAbbr(item.system.stat),
+    statModifier: stats[item.system.stat]?.modifier,
     rank: d.rank,
     hasToHit: d.hasToHit !== false && Number.isFinite(d.toHit),
     toHit: d.toHit,
@@ -108,6 +110,7 @@ const attackRow = (item, items) => {
       attackId: item.id,
       name: use.label ? `${item.name} (${use.label})` : item.name,
       stat: statAbbr(use.stat),
+      statModifier: stats[use.stat]?.modifier,
       hasToHit: use.hasToHit !== false && Number.isFinite(use.toHit),
       damageLabel: String(use.damageLabel ?? '').trim(),
     })),
@@ -118,7 +121,7 @@ const attackRow = (item, items) => {
  * A skill / spell row. Editable controls read the stored source values;
  * roll labels read the derived ones.
  */
-const skillRow = (item) => {
+const skillRow = (item, stats) => {
   const src = item.system._source ?? item.system;
   const d = item.system.derived ?? {};
   const checkType = checkTypeOf(src.checkType);
@@ -132,6 +135,8 @@ const skillRow = (item) => {
     name: item.name,
     img: item.img,
     stat: statAbbr(src.stat),
+    spell: item.type === 'spell',
+    statModifier: stats[src.stat]?.modifier,
     rank: src.rank,
     rankEffective: d.rankEffective ?? src.rank,
     rankModified: Number.isFinite(d.rankEffective) && (d.rankEffective !== src.rank),
@@ -163,16 +168,16 @@ const skillRow = (item) => {
 
 /**
  * Actor-sheet item lists from `actor.itemTypes`, each in sort order:
- * `attacks`, `skills`, `spells`.
+ * `attacks`, `skills`, `spells`. `stats` supplies prepared ability modifiers.
  */
-export const sheetItemLists = (itemTypes = {}) => {
+export const sheetItemLists = (itemTypes = {}, stats = {}) => {
   const { attack = [], skill = [], spell = [] } = itemTypes;
   const items = Object.values(itemTypes).flat();
   const spells = [...spell].sort(bySort);
   return {
-    attacks: [...attack].sort(bySort).map(item => attackRow(item, items)),
-    skills: [...skill].sort(bySort).map(skillRow),
-    spells: spells.map(skillRow),
+    attacks: [...attack].sort(bySort).map(item => attackRow(item, items, stats)),
+    skills: [...skill].sort(bySort).map(item => skillRow(item, stats)),
+    spells: spells.map(item => skillRow(item, stats)),
   };
 };
 
@@ -238,6 +243,7 @@ export const buffRows = (effects = [], items = []) => [...effects].sort(bySort).
   name: effect.name,
   img: effect.img,
   disabled: effect.disabled,
+  notes: htmlToText(effect.description),
   changes: (effect.system?.changes ?? []).map(change => describeChange(change, items)).join(', '),
 }));
 

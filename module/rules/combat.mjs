@@ -7,14 +7,16 @@
 // (the Rank -> bonus-damage-die chart is UNSOURCED per _data-notes.md).
 
 // To-Hit and Damage are materialized per attack so the roll-button labels ARE
-// the values (e.g. "To Hit +10", "Damage 2d8+4 slashing").
+// the values (e.g. "To Hit +10", "Damage 2d8+4 Slashing").
 export const attackToHit = (statModifier, rank, misc) => (+statModifier || 0) + (+rank || 0) + (+misc || 0);
 
 export const damageLabel = (die, flat, type) => {
   const f = +flat || 0;
   if (!die && f === 0) return 'No damage';
   const modifier = f === 0 ? '' : `${f > 0 ? '+' : '-'}${Math.abs(f)}`;
-  return [`${die || ''}${modifier}`, type].filter(Boolean).join(' ');
+  const damageType = String(type ?? '').trim();
+  const typeLabel = damageType.charAt(0).toUpperCase() + damageType.slice(1);
+  return [`${die || ''}${modifier}`, typeLabel].filter(Boolean).join(' ');
 };
 
 // ── Mob / NPC math ──

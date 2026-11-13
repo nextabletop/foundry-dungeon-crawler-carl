@@ -23,6 +23,9 @@
     {{/if}}
   </span>
   {{#if attackNotes}}
+  {{#if range}}
+  <span class="dcc-skill-summary dcc-attack-range"><span class="dcc-skill-summary-field"><strong>{{localize "DCC.Items.Range"}}:</strong> {{range}}</span></span>
+  {{/if}}
   {{#if notes}}
   <span class="dcc-attack-notes">{{notes}}</span>
   {{/if}}
