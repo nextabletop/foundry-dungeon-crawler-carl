@@ -19,13 +19,21 @@ describe('attackToHit', () => {
 
 describe('damageLabel (value-bearing label)', () => {
   it('formats die + signed flat + type', () => {
-    expect(damageLabel('2d8', 4, 'slashing')).toBe('2d8+4 slashing');
+    expect(damageLabel('2d8', 4, 'slashing')).toBe('2d8+4 Slashing');
   });
   it('shows negative flats and omits an empty type', () => {
     expect(damageLabel('1d6', -2, '')).toBe('1d6-2');
   });
   it('omits a zero modifier', () => {
-    expect(damageLabel('1d4', 0, 'bludgeoning')).toBe('1d4 bludgeoning');
+    expect(damageLabel('1d4', 0, 'bludgeoning')).toBe('1d4 Bludgeoning');
+  });
+  it.each([
+    ['  fire  ', 'Fire'],
+    ['Psychic', 'Psychic'],
+    ['magical Bludgeoning', 'Magical Bludgeoning'],
+    [undefined, ''],
+  ])('capitalizes the display type %j without changing the dice', (type, label) => {
+    expect(damageLabel('1d6+1d4', 2, type)).toBe(`1d6+1d4+2${label ? ` ${label}` : ''}`);
   });
   it('labels an attack with no die and no modifier as no damage', () => {
     expect(damageLabel('', 0, '')).toBe('No damage');

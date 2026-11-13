@@ -1,7 +1,7 @@
 {{!-- Clicking the current top slot clears it; other slots fill up to the clicked slot. --}}
-<div class="dcc-hb" style="--dcc-hb-columns: {{health.columns}}">
+<div class="dcc-hb" style="--dcc-hb-columns: {{health.columns}}; --dcc-hb-gradient-size: {{health.gradientSize}}%">
   {{#each health.slots as |slot|}}
-  <div class="dcc-hb-cell">
+  <div class="dcc-hb-cell" style="--dcc-hb-gradient-position: {{slot.gradientPosition}}%">
     <button type="button" class="dcc-hb-slot tier-{{slot.tier}}{{#if slot.filled}} filled{{/if}}"
       data-action="setSlots" data-slot="{{slot.i}}"
       aria-label="{{localize 'DCC.Health.Slot' n=slot.i}}">

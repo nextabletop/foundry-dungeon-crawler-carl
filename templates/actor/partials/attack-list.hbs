@@ -1,5 +1,5 @@
 {{!-- Canonical Attack Items from sheetItemLists().attacks.
-      PC: Stat, Rank, separate To Hit and Damage actions.
+      PC: Rank, Stat Mod, separate To Hit and Damage actions.
       `mob=true`: show the attack's static target or None, followed by its damage roll. --}}
 <div class="dcc-box dcc-list dcc-list--attacks">
   <div class="dcc-bar dcc-bar--list">
@@ -14,8 +14,8 @@
     {{#unless mob}}
     <li class="dcc-ihead">
       <span>{{localize "DCC.Sheet.Name"}}</span>
-      <span>{{localize "DCC.Items.Stat"}}</span>
       <span>{{localize "DCC.Items.Rank"}}</span>
+      <span>{{localize "DCC.Items.StatModifier"}}</span>
       <span>{{localize "DCC.Roll.ToHit"}}</span>
       <span>{{localize "DCC.Roll.Damage"}}</span>
       <span></span>
@@ -32,15 +32,17 @@
         <span class="dcc-mob-attack-to-hit" data-tooltip="{{localize 'DCC.Mob.StaticToHitTooltip'}}">
           {{#if mobToHitNone}}{{localize "DCC.None"}}{{else}}{{localize "DCC.Mob.ToHitLabel" target=mobToHit}}{{/if}}
         </span>
-        <span class="dcc-c-dmg">
-          {{#if noDamage}}
-          <span class="dcc-no-damage">{{localize "DCC.Roll.NoDamage"}}</span>
-          {{else}}
-          <button type="button" class="dcc-rollbtn dcc-rollbtn--wide" id="{{@root.rootId}}-{{id}}-rollAttack-damage" data-action="rollAttack" data-roll="damage"
-                  data-tooltip="{{damageLabel}}">{{damageLabel}}</button>
-          {{/if}}
+        <span class="dcc-mob-attack-damage-range">
+          <span class="dcc-c-dmg">
+            {{#if noDamage}}
+            <span class="dcc-no-damage">{{localize "DCC.Roll.NoDamage"}}</span>
+            {{else}}
+            <button type="button" class="dcc-rollbtn dcc-rollbtn--wide" id="{{@root.rootId}}-{{id}}-rollAttack-damage" data-action="rollAttack" data-roll="damage"
+                    data-tooltip="{{damageLabel}}">{{damageLabel}}</button>
+            {{/if}}
+          </span>
+          <span class="dcc-mob-attack-range" data-tooltip="{{range}}">{{range}}</span>
         </span>
-        <span class="dcc-mob-attack-range" data-tooltip="{{range}}">{{range}}</span>
       </div>
       <button type="button" class="icon fa-solid fa-pen-to-square dcc-mob-attack-edit" id="{{@root.rootId}}-{{id}}-edit" data-action="editItem" data-view-only
               data-tooltip aria-label="{{localize 'DCC.Items.Edit'}}"></button>
@@ -54,8 +56,8 @@
     </li>
     {{else}}
     {{#> "systems/dungeon-crawler-carl/templates/actor/partials/item-row.hbs" mob=../mob attackNotes=true}}
-      <span class="dcc-icell">{{#if stat}}{{localize stat}}{{/if}}{{#if isSpell}} <i class="fa-solid fa-wand-sparkles dcc-ispell" role="img" aria-label="{{localize 'TYPES.Item.spell'}}" data-tooltip="{{localize 'TYPES.Item.spell'}}"></i>{{/if}}</span>
       <span class="dcc-icell">{{rank}}</span>
+      <span class="dcc-icell">{{#if stat}}{{numberFormat statModifier}}{{/if}}</span>
       <span class="dcc-icell">
         {{#if hasToHit}}
         <button type="button" class="dcc-rollbtn" id="{{@root.rootId}}-{{id}}-rollAttack-toHit" data-action="rollAttack" data-roll="toHit"
@@ -83,8 +85,8 @@
         <span class="dcc-target" data-tooltip="{{localize 'DCC.Mob.StaticToHitTooltip'}}">{{mobToHit}}</span>{{/if}}
       </span>
       {{else}}
-      <span class="dcc-icell">{{#if stat}}{{localize stat}}{{/if}}</span>
       <span class="dcc-icell">{{rank}}</span>
+      <span class="dcc-icell">{{#if stat}}{{numberFormat statModifier}}{{/if}}</span>
       <span class="dcc-icell">
         {{#if hasToHit}}
         <button type="button" class="dcc-rollbtn" id="{{@root.rootId}}-{{attackId}}-use-{{index}}-toHit" data-action="rollAttack" data-roll="toHit"
@@ -101,6 +103,11 @@
         {{/if}}
       </span>
       <span></span>
+      {{#unless ../../mob}}
+      {{#if range}}
+      <span class="dcc-skill-summary dcc-attack-range"><span class="dcc-skill-summary-field"><strong>{{localize "DCC.Items.Range"}}:</strong> {{range}}</span></span>
+      {{/if}}
+      {{/unless}}
     </li>
     {{/each}}
     {{else}}

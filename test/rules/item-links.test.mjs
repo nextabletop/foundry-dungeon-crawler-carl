@@ -168,8 +168,11 @@ describe('granted Attacks', () => {
     expect(actor.createEmbeddedDocuments).toHaveBeenCalledWith('Item', [{
       type: 'attack',
       name: 'Magic Missile',
-      img: 'icons/svg/combat.svg',
-      system: { stat: 'intelligence', rank: 3, primarySkillId: 'spell' },
+      img: 'icons/svg/daze.svg',
+      system: {
+        stat: 'intelligence', rank: 3, primarySkillId: 'spell',
+        die: '', damageStat: '', damageBonus: 0, damageType: '', range: '', description: '',
+      },
     }]);
     expect(grantedAttack(source, actor.items.contents)).toBe(attack);
     expect(attack.system.linkedItemIds).toEqual([source.id]);
@@ -189,6 +192,89 @@ describe('granted Attacks', () => {
     expect(source.system.linkedItemIds).toEqual([]);
     expect(attack.system.linkedItemIds).toEqual([]);
     expect(attack.delete).toHaveBeenCalledWith({ dccLinkedCascade: true });
+  });
+
+  it('copies structured damage defaults from a dropped attack Skill only at creation', async () => {
+    const defaults = { die: '1d6', damageStat: 'strength', damageBonus: 2, damageType: 'Slashing' };
+    const source = new DCCItem({
+      id: 'source', type: 'skill', name: 'Axe',
+      system: {
+        stat: 'strength', rank: 3, isAttack: true, linkedItemIds: [],
+        attackDefaults: defaults,
+      },
+    });
+    const actor = actorWith(source);
+    await source._onCreate({}, {}, undefined);
+    const attack = grantedAttack(source, actor.items.contents);
+    expect(attack.system).toMatchObject({ ...defaults, stat: 'strength', rank: 3, primarySkillId: 'source' });
+    attack.system.die = '2d6';
+    source.system.attackDefaults = { ...defaults, die: '1d8' };
+    expect(await createGrantedAttack(source)).toBe(attack);
+    expect(attack.system.die).toBe('2d6');
+    expect(actor.createEmbeddedDocuments).toHaveBeenCalledTimes(1);
+  });
+
+  it('copies Skill notes and range and gives passive damage effects no To-Hit Ability', async () => {
+    const source = item('source', 'skill', [], {
+      stat: 'dexterity', checkType: 'passive', isAttack: true,
+      description: '<p>Multiply damage by Rank.</p>', range: 'Touch',
+      attackDefaults: { die: '', damageStat: '', damageBonus: 0, damageType: '' },
+    });
+    actorWith(source);
+    const attack = await createGrantedAttack(source);
+    expect(attack.system).toMatchObject({
+      stat: '', die: '', range: 'Touch', description: '<p>Multiply damage by Rank.</p>',
+    });
+  });
+
+  it('copies a dropped Spell damage, range, and notes without overwriting existing Attacks', async () => {
+    const defaults = { die: '1d4', damageStat: 'intelligence', damageBonus: 0, damageType: 'Force' };
+    const description = '<p>Base Damage: 1d4 + Int Force</p>';
+    const source = new DCCItem({
+      id: 'source', type: 'spell', name: 'Magic Missile',
+      system: {
+        stat: 'intelligence', rank: 2, isAttack: true, linkedItemIds: [],
+        range: 'Within your line of sight', description, attackDefaults: defaults,
+      },
+    });
+    const actor = actorWith(source);
+    await source._onCreate({}, {}, undefined);
+    const attack = grantedAttack(source, actor.items.contents);
+    expect(attack.system).toMatchObject({
+      ...defaults, stat: 'intelligence', rank: 2, primarySkillId: source.id,
+      range: source.system.range, description,
+    });
+    expect(attack.img).toBe('icons/svg/daze.svg');
+    attack.system.die = '2d4';
+    source.system.attackDefaults = { ...defaults, die: '1d8' };
+    expect(await createGrantedAttack(source)).toBe(attack);
+    expect(attack.system.die).toBe('2d4');
+    expect(actor.createEmbeddedDocuments).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['skill', 'spell'])('does not copy edited Attack damage back to its granting %s', async type => {
+    const defaults = { die: '1d6', damageStat: 'strength', damageBonus: 0, damageType: 'Slashing' };
+    const source = new DCCItem({
+      id: 'source', type,
+      system: { isAttack: true, linkedItemIds: [], attackDefaults: defaults },
+    });
+    const actor = actorWith(source);
+    await source._onCreate({}, {}, undefined);
+    const created = grantedAttack(source, actor.items.contents);
+    expect(created.system).toMatchObject(defaults);
+
+    const attack = new DCCItem({ id: created.id, type: 'attack', system: structuredClone(created.system) });
+    attack.parent = actor;
+    actor.items.contents[actor.items.contents.indexOf(created)] = attack;
+    const originalSource = structuredClone(source.system);
+    actor.updateEmbeddedDocuments.mockClear();
+    const editedDamage = { die: '2d8', damageStat: 'dexterity', damageType: 'Fire' };
+    Object.assign(attack.system, editedDamage);
+    await attack._onUpdate({ system: editedDamage }, {}, undefined);
+
+    expect(attack.system).toMatchObject(editedDamage);
+    expect(source.system).toEqual(originalSource);
+    expect(actor.updateEmbeddedDocuments).not.toHaveBeenCalled();
   });
 });
 

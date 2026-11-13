@@ -27,6 +27,9 @@
                 data-tooltip aria-label="{{localize 'DCC.Effect.Delete'}}"></button>
         {{/if}}
       </span>
+      {{#if notes}}
+      <span class="dcc-buff-notes">{{notes}}</span>
+      {{/if}}
     </li>
     {{else}}
     <li class="dcc-iempty">{{localize "DCC.Buff.None"}}</li>

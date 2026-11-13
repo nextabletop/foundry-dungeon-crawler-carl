@@ -335,6 +335,20 @@ describe('castSpell', () => {
     expect(formulas).toEqual({});
     expect(actor.update).toHaveBeenCalledWith({ 'system.mana.value': 2 });
   });
+  it.each(['Puddle Jumper Spell', 'Torch Spell'])('%s casts from the hotlist without a roll and preserves its Ability', async name => {
+    const actor = makeActor();
+    const spell = own(actor, makeItem('spell', name, {
+      stat: 'intelligence', enabled: true, checkType: 'passive',
+    }, { skillBonus: 1, manaCostEffective: 2 }));
+    await actor.useHotlistItem(spell);
+    expect(postCard.mock.calls[0][2]).toEqual({});
+    expect(postCard.mock.calls[0][1]).toMatchObject({
+      name, tag: 'DCC.CheckType.passive', cost: 2, insufficient: false,
+    });
+    expect(actor.update).toHaveBeenCalledWith({ 'system.mana.value': 3 });
+    expect(spell.system.stat).toBe('intelligence');
+    expect(spell.update).not.toHaveBeenCalled();
+  });
   it('a spell cast includes populated Duration and Cooldown metadata', async () => {
     const actor = makeActor();
     const spell = makeItem('spell', 'Rootfoot', {

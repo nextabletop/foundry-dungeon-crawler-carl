@@ -15,6 +15,7 @@ const { default: PcSheet } = await import('../../module/applications/pc-sheet.mj
 const { default: ActorSheetBase } = await import('../../module/applications/actor-sheet-base.mjs');
 const chooseItem = PcSheet.DEFAULT_OPTIONS.actions.createInventoryItem;
 const createItem = ActorSheetBase.DEFAULT_OPTIONS.actions.createItem;
+const chooseSkillOrSpell = PcSheet.DEFAULT_OPTIONS.actions.createSkillOrSpell;
 
 const makeSheet = () => {
   const sheet = new PcSheet();
@@ -22,6 +23,74 @@ const makeSheet = () => {
   sheet.document = { createEmbeddedDocuments: vi.fn() };
   return sheet;
 };
+
+describe('Crawler combined Skill and Spell creation', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it.each([
+    ['skill', 'icons/svg/book.svg'],
+    ['spell', 'icons/svg/daze.svg'],
+  ])('creates and opens a separate %s Item', async (type, img) => {
+    const sheet = makeSheet();
+    const render = vi.fn();
+    sheet.document.createEmbeddedDocuments.mockResolvedValue([{ sheet: { render } }]);
+    foundry.applications.api.DialogV2.wait.mockResolvedValue(type);
+    await chooseSkillOrSpell.call(sheet);
+    const dialog = foundry.applications.api.DialogV2.wait.mock.calls[0][0];
+    expect(dialog.buttons.map(button => button.action)).toEqual(['skill', 'spell', 'cancel']);
+    expect(dialog.rejectClose).toBe(false);
+    expect(dialog.modal).toBe(true);
+    expect(sheet.document.createEmbeddedDocuments).toHaveBeenCalledWith('Item', [{
+      type, name: 'DCC.Items.New', img,
+    }]);
+    expect(render).toHaveBeenCalledWith(true);
+  });
+
+  it.each([null, 'cancel'])('creates nothing when dismissed with %s', async choice => {
+    const sheet = makeSheet();
+    foundry.applications.api.DialogV2.wait.mockResolvedValue(choice);
+    await chooseSkillOrSpell.call(sheet);
+    expect(sheet.document.createEmbeddedDocuments).not.toHaveBeenCalled();
+  });
+
+  it('guards permissions before and after the chooser', async () => {
+    const sheet = makeSheet();
+    sheet.isEditable = false;
+    await chooseSkillOrSpell.call(sheet);
+    expect(foundry.applications.api.DialogV2.wait).not.toHaveBeenCalled();
+    sheet.isEditable = true;
+    foundry.applications.api.DialogV2.wait.mockImplementation(async () => {
+      sheet.isEditable = false;
+      return 'spell';
+    });
+    await chooseSkillOrSpell.call(sheet);
+    expect(sheet.document.createEmbeddedDocuments).not.toHaveBeenCalled();
+  });
+
+  it('prevents duplicate pending dialogs', async () => {
+    const sheet = makeSheet();
+    let resolve;
+    foundry.applications.api.DialogV2.wait.mockReturnValue(new Promise(r => { resolve = r; }));
+    const first = chooseSkillOrSpell.call(sheet);
+    await chooseSkillOrSpell.call(sheet);
+    expect(foundry.applications.api.DialogV2.wait).toHaveBeenCalledOnce();
+    resolve(null);
+    await first;
+  });
+
+  it('reports invalid selections and creation failures', async () => {
+    const sheet = makeSheet();
+    foundry.applications.api.DialogV2.wait.mockResolvedValueOnce('gear').mockResolvedValueOnce('skill');
+    await chooseSkillOrSpell.call(sheet);
+    expect(ui.notifications.error).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Unexpected skill or spell item type: gear' }), { console: true },
+    );
+    const error = new Error('Cannot create skill');
+    sheet.document.createEmbeddedDocuments.mockRejectedValue(error);
+    await chooseSkillOrSpell.call(sheet);
+    expect(ui.notifications.error).toHaveBeenLastCalledWith(error, { console: true });
+  });
+});
 
 describe('Crawler inventory item creation', () => {
   beforeEach(() => {

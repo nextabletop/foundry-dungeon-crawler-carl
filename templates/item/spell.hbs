@@ -20,7 +20,7 @@
       {{formGroup systemFields.duration value=systemSource.duration rootId=rootId}}
     </div>
     <div class="dcc-item-grid">
-      {{formGroup systemFields.limitations value=systemSource.limitations rootId=rootId}}
+      {{formGroup systemFields.limitations value=systemSource.limitations rootId=rootId classes="dcc-item-wide"}}
     </div>
     <div class="dcc-item-flags">
       {{formGroup systemFields.enabled value=systemSource.enabled rootId=rootId}}
@@ -28,8 +28,17 @@
       {{#unless (eq systemSource.checkType "passive")}}
       {{formGroup systemFields.mark value=systemSource.mark rootId=rootId}}
       {{/unless}}
+      {{#if showHotlist}}
       {{formGroup systemFields.onHotlist value=systemSource.onHotlist rootId=rootId}}
+      {{/if}}
     </div>
+    {{#if systemSource.isAttack}}
+    <div class="dcc-item-grid">
+      {{formGroup systemFields.attackDefaults.fields.die value=systemSource.attackDefaults.die label=(localize "DCC.Item.FIELDS.die.label") rootId=rootId}}
+      {{formGroup systemFields.attackDefaults.fields.damageStat value=systemSource.attackDefaults.damageStat label=(localize "DCC.Item.FIELDS.damageStat.label") options=selectOptions.damageStat rootId=rootId}}
+      {{formGroup systemFields.attackDefaults.fields.damageType value=systemSource.attackDefaults.damageType label=(localize "DCC.Item.FIELDS.damageType.label") rootId=rootId classes="dcc-item-wide"}}
+    </div>
+    {{/if}}
   </div>
   {{> "systems/dungeon-crawler-carl/templates/item/partials/description.hbs"}}
 </section>

@@ -49,7 +49,6 @@
         <span>{{localize "DCC.Inventory.Slot"}}</span>
         <span>{{localize "DCC.Inventory.Active"}}</span>
         <span>{{localize "DCC.Inventory.Accessory"}}</span>
-        <span>{{localize "DCC.Hotlist.Short"}}</span>
         <span></span>
       </li>
       {{#each inventory}}
@@ -75,10 +74,6 @@
           <input class="dcc-icheck" type="checkbox" id="{{@root.rootId}}-{{id}}-accessory" data-field="system.accessory" {{checked accessory}}
                  data-tooltip="{{localize 'DCC.Inventory.AccessoryTooltip'}}" aria-label="{{localize 'DCC.Inventory.Accessory'}}">
           {{/if}}
-        </span>
-        <span class="dcc-icell">
-          <input class="dcc-icheck" type="checkbox" id="{{@root.rootId}}-{{id}}-hotlist" data-field="system.onHotlist" {{checked onHotlist}}
-                 data-tooltip="{{localize 'DCC.Hotlist.Toggle' cap=@root.hotlistCap}}" aria-label="{{localize 'DCC.Hotlist.Label'}}">
         </span>
       {{/"systems/dungeon-crawler-carl/templates/actor/partials/item-row.hbs"}}
       {{else}}

@@ -127,7 +127,7 @@ describe('deriveCreature — stats, health, defenses', () => {
       modifiers: [{ target: 'item:Claw:to_hit', value: '2' }, { target: 'item:Claw:to_hit', value: '50%' },
         { target: 'item:Aura:to_hit', value: '100' }],
     }));
-    expect(d.items.a).toMatchObject({ toHit: 7, mobToHit: 20, mobToHitNone: false });
+    expect(d.items.a).toMatchObject({ toHit: 7, mobToHit: 20, mobToHitNone: false, damageLabel: '1d6 Slashing' });
     expect(d.items.b).toMatchObject({ toHit: -10, mobToHit: 3 });
     expect(d.items.c).toMatchObject({ toHit: 0, mobToHit: null, mobToHitNone: true });
     expect(d.items.d).toMatchObject({ toHit: 7, mobToHit: 20 });
@@ -149,7 +149,7 @@ describe('deriveCreature — Attacks', () => {
     const d = deriveCreature(base());
     expect(d.items.w1.toHit).toBe(6);
     expect(d.items.w1.damageBase).toBe(1);
-    expect(d.items.w1.damageLabel).toBe('1d4+1 piercing');
+    expect(d.items.w1.damageLabel).toBe('1d4+1 Piercing');
     expect(d.items.w1.mobToHit).toBe(10 + 6 + 1);
   });
 
@@ -165,8 +165,8 @@ describe('deriveCreature — Attacks', () => {
         }),
       ],
     }));
-    expect(d.items.mixed).toMatchObject({ toHit: 6, damageBase: 4, damageLabel: '1d6+4 slashing' });
-    expect(d.items.same).toMatchObject({ toHit: 5, damageBase: 4, damageLabel: '1d6+4 slashing' });
+    expect(d.items.mixed).toMatchObject({ toHit: 6, damageBase: 4, damageLabel: '1d6+4 Slashing' });
+    expect(d.items.same).toMatchObject({ toHit: 5, damageBase: 4, damageLabel: '1d6+4 Slashing' });
   });
 
   it('does not add a damage ability to Mobs or blank Crawler damage abilities', () => {
@@ -202,7 +202,7 @@ describe('deriveCreature — Attacks', () => {
     i.modifiers = [{ target: 'group:attacks:damage', value: '2' }];
     const d = deriveCreature(i);
     expect(d.items.w1.damageBase).toBe(3);
-    expect(d.items.w1.damageLabel).toBe('1d4+3 piercing');
+    expect(d.items.w1.damageLabel).toBe('1d4+3 Piercing');
   });
 
   it('dice damage modifiers remain roll-time dice instead of becoming a flat bonus', () => {
@@ -213,7 +213,7 @@ describe('deriveCreature — Attacks', () => {
       damageBase: 1,
       damageModifierDice: '+1d6',
       damageDice: '1d4+1d6',
-      damageLabel: '1d4+1d6+1 piercing',
+      damageLabel: '1d4+1d6+1 Piercing',
     });
   });
 
@@ -358,7 +358,7 @@ describe('deriveCreature — Attacks', () => {
       rank: 5,
       toHit: 12,
       range: '20ft',
-      damageLabel: '1d4+1 piercing',
+      damageLabel: '1d4+1 Piercing',
     });
     expect(d.items.a1.skillUses[1]).toMatchObject({
       label: 'improvised',
@@ -367,7 +367,7 @@ describe('deriveCreature — Attacks', () => {
       rank: 0,
       toHit: 6,
       range: '5ft',
-      damageLabel: '1d4+1 piercing',
+      damageLabel: '1d4+1 Piercing',
     });
   });
 
@@ -394,7 +394,7 @@ describe('deriveCreature — Attacks', () => {
     const d = deriveCreature(pc({ items, modifiers: [{ target: 'group:attacks:to_hit', value: '1' }] }));
     expect(d.items.a1.toHit).toBe(1 + 2 + 1);
     expect(d.items.a1.damageBase).toBe(1);
-    expect(d.items.a1.damageLabel).toBe('2d6+1 fire');
+    expect(d.items.a1.damageLabel).toBe('2d6+1 Fire');
   });
 
   it('a Spell has no embedded attack-derived keys', () => {
@@ -468,7 +468,7 @@ describe('deriveVehicle', () => {
     const d = deriveVehicle(veh({ items: [attack('w1', 'Gun', { stat: 'dexterity', rank: 2, die: '2d8', damageBonus: 0, damageType: 'piercing' })] }));
     expect(d.items.w1.toHit).toBe(2);
     expect(d.items.w1.damageBase).toBe(0);
-    expect(d.items.w1.damageLabel).toBe('2d8 piercing');
+    expect(d.items.w1.damageLabel).toBe('2d8 Piercing');
   });
 
   it('derives vehicle No Damage and keeps modifier-only damage rollable', () => {

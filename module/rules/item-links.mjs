@@ -126,14 +126,21 @@ export async function createGrantedAttack(source) {
   }
   const existing = grantedAttack(source, actor.items);
   if (existing) return existing;
+  const defaults = source.system?.attackDefaults;
   const [attack] = await actor.createEmbeddedDocuments('Item', [{
     type: 'attack',
     name: source.name,
-    img: DEFAULT_ITEM_ICONS.attack,
+    img: source.type === 'spell' ? DEFAULT_ITEM_ICONS.spell : DEFAULT_ITEM_ICONS.attack,
     system: {
-      stat: source.system?.stat ?? 'strength',
+      stat: source.type === 'skill' && source.system?.checkType === 'passive' ? '' : (source.system?.stat ?? 'strength'),
       rank: Number(source.system?.rank) || 0,
       primarySkillId: source.id,
+      die: defaults?.die ?? '',
+      damageStat: defaults?.damageStat ?? '',
+      damageBonus: defaults?.damageBonus ?? 0,
+      damageType: defaults?.damageType ?? '',
+      range: source.system?.range ?? '',
+      description: source.system?.description ?? '',
     },
   }]);
   if (!attack) throw new Error(`Could not create the Attack granted by "${source.name}".`);

@@ -405,6 +405,18 @@ describe('Health Bar UI', () => {
     for (let tier = 1; tier <= 10; tier++) expect(css).toContain(`.dcc-hb-slot.filled.tier-${tier} {`);
   });
 
+  it('renders the continuous book gradient for filled Mob and Vehicle slots', () => {
+    const template = readFileSync(new URL('../../templates/actor/partials/health-bar.hbs', import.meta.url), 'utf8');
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    const sheet = readFileSync(new URL('../../module/applications/actor-sheet-base.mjs', import.meta.url), 'utf8');
+    expect(template).toContain('--dcc-hb-gradient-size: {{health.gradientSize}}%');
+    expect(template).toContain('--dcc-hb-gradient-position: {{slot.gradientPosition}}%');
+    expect(sheet).toContain('gradientSize: system.healthBarSlots * 100');
+    expect(css).toContain('.dcc.sheet.actor:is(.mob, .vehicle) .dcc-hb { column-gap: 0; }');
+    expect(css).toMatch(/\.dcc\.sheet\.actor:is\(\.mob, \.vehicle\) \.dcc-hb-cell \.dcc-hb-slot\.filled \{[^}]*linear-gradient\(to right, #8b1e22 0%, #998b23 50%, #0a4f23 100%\);[^}]*background-size: var\(--dcc-hb-gradient-size\) 100%;[^}]*background-position: var\(--dcc-hb-gradient-position\) 0;/);
+    expect(css).toContain('.dcc-hb-cell:not(:first-child) .dcc-hb-slot.filled');
+  });
+
   it('allows an explicit zero Vehicle Constitution Modifier in the sheet', () => {
     const vehicle = readFileSync(new URL('../../templates/actor/vehicle/body.hbs', import.meta.url), 'utf8');
     expect(vehicle).toMatch(/<input[^>]*type="number"[^>]*min="0"[^>]*name="system\.constitutionModifier"[^>]*value="{{systemSource\.constitutionModifier}}"[^>]*placeholder="5"/);
@@ -683,6 +695,43 @@ describe('sheetItemLists', () => {
     expect(attack).toContain('data-action="deleteSkillUse"');
     expect(list).toContain('data-skill-use-index="{{index}}"');
   });
+  it('uses the Spell default for magical Attack rows without replacing custom artwork', () => {
+    const { attacks } = sheetItemLists({
+      attack: [
+        { ...it_('a', 'attack', 'Magic Missile', 0, { linkedItemIds: ['s'] }), img: 'icons/svg/combat.svg' },
+        { ...it_('b', 'attack', 'Custom', 1, { primarySkillId: 's' }), img: 'custom.svg' },
+        { ...it_('c', 'attack', 'Primary Spell', 2, { primarySkillId: 's' }), img: 'icons/svg/combat.svg' },
+        { ...it_('d', 'attack', 'Physical', 3), img: 'icons/svg/combat.svg' },
+      ],
+      spell: [it_('s', 'spell', 'Magic Missile', 0, { linkedItemIds: ['a'] })],
+    });
+    expect(attacks.map(row => row.img)).toEqual([
+      'icons/svg/daze.svg', 'custom.svg', 'icons/svg/daze.svg', 'icons/svg/combat.svg',
+    ]);
+    const list = readFileSync(new URL('../../templates/actor/partials/attack-list.hbs', import.meta.url), 'utf8');
+    expect(list).not.toContain('fa-wand-sparkles');
+  });
+  it('shows Rank then the prepared Stat Mod for primary and alternate Crawler Attacks', () => {
+    const { attacks } = sheetItemLists({ attack: [
+      it_('a', 'attack', 'Spear', 0, { stat: 'strength' }, {
+        rank: 3, toHit: 5,
+        skillUses: [{ stat: 'dexterity', rank: 1, toHit: 4 }],
+      }),
+      it_('b', 'attack', 'Iron Punch', 1, { stat: '' }, {
+        rank: 7, hasToHit: false, toHit: null,
+      }),
+    ] }, { strength: { modifier: 2 }, dexterity: { modifier: 3 } });
+    expect(attacks[0]).toMatchObject({ rank: 3, statModifier: 2, toHit: 5 });
+    expect(attacks[0].skillUses[0]).toMatchObject({ rank: 1, statModifier: 3, toHit: 4 });
+    expect(attacks[1]).toMatchObject({ rank: 7, stat: '', hasToHit: false });
+    expect(attacks[1].statModifier).toBeUndefined();
+    const list = readFileSync(new URL('../../templates/actor/partials/attack-list.hbs', import.meta.url), 'utf8');
+    expect(list).toMatch(/DCC.Items.Rank"[\s\S]*?DCC.Items.StatModifier"[\s\S]*?DCC.Roll.ToHit"/);
+    expect(list.match(/{{rank}}<\/span>\s*<span class="dcc-icell">{{#if stat}}{{numberFormat statModifier}}/g)).toHaveLength(2);
+    expect(list).not.toContain('numberFormat statModifier sign=true');
+    expect(list.match(/{{numberFormat toHit sign=true}}/g)).toHaveLength(2);
+    expect(list).not.toContain('{{localize stat}}');
+  });
   it('carries No Damage to primary and alternate rows and renders plain text', () => {
     const { attacks } = sheetItemLists({ attack: [
       it_('a', 'attack', 'Aura', 0, {}, {
@@ -702,8 +751,10 @@ describe('sheetItemLists', () => {
   it('keeps Crawler attack headers aligned for damage buttons and No Damage rows', () => {
     const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
     expect(css).toContain(
-      '.dcc.sheet.actor .dcc-ilist--attacks > li { grid-template-columns: minmax(0, 1fr) 44px 40px 56px 128px 44px; }',
+      '.dcc.sheet.actor .dcc-ilist--attacks > li { grid-template-columns: minmax(0, 1fr) 32px 32px 44px 128px 44px; }',
     );
+    const labels = JSON.parse(readFileSync(new URL('../../lang/en.json', import.meta.url), 'utf8'));
+    expect(labels.DCC.Items.StatModifier).toBe('Mod');
   });
   it('attack rows carry the mob static To-Hit target (derived.mobToHit)', () => {
     const { attacks } = sheetItemLists({
@@ -732,6 +783,25 @@ describe('sheetItemLists', () => {
     expect(itemRow).toMatch(/{{#if attackNotes}}[\s\S]*{{#if notes}}[\s\S]*class="dcc-attack-notes">{{notes}}/);
     expect(css).toMatch(/\.dcc-ilist--attacks > \.dcc-attack-row > \.dcc-attack-notes \{[^}]*grid-area: auto;[^}]*grid-column: 1 \/ -1;/);
   });
+  it('displays populated Crawler Attack ranges like spell metadata, including alternate uses', () => {
+    const list = readFileSync(new URL('../../templates/actor/partials/attack-list.hbs', import.meta.url), 'utf8');
+    const row = readFileSync(new URL('../../templates/actor/partials/item-row.hbs', import.meta.url), 'utf8');
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    const { attacks } = sheetItemLists({ attack: [
+      it_('a', 'attack', 'Spear', 0, { range: ' 5 feet ' }, {
+        skillUses: [{ index: 0, range: '20 feet' }],
+      }),
+      it_('b', 'attack', 'Blank', 1, { range: ' ' }),
+    ] });
+    expect(attacks[0].range).toBe('5 feet');
+    expect(attacks[0].skillUses[0].range).toBe('20 feet');
+    expect(attacks[1].range).toBe('');
+    expect(row).toMatch(/{{#if attackNotes}}\s*{{#if range}}\s*<span class="dcc-skill-summary dcc-attack-range">/);
+    expect(row).toContain('<strong>{{localize "DCC.Items.Range"}}:</strong> {{range}}');
+    expect(row.indexOf('dcc-attack-range')).toBeLessThan(row.indexOf('class="dcc-attack-notes"'));
+    expect(list).toMatch(/{{#unless \.\.\/\.\.\/mob}}\s*{{#if range}}\s*<span class="dcc-skill-summary dcc-attack-range">/);
+    expect(css).toMatch(/\.dcc-ilist--attacks > \.dcc-irow > \.dcc-attack-range \{[^}]*grid-area: auto;[^}]*grid-column: 1 \/ -1;/);
+  });
   it('renders book-style Mob attack rows without a subheader', () => {
     const list = readFileSync(new URL('../../templates/actor/partials/attack-list.hbs', import.meta.url), 'utf8');
     const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
@@ -745,10 +815,13 @@ describe('sheetItemLists', () => {
     expect(list.indexOf('dcc-attack-notes')).toBeLessThan(list.indexOf('{{#each skillUses}}'));
     expect(list).toContain('data-tooltip="{{#if ../../mob}}{{damageLabel}}{{else}}{{localize \'DCC.Roll.Damage\'}}{{/if}}"');
     expect(css).toMatch(/\.dcc-ilist--attacks\.dcc-ilist--lean > \.dcc-mob-attack-row \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) 12px 12px;/);
-    expect(css).toMatch(/\.dcc-mob-attack-main \{[\s\S]*?grid-template-columns: 20px auto auto minmax\(110px, 160px\) minmax\(0, 1fr\);/);
+    expect(css).toMatch(/\.dcc-mob-attack-main \{[\s\S]*?grid-template-columns: 20px auto auto minmax\(0, 1fr\);/);
+    expect(list).toMatch(/class="dcc-mob-attack-damage-range">[\s\S]*?class="dcc-c-dmg">[\s\S]*?<span class="dcc-mob-attack-range"/);
+    expect(css).toContain('.dcc-mob-attack-damage-range { display: flex; align-items: center; min-width: 0; gap: 6px; }');
+    expect(css).toContain('.dcc-mob-attack-main .dcc-c-dmg { flex: 0 1 auto; min-width: 0; max-width: 250px; }');
     expect(css).toContain('.dcc-ilist--attacks.dcc-ilist--lean { --dcc-mob-attack-size: 11px; }');
-    expect(css).toMatch(/\.dcc-mob-attack-main \.dcc-rollbtn--wide \{[^}]*display: block;[^}]*padding-inline: 4px;[^}]*font-size: var\(--dcc-mob-attack-size\);[^}]*text-overflow: ellipsis;[^}]*white-space: nowrap;/);
-    expect(css).toMatch(/:is\(\.dcc-attack-notes, \.dcc-inventory-notes\) \{[^}]*grid-area: notes;[^}]*white-space: pre-line;/);
+    expect(css).toMatch(/\.dcc-mob-attack-main \.dcc-rollbtn--wide \{[^}]*display: block;[^}]*padding-inline: 4px;[^}]*font-size: var\(--dcc-mob-attack-size\);[^}]*text-transform: none;[^}]*text-overflow: ellipsis;[^}]*white-space: nowrap;/);
+    expect(css).toMatch(/:is\(\.dcc-attack-notes, \.dcc-inventory-notes, \.dcc-buff-notes\) \{[^}]*grid-area: notes;[^}]*white-space: pre-line;/);
   });
   it('skill rows: source rank, effective rank flag, cost for spells', () => {
     expect(lists.skills[0]).toMatchObject({ rank: 2, rankEffective: 3, rankModified: true, bonus: 4 });
@@ -756,6 +829,43 @@ describe('sheetItemLists', () => {
     expect(lists.spells[1]).toMatchObject({ cost: 3 });
     expect(lists.spells[1]).not.toHaveProperty('attack');
     expect(lists.skills[0].cost).toBeUndefined();
+    expect(lists.skills.every(row => row.spell === false)).toBe(true);
+    expect(lists.spells.every(row => row.spell === true)).toBe(true);
+  });
+  it('shows the prepared Ability modifier separately from effective Rank and roll bonus', () => {
+    const items = [
+      { id: 's', type: 'skill', name: 'Spear', system: { stat: 'strength', rank: 3 } },
+      { id: 'p', type: 'skill', name: 'Passive', system: { stat: 'strength', rank: 2, checkType: 'passive' } },
+      { id: 'z', type: 'skill', name: 'Minimum', system: { stat: 'dexterity', rank: 1 } },
+      { id: 'm', type: 'spell', name: 'Spell', system: { stat: 'intelligence', rank: 4 } },
+    ];
+    const derived = deriveCreature({
+      type: 'pc',
+      stats: Object.fromEntries(STATS.map(stat => [stat, { base: 1 }])),
+      items,
+      modifiers: [
+        { target: 'strength', value: '2' },
+        { target: 'dexterity', value: '-1' },
+        { target: 'intelligence', value: '-3' },
+        { target: 'group:skills:rank', value: '1' },
+      ],
+    });
+    const { skills, spells } = sheetItemLists({
+      skill: items.filter(item => item.type === 'skill').map(item => ({
+        ...item, system: { ...item.system, derived: derived.items[item.id] },
+      })),
+      spell: items.filter(item => item.type === 'spell').map(item => ({
+        ...item, system: { ...item.system, derived: derived.items[item.id] },
+      })),
+    }, derived.stats);
+    expect(skills.find(row => row.id === 's')).toMatchObject({
+      stat: 'DCC.StatAbbr.strength', statModifier: 2, rankEffective: 4, bonus: 6,
+    });
+    expect(skills.find(row => row.id === 'p')).toMatchObject({
+      statModifier: 2, isPassive: true, bonus: 3,
+    });
+    expect(skills.find(row => row.id === 'z')).toMatchObject({ statModifier: 1 });
+    expect(spells[0]).toMatchObject({ stat: 'DCC.StatAbbr.intelligence', statModifier: 1 });
   });
   it('skill rows expose opposed/passive display state from checkType', () => {
     const { skills } = sheetItemLists({
@@ -813,6 +923,24 @@ describe('sheetItemLists', () => {
 });
 
 describe('buffRows', () => {
+  it('exposes safe plain-text notes for enabled and disabled effects, omitting blank descriptions', () => {
+    const rows = buffRows([
+      { id: 'a', name: 'Anti-Piercing', description: '<p>Negates <strong>Armor Piercing</strong>.</p><p>Second &amp; third.</p><script>bad()</script>', disabled: false },
+      { id: 'b', name: 'Burned', description: '<p>Damage each round.<br>Until removed.</p>', disabled: true },
+      { id: 'c', name: 'Blank', description: '<p></p>' },
+      { id: 'd', name: 'Missing' },
+    ]);
+    expect(Object.fromEntries(rows.map(row => [row.id, row.notes]))).toEqual({
+      a: 'Negates Armor Piercing.\nSecond & third.',
+      b: 'Damage each round.\nUntil removed.',
+      c: '',
+      d: '',
+    });
+    const template = readFileSync(new URL('../../templates/actor/partials/buff-list.hbs', import.meta.url), 'utf8');
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    expect(template).toMatch(/{{\/if}}\s*<\/span>\s*{{#if notes}}\s*<span class="dcc-buff-notes">{{notes}}<\/span>\s*{{\/if}}\s*<\/li>/);
+    expect(css).toMatch(/\.dcc-ilist--buffs > \.dcc-irow > \.dcc-buff-notes \{[^}]*grid-area: auto;[^}]*grid-column: 1 \/ -1;/);
+  });
   it('orders by sort, then name, and summarises changes', () => {
     const rows = buffRows([
       { id: 'b', name: 'Rage', sort: 2, disabled: false, system: { changes: [{ key: 'strength', type: 'dcc', value: '2' }] } },
@@ -845,11 +973,27 @@ describe('skill and spell authored metadata templates', () => {
   const description = readFileSync(new URL('../../templates/item/partials/description.hbs', import.meta.url), 'utf8');
   const upgrades = readFileSync(new URL('../../templates/item/upgrades.hbs', import.meta.url), 'utf8');
 
+  it('combines only Crawler lists and preserves per-row casting and spell metadata', () => {
+    const pc = readFileSync(new URL('../../templates/actor/pc/skills.hbs', import.meta.url), 'utf8');
+    const sheet = readFileSync(new URL('../../module/applications/pc-sheet.mjs', import.meta.url), 'utf8');
+    const mob = readFileSync(new URL('../../templates/actor/mob/body.hbs', import.meta.url), 'utf8');
+    expect(pc.match(/partials\/skill-list.hbs/g)).toHaveLength(1);
+    expect(pc).toContain('rows=skillsAndSpells combined=true');
+    expect(sheet).toContain('skillsAndSpells: [...context.skills, ...context.spells]');
+    expect(list).toContain('spell=(or spell ../spell)');
+    expect(list).toContain('data-action="createSkillOrSpell"');
+    expect(list).toContain('DCC.Items.NoSkillsOrSpells');
+    expect(list).toMatch(/{{#if spell}}\s*<button[^>]+data-action="castSpell"/);
+    expect(list).toContain('data-action="rollSkill"');
+    expect(mob).not.toContain('combined=true');
+  });
+
   it('edits Range, Cooldown, and Limitations on skills and spells, with spell-only Duration', () => {
     for (const template of [skill, spell]) {
       for (const field of ['range', 'cooldown', 'limitations']) {
         expect(template).toContain(`systemFields.${field} value=systemSource.${field}`);
       }
+      expect(template).toContain('systemFields.limitations value=systemSource.limitations rootId=rootId classes="dcc-item-wide"');
     }
     expect(spell).toContain('systemFields.duration value=systemSource.duration');
     expect(skill).not.toContain('systemFields.duration');
@@ -865,6 +1009,14 @@ describe('skill and spell authored metadata templates', () => {
     expect(list).not.toContain('upgrades');
   });
 
+  it('displays a dash for Passive Skill and Spell Stat & Mod while keeping no-roll actions', () => {
+    expect(list).toContain('{{#if isPassive}}-{{else}}{{#if stat}}{{localize stat}} {{numberFormat statModifier sign=true}}{{/if}}{{/if}}');
+    expect(list).toMatch(/{{#if spell}}\s*<button[^>]+data-action="castSpell"/);
+    expect(list).toContain('data-action="rollSkill"');
+    expect(list).toContain('{{#if isPassive}}<i class="fa-solid fa-comment" inert></i>');
+    expect(spell).toMatch(/{{#unless \(eq systemSource.checkType "passive"\)}}\s*{{formGroup systemFields.stat/);
+  });
+
   it('keeps hotlist editing on item sheets and removes Skill Check controls', () => {
     for (const template of [skill, spell]) {
       expect(template).toContain('systemFields.onHotlist value=systemSource.onHotlist');
@@ -877,6 +1029,27 @@ describe('skill and spell authored metadata templates', () => {
     expect(list).toContain('data-field="system.enabled"');
     expect(list).toContain('dcc-c-type');
     expect(list).toContain('fa-comment');
+  });
+
+  it('places Stat & Mod between Rank and Type, followed by Roll, on Crawler lists', () => {
+    const css = readFileSync(new URL('../../styles/system.css', import.meta.url), 'utf8');
+    const sheet = readFileSync(new URL('../../module/applications/creature-sheet.mjs', import.meta.url), 'utf8');
+    const labels = JSON.parse(readFileSync(new URL('../../lang/en.json', import.meta.url), 'utf8'));
+    expect(sheet).toContain('sheetItemLists(this.document.itemTypes, this.document.system.stats)');
+    expect(labels.DCC.Items.StatMod).toBe('Stat & Mod');
+    expect(list).toContain('{{localize stat}} {{numberFormat statModifier sign=true}}');
+    const header = list.slice(list.indexOf('<li class="dcc-ihead">'), list.indexOf('{{#each rows}}'));
+    expect([...header.matchAll(/class="dcc-c-(\w+)"/g)].map(match => match[1]))
+      .toEqual(['name', 'rank', 'stat', 'type', 'roll', 'used', 'mods', 'ctl']);
+    expect(list).toMatch(/{{#unless lean}}\s*<span class="dcc-icell dcc-c-stat">/);
+    expect(list).toMatch(/{{#if lean}}\s*<span class="dcc-icell dcc-c-mods">[\s\S]*?data-field="system.enabled"[\s\S]*?<\/span>\s*{{\/if}}/);
+    expect(header).toContain('{{#if lean}}<span class="dcc-c-mods">');
+    expect(css).toContain('grid-template-areas: "name rank stat type roll used ctl";');
+    expect(css).toContain('"name    rank    stat    type    roll    used    ctl"');
+    expect(css).toContain('grid-template-areas: "name rank type roll mods ctl";');
+    for (const template of [skill, spell]) {
+      expect(template).toContain('systemFields.enabled value=systemSource.enabled');
+    }
   });
 
   it('lets Skills and Spells grant a linked Attack', () => {
@@ -915,6 +1088,15 @@ describe('inventoryView', () => {
     expect(inventoryTemplate).toContain('inventoryNotes=true');
     expect(itemRowTemplate).toMatch(/{{#if inventoryNotes}}[\s\S]*class="dcc-inventory-notes">{{notes}}/);
     expect(css).toMatch(/\.dcc-ilist--inventory > \.dcc-inventory-row > \.dcc-inventory-notes \{[^}]*grid-column: 1 \/ -1;/);
+  });
+  it('omits Hot from Crawler Inventory while retaining hotlist editing on item sheets', () => {
+    expect(inventoryTemplate).not.toContain('DCC.Hotlist.Short');
+    expect(inventoryTemplate).not.toContain('system.onHotlist');
+    expect(css).toContain('.dcc-ilist--inventory > li { grid-template-columns: minmax(0, 1fr) 48px 84px 44px 36px 44px; }');
+    for (const type of ['gear', 'weapon']) {
+      const template = readFileSync(new URL(`../../templates/item/${type}.hbs`, import.meta.url), 'utf8');
+      expect(template).toContain('systemFields.onHotlist value=systemSource.onHotlist');
+    }
   });
   it('paper doll: every gear slot in order, the first item (gear before weapons) per slot', () => {
     expect(view.gearSlots.map(s => s.slot)).toEqual(['head', 'torso', 'arms', 'hands', 'legs', 'feet']);

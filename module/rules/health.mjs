@@ -101,13 +101,15 @@ export const slotClickTarget = (clicked, current) => {
  * View model for the actor's slot count, with percentage labels and rainbow tiers.
  * @param {number} healthBar - displayed (clamped) healthBar
  * @param {number} slots - the actor's slot count (healthBarSlots)
- * @returns {{i:number, filled:boolean, percent:number, tier:number}[]}
+ * @returns {{i:number, filled:boolean, percent:number, tier:number, gradientPosition:number}[]}
  */
 export const slotView = (healthBar, slots) => {
   const h = +healthBar || 0;
   const max = slotMax(slots);
   return Array.from({ length: max }, (_, n) => {
     const i = n + 1;
-    return { i, filled: i <= h, percent: Math.floor(i * 100 / max), tier: Math.ceil(i * 10 / max) };
+    const tier = max === 1 ? 10 : 1 + Math.round(n * 9 / (max - 1));
+    const gradientPosition = max === 1 ? 0 : n * 100 / (max - 1);
+    return { i, filled: i <= h, percent: Math.floor(i * 100 / max), tier, gradientPosition };
   });
 };
