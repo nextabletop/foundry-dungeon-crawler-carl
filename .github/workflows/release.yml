@@ -29,7 +29,7 @@ jobs:
           '
 
       - name: Package system
-        run: git archive --format=zip --output=dungeon-crawler-carl.zip "$GITHUB_SHA" system.json index.mjs module styles templates lang
+        run: git archive --format=zip --output=dungeon-crawler-carl.zip "$GITHUB_SHA" system.json index.mjs module styles templates lang assets
 
       - name: Publish release
         env:
